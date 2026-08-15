@@ -1,0 +1,72 @@
+# profile.yml — Coding Agent Kit manifest (v1.0)
+# Single source of truth: paths, skills, adapters.
+# Superpowers: plan → TDD → implement → verify → report.
+# YAGNI: delete weightless code.
+
+version: "1.0"
+name: coding-agent-kit
+description: Coding Agent OS — superpowers, YAGNI, TDD, кросс-чатовая память.
+
+core:
+  ops:           OPS.md
+  boot:          BOOT.md
+  agents:        AGENTS.md
+  runtime:       SKILL_RUNTIME.md
+
+paths:
+  skills:        skills
+  wiki:          Wiki
+  db_tools:      db-tools
+  adapters:      adapters
+  scripts:       scripts
+
+memory:
+  engine: db-tools/search.py
+  build:  db-tools/build.py
+  lint:   db-tools/lint_wiki.py
+  warmup: scripts/memory-warmup.py
+
+skills:
+  format: SKILL.md + frontmatter
+  frontmatter_required: true
+  required_keys: [name, description]
+  always_on:
+    - superpowers               # plan → TDD → implement → verify → report
+    - yagni                     # минимализм, удаление лишнего
+    - engineering-persona       # прямой инженерный тон
+    - fable-method              # сложные задачи
+    - dev-wiki                  # кросс-чатовая память
+  domain:
+    - code-review-and-quality
+    - test-driven-development
+    - incremental-implementation
+    - debugging-and-error-recovery
+    - architecture-simplicity
+    - production-first-decisions
+    - security-and-hardening
+    - observability-and-instrumentation
+    - shipping-and-launch
+    - spec-driven-development
+    - git-workflow-and-versioning
+    - code-graph-review
+    - money-path-safety
+    - web-research
+    - skill-authoring
+    - reasoning-engine
+    - testing-discipline
+    - debug-incident-protocol
+
+adapters:
+  - platform: gemini
+    target: adapters/gemini.md
+  - platform: antigravity
+    target: adapters/antigravity.md
+  - platform: universal
+    target: adapters/UNIVERSAL.md
+
+integrity:
+  watch:
+    - OPS.md
+    - BOOT.md
+    - AGENTS.md
+    - profile.yml

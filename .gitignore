@@ -1,0 +1,7 @@
+# Build artifacts
+db/*.db
+db/*.db-journal
+__pycache__/
+*.pyc
+.DS_Store
+.env
