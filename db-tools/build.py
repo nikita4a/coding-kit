@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 
-
-"""Сборка базы файлов из папки набора.
+"""Сборка базы файлов из папки проекта.
 
 По умолчанию — ИНКРЕМЕНТАЛЬНО: сравнивает mtime/размер файлов с базой и
 обновляет только изменённые/добавленные/удалённые. FTS-индекс
@@ -10,7 +9,8 @@
 схемы или с флагом --full.
 
 Запуск:
-    python3 build.py                                    # корень набора -> db/wiki.db
+    python3 build.py                                    # coding-kit -> wiki.db
+    python3 build.py -r ../projects/sherpa-voice -o ../db/sherpa-voice.db
     python3 build.py --full                             # полная пересборка
 """
 import argparse
@@ -20,6 +20,12 @@ import os
 import sqlite3
 import sys
 
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
+import _compat
+
+ROOT = _compat.chulan_root()
+
 # Windows-консоль по умолчанию cp1251 — русский вывод падает с
 # UnicodeEncodeError. Переключаем на UTF-8 (Python 3.7+).
 try:
@@ -28,152 +34,30 @@ try:
 except Exception:  # noqa: S110,BLE001 — reconfigure опционален, без него живём
     pass
 
+# Вендор/стороннее — не индексируем (паттерн .cursorignore/EXCLUDED):
+# agent/ — внутренние агенты (reverser): своя база db/agent.db, из общей
+# исключён (изоляция знаний агентов, решение владельца 12.08.2026, id=351).
+# Вендор fable-method исключается ТОЛЬКО на корневом уровне (ROOT_SKIP_DIRS):
+# канон skills/fable-method/ (SKILL.md + references + eval/ + LICENSE)
+# индексируется — по нему ищут в базе (12.08.2026, id=357).
 DEFAULT_SKIP_DIRS = {"db", "venv", "models", ".git", "__pycache__",
-                     ".reasonix"}
-DEFAULT_SKIP_FILES = {".env", "wiki.db"}
+                     ".reasonix", "agent"}
+ROOT_SKIP_DIRS = {"fable-method"}
+DEFAULT_SKIP_FILES = {".env", "wiki.db", "sherpa-voice.db"}
 
+# --- JS/TS через tree-sitter (tree_sitter_language_pack уже в venv —
+# приходит с code-review-graph; тот же движок, что у GitHub/NeoVim). ---
+import os
+import sys
 
-def extract_symbols(rel_path, content):
-    """Символы файла: (имя, тип, строка, сигнатура). Для .py —
-    функции/классы/методы через ast (у функций — сигнатура); для .md —
-    заголовки (# / ## / ###) как разделы; для .sh — функции по строке
-    'имя() {'."""
-    ext = os.path.splitext(rel_path)[1].lower()
-    syms = []
-    if ext == ".py":
-        import ast
-        try:
-            tree = ast.parse(content)
-        except SyntaxError:
-            return syms
-
-        def sig(node):
-            try:
-                args = node.args
-                parts = [a.arg for a in args.posonlyargs + args.args]
-                if args.vararg:
-                    parts.append("*" + args.vararg.arg)
-                for a in args.kwonlyargs:
-                    parts.append(a.arg)
-                if args.kwarg:
-                    parts.append("**" + args.kwarg.arg)
-                return f"def {node.name}({', '.join(parts)})"
-            except (AttributeError, TypeError, ValueError):
-                return f"def {node.name}(...)"
-
-        def walk(node, in_class=False):
-            for child in ast.iter_child_nodes(node):
-                if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    kind = "method" if in_class else "function"
-                    syms.append((child.name, kind, child.lineno,
-                                 sig(child)))
-                    walk(child, in_class=False)
-                elif isinstance(child, ast.ClassDef):
-                    bases = [b.id for b in child.bases if isinstance(b, ast.Name)]
-                    syms.append((child.name, "class", child.lineno,
-                                 f"class {child.name}({', '.join(bases)})"
-                                 if bases else f"class {child.name}"))
-                    walk(child, in_class=True)
-                else:
-                    walk(child, in_class)
-
-        walk(tree)
-        return sorted(syms, key=lambda s: s[2])
-    if ext == ".md":
-        import re
-        for i, line in enumerate(content.split("\n"), 1):
-            m = re.match(r"^(#{1,3})\s+(.*)$", line)
-            if m:
-                depth = len(m.group(1))
-                syms.append((m.group(2).strip(), f"h{depth}", i, ""))
-        return syms
-    if ext == ".sh":
-        import re
-        for i, line in enumerate(content.split("\n"), 1):
-            m = re.match(r"^\s*([a-zA-Z_][a-zA-Z0-9_]*)\(\)\s*(\{)?\s*(#.*)?$",
-                         line)
-            if m:
-                syms.append((m.group(1), "function", i, ""))
-        return syms
-    return syms
-
-
-def extract_imports(rel_path, content):
-    """Рёбра импортов для .py: (rel_path, модуль, строка)."""
-    if not rel_path.endswith(".py"):
-        return []
-    import ast
-    try:
-        tree = ast.parse(content)
-    except SyntaxError:
-        return []
-    edges = []
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for a in node.names:
-                edges.append((a.name.split(".")[0], node.lineno))
-        elif isinstance(node, ast.ImportFrom):
-            mod = node.module or ""
-            edges.append((mod.split(".")[0], node.lineno))
-    return edges
-
-
-def extract_calls(rel_path, content):
-    """Рёбра вызовов для .py: (rel_path, имя_вызываемого, строка).
-    Имя — последний атрибут цепочки (os.path.join -> join, tg_send_text)."""
-    if not rel_path.endswith(".py"):
-        return []
-    import ast
-    try:
-        tree = ast.parse(content)
-    except SyntaxError:
-        return []
-    edges = []
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call):
-            f = node.func
-            if isinstance(f, ast.Name):
-                edges.append((f.id, node.lineno))
-            elif isinstance(f, ast.Attribute):
-                edges.append((f.attr, node.lineno))
-    return edges
-
-
-def extract_inherits(rel_path, content):
-    """Наследование для .py: (rel_path, класс, базовый_класс, строка).
-    Простые имена (class X(Base)) и последний атрибут цепочки
-    (unittest.TestCase -> TestCase, как в extract_calls): полное имя
-    неоднозначно, но граф «кто наследует от TestCase» работает."""
-    if not rel_path.endswith(".py"):
-        return []
-    import ast
-    try:
-        tree = ast.parse(content)
-    except SyntaxError:
-        return []
-    edges = []
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ClassDef):
-            for b in node.bases:
-                if isinstance(b, ast.Name):
-                    edges.append((node.name, b.id, node.lineno))
-                elif isinstance(b, ast.Attribute):
-                    edges.append((node.name, b.attr, node.lineno))
-    return edges
-
-
-def extract_errors(rel_path, content):
-    """Синтаксические ошибки .py: (rel_path, строка, сообщение).
-    Файл, который не парсится, — диагностика для поиска, а не молчаливый
-    пропуск (раньше SyntaxError просто давал пустой список символов)."""
-    if not rel_path.endswith(".py"):
-        return []
-    import ast
-    try:
-        ast.parse(content)
-    except SyntaxError as e:
-        return [(e.lineno or 0, e.msg)]
-    return []
+import _compat
+from parsers import (  # noqa: F401 — контракт (тесты: build.extract_*)
+    extract_calls,
+    extract_errors,
+    extract_imports,
+    extract_inherits,
+    extract_symbols,
+)
 
 
 def read_hashed(full):
@@ -188,8 +72,12 @@ _BINARY_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".bmp"}
 
 
 def is_artifact(fn):
-    """Служебные файлы sqlite и изображения — в текстовую базу не заносим."""
-    return fn.endswith((".db", ".db-shm", ".db-wal", ".db-journal")) or \
+    """Служебные файлы sqlite, бэкапы и изображения — в текстовую базу не
+    заносим. .bak/.orig — резервные копии (gen_index пишет index.md.bak
+    перед перезаписью): они дублируют содержимое и мусорят поиск
+    (кейс 14.08.2026: фантом index.md.bak в wiki.db, research.db id=489)."""
+    return fn.endswith((".db", ".db-shm", ".db-wal", ".db-journal",
+                        ".bak", ".orig")) or \
         os.path.splitext(fn)[1].lower() in _BINARY_EXTS
 
 
@@ -216,13 +104,21 @@ def load_gitignore(root):
     return ignore_dirs, ignore_files
 
 
-def scan_files(root, skip_dirs, skip_files, use_gitignore=False):
+def scan_files(root, skip_dirs, skip_files, use_gitignore=False,
+               root_skip_dirs=ROOT_SKIP_DIRS):
     """Быстрый проход без чтения контента: rel -> (mtime, size)."""
     out = {}
     gi_dirs, gi_files = load_gitignore(root) if use_gitignore else (set(), [])
     skip = set(skip_dirs) | gi_dirs
+    root_abs = os.path.abspath(root)
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in skip]
+        # root_skip_dirs исключаются ТОЛЬКО на корневом уровне (вендор в
+        # корне), а не по имени везде: канон skills/fable-method/ должен
+        # индексироваться.
+        dirnames[:] = [d for d in dirnames
+                       if d not in skip
+                       and not (os.path.abspath(dirpath) == root_abs
+                                and d in root_skip_dirs)]
         for fn in sorted(filenames):
             if fn in skip_files or is_artifact(fn):
                 continue
@@ -234,7 +130,6 @@ def scan_files(root, skip_dirs, skip_files, use_gitignore=False):
                 continue
             out[rel] = (os.path.getmtime(full), os.path.getsize(full))
     return out
-
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS files (
@@ -488,6 +383,10 @@ def incremental_build(con, root, skip_dirs, skip_files, extra=None,
     for rel in set(db_files) - set(disk) - set(extra or {}):
         cur.execute("DELETE FROM files WHERE rel_path = ?", (rel,))
         cur.execute("DELETE FROM symbols WHERE rel_path = ?", (rel,))
+        cur.execute("DELETE FROM imports WHERE rel_path = ?", (rel,))
+        cur.execute("DELETE FROM calls WHERE rel_path = ?", (rel,))
+        cur.execute("DELETE FROM inherits WHERE rel_path = ?", (rel,))
+        cur.execute("DELETE FROM errors WHERE rel_path = ?", (rel,))
         stats["del"] += 1
     return stats
 
@@ -498,7 +397,8 @@ def schema_ok(con):
         cur = con.cursor()
         for t in ("files", "symbols", "imports", "calls", "inherits",
                   "errors"):
-            cur.execute(f"SELECT 1 FROM {t} LIMIT 1")
+            # t — только из фиксированного кортежа выше, не пользовательский ввод
+            cur.execute(f"SELECT 1 FROM {t} LIMIT 1")  # noqa: S608 — t из фикс. кортежа; nosemgrep
         file_cols = [r[1] for r in cur.execute("PRAGMA table_info(files)")]
         sym_cols = [r[1] for r in cur.execute("PRAGMA table_info(symbols)")]
         return "lines" in file_cols and "content_hash" in file_cols and \
@@ -509,7 +409,7 @@ def schema_ok(con):
 
 def main():
     ap = argparse.ArgumentParser(description="Сборка базы файлов в sqlite")
-    ap.add_argument("-r", "--root", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    ap.add_argument("-r", "--root", default=str(ROOT))
     ap.add_argument("-o", "--out", help="путь к базе (по умолчанию <root>/<имя папки>.db)")
     ap.add_argument("--full", action="store_true", help="полная пересборка вместо инкрементальной")
     ap.add_argument("--skip-dirs", nargs="*", default=[], help="дополнительные папки для исключения")
@@ -525,11 +425,8 @@ def main():
     if not os.path.isdir(root):
         print(f"нет такой папки: {root}", file=sys.stderr)
         sys.exit(1)
-    if args.out:
-        db_path = os.path.abspath(args.out)
-    else:
-        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                               "..", "db", "wiki.db")
+    db_path = (os.path.abspath(args.out) if args.out
+               else os.path.join(ROOT, "db", "wiki.db"))
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
     skip_dirs = DEFAULT_SKIP_DIRS | set(args.skip_dirs)

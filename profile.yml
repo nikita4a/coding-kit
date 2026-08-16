@@ -17,11 +17,11 @@ paths:
   skills:        skills
   wiki:          Wiki
   db_tools:      db-tools
-  adapters:      adapters
-  scripts:       scripts
-
 memory:
   engine: db-tools/search.py
+  findings: db-tools/findings.py
+  repomap: db-tools/repomap.py
+  search_all: db-tools/search_all.py
   build:  db-tools/build.py
   lint:   db-tools/lint_wiki.py
   warmup: scripts/memory-warmup.py
@@ -55,6 +55,8 @@ skills:
     - reasoning-engine
     - testing-discipline
     - debug-incident-protocol
+    - fable-judge
+    - windows-encoding-fixes
 
 adapters:
   - platform: gemini

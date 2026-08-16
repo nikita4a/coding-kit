@@ -1,24 +1,32 @@
 #!/usr/bin/env python3
-"""Лог поисков в research.db — метрики использования баз.
 
-Каждый поиск по базе (search.py) пишет строку в search_log:
+"""Лог поисков в research.db — метрики использования баз (пункт #4 обшивки).
+
+Каждый поиск по базе (search.py, MCP db-tools) пишет строку в search_log:
 когда, чем, в какой базе, какой запрос, сколько нашлось. Это позволяет
 отвечать на «что мы реально ищем, что находим, где пусто» — а не гадать.
 
 Использование:
     from log import log_search, search_stats
-    log_search("search.py", "wiki", "страховка", 3)
+    log_search("search.py", "coding-kit", "канон", 3)
     print(search_stats(20))
 
 Таблица создаётся лениво при первом логировании — отдельная миграция не
 нужна (research.db хранит и findings, и метрики).
 """
 import datetime
+
 import os
 import sqlite3
+import sys
 
-DB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                  "db", "research.db")
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
+import _compat
+
+ROOT = _compat.chulan_root()
+
+DB = os.path.join(ROOT, "db", "research.db")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS search_log (
@@ -80,3 +88,24 @@ def search_stats(limit=20):
     return {"total": total, "empty": empty, "top": [dict(r) for r in top],
             "by_db": [dict(r) for r in by_db],
             "last": [dict(r) for r in last]}
+
+
+def empty_queries(limit=30):
+    """Майнинг пустых запросов: какие темы ищут и НЕ находят (все прогоны
+    пустые) — кандидаты в доки/wiki (аудит 14.08, research.db id=489).
+    Исключаем обрубки (одно слово без смысла) и служебный мусор."""
+    con = _connect()
+    rows = con.execute(
+        "SELECT query, COUNT(*) n, MAX(ts) last_ts, db_name "
+        "FROM search_log WHERE hits = 0 "
+        "GROUP BY query HAVING n >= 2 ORDER BY n DESC LIMIT ?",
+        (limit,)).fetchall()
+    con.close()
+    junk = {"test", "foo", "удал", "настройк", "подмешка"}
+    out = []
+    for r in rows:
+        q = r["query"]
+        if q.strip().lower() in junk or len(q) < 4:
+            continue
+        out.append(dict(r))
+    return out

@@ -1,0 +1,232 @@
+#!/usr/bin/env python3
+
+"""История файлов из git в research.db — history-aware поиск (паттерн
+Sourcegraph/zoekt: «кто менял файл и когда» из индекса, а не из памяти).
+
+Замер 13.08.2026: git log по всему coding-kit — 0.00с, 7.6 МБ пик RAM
+(пренебрежимо для бюджета 8 ГБ / CPU×0.5).
+
+Примеры:
+    python3 githist.py refresh                 # перечитать историю (идемпотентно)
+    python3 githist.py file scripts/doctor/doctor.py  # кто менял файл, когда, как часто
+    python3 githist.py hotspots --top 10       # файлы-лидеры по числу правок
+    python3 githist.py commits --since 2026-08-01 --limit 10
+"""
+import argparse
+import os
+import sqlite3
+import subprocess
+import sys
+
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
+import _compat
+
+ROOT = _compat.chulan_root()
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:  # noqa: S110,BLE001 — reconfigure опционален, без него живём
+    pass
+
+
+DB = os.path.join(ROOT, "db", "research.db")
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS commits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    repo TEXT NOT NULL,
+    hash TEXT NOT NULL,
+    date TEXT NOT NULL,
+    author TEXT NOT NULL,
+    subject TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS file_history (
+    file TEXT NOT NULL,
+    repo TEXT NOT NULL,
+    commits INTEGER NOT NULL DEFAULT 0,
+    first TEXT DEFAULT '',
+    last TEXT DEFAULT '',
+    authors TEXT DEFAULT '',
+    PRIMARY KEY (file, repo)
+);
+CREATE TABLE IF NOT EXISTS commit_files (
+    hash TEXT NOT NULL,
+    file TEXT NOT NULL,
+    repo TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_commits_date ON commits(date);
+CREATE INDEX IF NOT EXISTS idx_commit_files ON commit_files(hash, repo);
+"""
+
+
+def connect():
+    os.makedirs(os.path.dirname(DB), exist_ok=True)
+    con = sqlite3.connect(DB)
+    con.row_factory = sqlite3.Row
+    con.execute("PRAGMA journal_mode=WAL")
+    con.executescript(SCHEMA)
+    con.commit()
+    return con
+
+
+def _git_log(repo):
+    """git log всего репозитория: [(hash, date, author, subject, [files])]."""
+    out = subprocess.run(
+        ["git", "-C", repo, "log", "--name-only",
+         "--pretty=format:%H|%ai|%an|%s"],
+        capture_output=True, text=True, timeout=60)
+    if out.returncode != 0:
+        return None, out.stderr.strip() or "git недоступен"
+    commits = []
+    cur = None
+    for line in out.stdout.splitlines():
+        if line.startswith("commit") or not line.strip():
+            if cur and cur[4]:
+                commits.append(cur)
+            cur = None
+            continue
+        if "|" in line and len(line.split("|")) >= 4:
+            if cur and cur[4]:
+                commits.append(cur)
+            h, d, a, s = line.split("|", 3)
+            cur = [h, d.strip(), a.strip(), s.strip(), []]
+        elif cur is not None:
+            cur[4].append(line.strip())
+    if cur and cur[4]:
+        commits.append(cur)
+    return commits, None
+
+
+def cmd_refresh(args):
+    con = connect()
+    repos = [str(ROOT)]
+    sherpa = os.path.join(ROOT, "projects", "sherpa-voice")
+    if os.path.isdir(sherpa):
+        repos.append(sherpa)
+    for repo in repos:
+        commits, err = _git_log(repo)
+        if err:
+            print(f"[✗] {repo}: {err}", file=sys.stderr)
+            continue
+        cur = con.cursor()
+        cur.execute("DELETE FROM commits WHERE repo=?", (repo,))
+        cur.execute("DELETE FROM file_history WHERE repo=?", (repo,))
+        cur.execute("DELETE FROM commit_files WHERE repo=?", (repo,))
+        per_file = {}
+        for h, d, a, s, files in commits:
+            cur.execute(
+                "INSERT INTO commits (repo, hash, date, author, subject) "
+                "VALUES (?,?,?,?,?)", (repo, h, d, a, s))
+            for f in files:
+                cur.execute(
+                    "INSERT INTO commit_files (hash, file, repo) "
+                    "VALUES (?,?,?)", (h, f, repo))
+                rec = per_file.setdefault(f, {"n": 0, "first": d, "last": d,
+                                              "authors": set()})
+                rec["n"] += 1
+                rec["first"] = min(rec["first"], d)
+                rec["last"] = max(rec["last"], d)
+                rec["authors"].add(a)
+        for f, rec in per_file.items():
+            cur.execute(
+                "INSERT INTO file_history (file, repo, commits, first, last, "
+                "authors) VALUES (?,?,?,?,?,?)",
+                (f, repo, rec["n"], rec["first"], rec["last"],
+                 ", ".join(sorted(rec["authors"]))))
+        con.commit()
+        print(f"[✓] {repo}: {len(commits)} коммитов, "
+              f"{len(per_file)} файлов в истории")
+    con.close()
+
+
+def cmd_file(args):
+    con = connect()
+    cur = con.cursor()
+    target = args.file.lstrip("./")
+    row = cur.execute(
+        "SELECT * FROM file_history WHERE file=? OR file LIKE ?",
+        (target, f"%{target}")).fetchone()
+    if not row:
+        print(f"файл «{args.file}» в git-истории не найден")
+        con.close()
+        return
+    print(f"{row['file']}: правок {row['commits']}, "
+          f"{row['first'][:10]} → {row['last'][:10]}, "
+          f"авторы: {row['authors']}\n")
+    rows = cur.execute(
+        "SELECT c.date, c.author, c.subject FROM commits c "
+        "JOIN commit_files cf ON cf.hash = c.hash "
+        "WHERE cf.file=? AND cf.repo=? ORDER BY c.date DESC",
+        (row["file"], row["repo"])).fetchall()
+    if args.limit:
+        rows = rows[: args.limit]
+    for r in rows:
+        print(f"  {r['date'][:10]}  {r['author']:12}  {r['subject'][:60]}")
+    con.close()
+
+
+def cmd_hotspots(args):
+    con = connect()
+    cur = con.cursor()
+    rows = cur.execute(
+        "SELECT file, commits, last FROM file_history "
+        "ORDER BY commits DESC LIMIT ?", (args.top,)).fetchall()
+    print(f"топ-{args.top} файлов по числу правок:\n")
+    for r in rows:
+        print(f"  {r['commits']:3}  {r['file']:50}  последняя: {r['last'][:10]}")
+    con.close()
+
+
+def cmd_commits(args):
+    con = connect()
+    cur = con.cursor()
+    sql = "SELECT date, author, subject, hash FROM commits WHERE 1=1"
+    params = []
+    if args.since:
+        sql += " AND date >= ?"
+        params.append(args.since)
+    if args.file:
+        sql += " AND repo=(SELECT repo FROM file_history WHERE file LIKE ? LIMIT 1)"
+        params.append(f"%{args.file.lstrip('./')}%")
+    sql += " ORDER BY date DESC LIMIT ?"
+    params.append(args.limit)
+    rows = cur.execute(sql, params).fetchall()
+    for r in rows:
+        print(f"{r['date'][:10]}  {r['author']:12}  {r['subject'][:60]}")
+    con.close()
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        description="История файлов из git (research.db)")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    p_refresh = sub.add_parser("refresh", help="перечитать git-историю")
+    p_refresh.set_defaults(fn=cmd_refresh)
+
+    p_file = sub.add_parser("file", help="история одного файла")
+    p_file.add_argument("file", help="путь к файлу")
+    p_file.add_argument("--limit", type=int, default=15,
+                        help="сколько коммитов показать")
+    p_file.set_defaults(fn=cmd_file)
+
+    p_hot = sub.add_parser("hotspots", help="файлы-лидеры по правкам")
+    p_hot.add_argument("--top", type=int, default=10)
+    p_hot.set_defaults(fn=cmd_hotspots)
+
+    p_cm = sub.add_parser("commits", help="список коммитов")
+    p_cm.add_argument("--since", default="", help="с даты (YYYY-MM-DD)")
+    p_cm.add_argument("--file", default="", help="фильтр: файл (подстрока)")
+    p_cm.add_argument("--limit", type=int, default=20)
+    p_cm.set_defaults(fn=cmd_commits)
+
+    args = ap.parse_args()
+    args.fn(args)
+
+
+if __name__ == "__main__":
+    main()
+
+

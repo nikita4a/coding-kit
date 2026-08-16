@@ -1,4 +1,5 @@
 # Coding Agent OS — Operating Contract
+> **v1.2** | db-tools v2.7 (findings, repomap, call-graph), fable-judge, FILE-SIZE gate.
 
 > **Product:** Coding Agent OS v1.0 | **CORE v1.0**
 > Profile root: this directory.
@@ -103,6 +104,14 @@ python scripts/memory-warmup.py -q "X"
 
 ---
 
+**Движок v2.7:**
+- `python db-tools/findings.py add "тема" --text "вывод" --source путь` — находки в research.db (иначе знание теряется)
+- `python db-tools/findings.py search "тема"` — поиск по находкам
+- `python db-tools/repomap.py project --tokens 1500` — карта проекта (PageRank по импорт-графу)
+- `python db-tools/repomap.py file <путь>` — карта файла: символы + кто зовёт + кого зовёт
+- `python db-tools/search.py --calls <fn>` / `--imports` / `--inherits` — графы зависимостей
+- `python db-tools/search_all.py "тема"` — поиск по всем базам разом
+
 ## 6. 📚 SKILLS
 
 ### Always-on
@@ -115,8 +124,8 @@ python scripts/memory-warmup.py -q "X"
 | `dev-wiki` | Кросс-чатовая память |
 
 ### Доменные
-| Скилл | Триггер |
-|-------|---------|
+| `fable-judge` | Проверка «готово»: перепрогон заявленных проверок, вердикт VERIFIED/REFUTED |
+| `windows-encoding-fixes` | Windows: cp1251, CRLF, venv paths |
 | `code-review-and-quality` | Ревью, «проверь код», «что сломает» |
 | `test-driven-development` | «Напиши тест», «покрой», TDD |
 | `incremental-implementation` | Многофайловые изменения |
@@ -146,3 +155,14 @@ python scripts/memory-warmup.py -q "X"
 ## 8. DRIFT KILLER
 
 Каждые ~10 ходов: я инженер или «вежливый ассистент»? Следую superpowers? YAGNI? 2+ НЕТ → читай OPS.md заново.
+
+---
+
+## 9. FILE-SIZE GATE (god-файлы запрещены)
+
+Код — 500/1000 строк (soft/hard), доки — 300/500. Файл у лимита → РЕЖЬ, а не расти:
+per-concern модули + тонкий barrel. Проверка:
+```bash
+python scripts/tools/check_file_sizes.py            # отчёт
+python scripts/tools/check_file_sizes.py --ci       # гейт (exit 1 при hard)
+```

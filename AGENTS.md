@@ -77,6 +77,10 @@ scripts/context-monitor.py  # python scripts/context-monitor.py --check
 db-tools/build.py           # python db-tools/build.py
 db-tools/search.py          # python db-tools/search.py "запрос"
 db-tools/lint_wiki.py       # python db-tools/lint_wiki.py Wiki
+db-tools/findings.py        # python db-tools/findings.py add|search|list
+db-tools/repomap.py         # python db-tools/repomap.py project|file
+db-tools/search_all.py      # python db-tools/search_all.py "запрос"
+scripts/tools/check_file_sizes.py  # лимиты файлов (god-файлы запрещены)
 skills/                     # скиллы (Hermes-совместимые)
 adapters/                   # адаптеры для IDE
 ```
@@ -97,8 +101,8 @@ adapters/                   # адаптеры для IDE
 
 ### Доменные
 
-| Скилл | Триггер |
-|-------|---------|
+| `fable-judge` | «Проверь, что сделано», judge, вердикт VERIFIED/REFUTED |
+| `windows-encoding-fixes` | Windows: cp1251, CRLF, PowerShell, venv |
 | `code-review-and-quality` | «Проверь код», «отревью», «что сломает» |
 | `test-driven-development` | «Напиши тест», «покрой», TDD |
 | `incremental-implementation` | Многофайловые изменения, поэтапная реализация |
