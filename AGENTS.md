@@ -13,7 +13,7 @@
 read OPS.md
 
 # 2. Память — прогрев
-python scripts/memory-warmup.py
+python ../memory/scripts/memory-warmup.py
 
 # 3. Контекст
 python scripts/context-monitor.py --check
@@ -28,7 +28,7 @@ python scripts/context-monitor.py --check
 Три закона:
 1. **Superpowers** — plan → TDD → implement → verify → report. Не пиши код без плана и теста.
 2. **YAGNI** — не строй лишнего. Меньше кода = меньше багов = меньше поддержки.
-3. **Память** — Wiki, не разговор. Перед «что мы знаем про X» → `python scripts/memory-warmup.py -q "X"`.
+3. **Память** — Wiki, не разговор. Перед «что мы знаем про X» → `python ../memory/scripts/memory-warmup.py -q "X"`.
 
 ---
 
@@ -53,10 +53,10 @@ python scripts/context-monitor.py --check
 
 ### 3. Кросс-чатовая память
 
-Перед «что мы знаем про X» → `python scripts/memory-warmup.py -q "X"`.
+Перед «что мы знаем про X» → `python ../memory/scripts/memory-warmup.py -q "X"`.
 Нашёл → ответ со ссылкой. Не нашёл → честно «в базе нет».
 
-Цикл записи: файл → index.md → log.md → `python db-tools/build.py` → lint.
+Цикл записи: файл → index.md → log.md → `python ../memory/db-tools/build.py` → lint.
 
 ### 4. Скиллы — правило нуля
 
@@ -72,14 +72,14 @@ python scripts/context-monitor.py --check
 ## Инструменты
 
 ```
-scripts/memory-warmup.py    # python scripts/memory-warmup.py
+scripts/memory-warmup.py    # python ../memory/scripts/memory-warmup.py
 scripts/context-monitor.py  # python scripts/context-monitor.py --check
-db-tools/build.py           # python db-tools/build.py
-db-tools/search.py          # python db-tools/search.py "запрос"
-db-tools/lint_wiki.py       # python db-tools/lint_wiki.py Wiki
-db-tools/findings.py        # python db-tools/findings.py add|search|list
-db-tools/repomap.py         # python db-tools/repomap.py project|file
-db-tools/search_all.py      # python db-tools/search_all.py "запрос"
+db-tools/ → ../memory/      # память вынесена: db-tools и базы живут в ../memory
+db-tools/search.py          # python ../memory/db-tools/search.py "запрос"
+db-tools/lint_wiki.py       # python ../memory/db-tools/lint_wiki.py ../memory/Wiki
+../memory/db-tools/findings.py # python ../memory/db-tools/findings.py add|search|list
+../memory/db-tools/repomap.py # python ../memory/db-tools/repomap.py project|file
+../memory/db-tools/search_all.py # python ../memory/db-tools/search_all.py "запрос"
 scripts/tools/check_file_sizes.py  # лимиты файлов (god-файлы запрещены)
 skills/                     # скиллы (Hermes-совместимые)
 adapters/                   # адаптеры для IDE
@@ -125,7 +125,7 @@ adapters/                   # адаптеры для IDE
 
 1. Понять: вопрос / задача / запись в базу.
 2. Задача → superpowers: plan → TDD → implement → verify → report.
-3. Вопрос про известное → `python scripts/memory-warmup.py -q "X"` → ответ.
+3. Вопрос про известное → `python ../memory/scripts/memory-warmup.py -q "X"` → ответ.
 4. Вопрос про внешнее → веб-поиск → ответ.
 5. «Запиши» → цикл dev-wiki.
 
@@ -147,6 +147,6 @@ adapters/                   # адаптеры для IDE
 
 ## session end
 
-1. `python scripts/memory-warmup.py`
+1. `python ../memory/scripts/memory-warmup.py`
 2. Записать итоги в `Wiki/log.md`
-3. `python db-tools/build.py`
+3. `python ../memory/db-tools/build.py`

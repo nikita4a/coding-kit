@@ -95,22 +95,22 @@ first   first     minimal      observed    first
 
 ## 5. 🧠 CROSS-CHAT MEMORY
 
-Память = база, не разговор. Перед «что мы знаем про X»:
+Память = база (../memory), не разговор. Перед «что мы знаем про X»:
 ```bash
-python scripts/memory-warmup.py -q "X"
+python ../memory/db-tools/search_all.py "X"
 ```
 
-Цикл: файл в Wiki/ → index.md → log.md → `python db-tools/build.py` → `python db-tools/lint_wiki.py Wiki`
+**Иерархия:** переносимые знания → `../memory/Wiki/<тип>/<slug>.md` → `python ../memory/db-tools/build.py`. Статус/специфика проекта → файл в проекте → `python ../memory/db-tools/build.py -r <корень проекта> -o ../memory/db/<имя>.db`. Findings: `python ../memory/db-tools/findings.py add "тема" --text "вывод" --source путь`.
 
 ---
 
 **Движок v2.7:**
-- `python db-tools/findings.py add "тема" --text "вывод" --source путь` — находки в research.db (иначе знание теряется)
-- `python db-tools/findings.py search "тема"` — поиск по находкам
-- `python db-tools/repomap.py project --tokens 1500` — карта проекта (PageRank по импорт-графу)
-- `python db-tools/repomap.py file <путь>` — карта файла: символы + кто зовёт + кого зовёт
-- `python db-tools/search.py --calls <fn>` / `--imports` / `--inherits` — графы зависимостей
-- `python db-tools/search_all.py "тема"` — поиск по всем базам разом
+- `python ../memory/db-tools/findings.py add "тема" --text "вывод" --source путь` — находки в research.db (иначе знание теряется)
+- `python ../memory/db-tools/findings.py search "тема"` — поиск по находкам
+- `python ../memory/db-tools/repomap.py project --tokens 1500` — карта проекта (PageRank по импорт-графу)
+- `python ../memory/db-tools/repomap.py file <путь>` — карта файла: символы + кто зовёт + кого зовёт
+- `python ../memory/db-tools/search.py --calls <fn>` / `--imports` / `--inherits` — графы зависимостей
+- `python ../memory/db-tools/search_all.py "тема"` — поиск по всем базам разом
 
 ## 6. 📚 SKILLS
 
