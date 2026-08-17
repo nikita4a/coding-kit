@@ -68,19 +68,23 @@ def stats(db: sqlite3.Connection) -> dict:
 
 
 def search(db: sqlite3.Connection, query: str, limit: int = 5) -> list:
-    """Full-text search the Wiki."""
+    """Full-text search (schema v2.7: files + files_fts)."""
     try:
         rows = db.execute(
-            "SELECT path, title, type, date, snippet(wiki, 0, '<mark>', '</mark>', '...', 40) as sn "
-            "FROM wiki WHERE wiki MATCH ? ORDER BY rank LIMIT ?",
+            "SELECT f.rel_path AS path, f.rel_path AS title, f.ext AS type, "
+            "date(f.mtime, 'unixepoch') AS date, "
+            "snippet(files_fts, 1, '<mark>', '</mark>', '...', 40) AS sn "
+            "FROM files_fts ft JOIN files f ON f.id = ft.rowid "
+            "WHERE files_fts MATCH ? ORDER BY rank LIMIT ?",
             (query, limit),
         ).fetchall()
     except Exception:
         # Fallback: LIKE search
         try:
             rows = db.execute(
-                "SELECT path, title, type, date, substr(content, 1, 200) as sn "
-                "FROM wiki WHERE content LIKE ? ORDER BY date DESC LIMIT ?",
+                "SELECT rel_path AS path, rel_path AS title, ext AS type, "
+                "date(mtime, 'unixepoch') AS date, substr(content, 1, 200) AS sn "
+                "FROM files WHERE content LIKE ? ORDER BY mtime DESC LIMIT ?",
                 (f"%{query}%", limit),
             ).fetchall()
         except Exception:
