@@ -17,6 +17,16 @@ Spec    Red test  Green code   Evidence    Outcome
 first   first     minimal      observed    first
 ```
 
+## Фазовые скиллы (обрастание obra)
+
+Кит v2: каждая фаза имеет гранулярный скилл-помощник. Фаза не заменяется, а углубляется:
+
+- PLAN → `brainstorming` (дизайн-вопросы, спека), `writing-plans` (план исполнения)
+- IMPLEMENT → `executing-plans` (по плану с чекпоинтами), `subagent-driven-development`, `dispatching-parallel-agents`
+- VERIFY → `verification-before-completion` (свежий вывод), `requesting-code-review`, `fable-judge` (adversarial)
+- Debug → `systematic-debugging`, `debugging-and-error-recovery`
+- Git → `using-git-worktrees`, `finishing-a-development-branch`
+
 ## Phase 1: PLAN
 
 **Сформулируй «что значит готово» — конкретно, наблюдаемо.**

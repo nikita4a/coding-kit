@@ -130,6 +130,7 @@ python ../memory/db-tools/search_all.py "X"
 | `test-driven-development` | «Напиши тест», «покрой», TDD |
 | `incremental-implementation` | Многофайловые изменения |
 | `debugging-and-error-recovery` | «Не работает», «сломалось», баг |
+| `systematic-debugging` | Корневая причина: reproduce → localize → fix → guard |
 | `architecture-simplicity` | Проектирование, рефакторинг |
 | `production-first-decisions` | Выбор инструмента/библиотеки |
 | `security-and-hardening` | OWASP, input validation, auth |
@@ -141,6 +142,16 @@ python ../memory/db-tools/search_all.py "X"
 | `money-path-safety` | Деньги, оплата, баланс |
 | `web-research` | Веб-поиск, фактчекинг |
 | `skill-authoring` | Создание скиллов |
+| `brainstorming` | Дизайн-задачи: вопросы до кода, спецификация |
+| `writing-plans` | План исполнения из спеки |
+| `executing-plans` | Исполнение плана с чекпоинтами |
+| `subagent-driven-development` | Реализация субагентами |
+| `dispatching-parallel-agents` | Параллельные независимые задачи |
+| `verification-before-completion` | «Готово» только со свежим выводом проверки |
+| `requesting-code-review` | Запрос ревью |
+| `receiving-code-review` | Обработка фидбека ревью |
+| `using-git-worktrees` | Изолированные worktree для веток |
+| `finishing-a-development-branch` | Интеграция ветки в main |
 
 ---
 
