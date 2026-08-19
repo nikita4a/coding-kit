@@ -44,15 +44,22 @@ def list_dbs() -> list:
 
 def _sanitize(query: str) -> str:
     """Quote tokens with FTS5 specials (hyphen = column filter:
-    'agent-lsp' dies as 'no such column: lsp' without this)."""
+    'agent-lsp' dies as 'no such column: lsp' without this). Mirrors
+    search.py sanitize_query; duplicated because warmup ships to
+    ~/.memory/scripts without db-tools. Prefix wildcards stay unquoted
+    (a quoted '*' is a literal and kills the prefix search)."""
     out = []
     for tok in query.split():
         up = tok.upper()
         if up in ("AND", "OR", "NOT") or up.startswith("NEAR(") or \
                 (tok.startswith('"') and tok.endswith('"')):
             out.append(tok)
-        elif any(c in tok for c in '"-()*:^') and not tok.endswith("*"):
-            out.append('"' + tok.replace('"', '""') + '"')
+        elif any(c in tok for c in '"-()*:^'):
+            if tok.endswith("*") and not any(c in tok[:-1]
+                                              for c in '"-():^'):
+                out.append(tok)
+            else:
+                out.append('"' + tok.replace('"', '""') + '"')
         else:
             out.append(tok)
     return " ".join(out)
