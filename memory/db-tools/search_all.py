@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-"""Поиск по ВСЕМ базам воркспейса сразу (паттерн srclight multi-repo:
-ATTACH + UNION). «Где это лежит» одним запросом — по всем базам,
-agent, wiki, проектным базам db/*.db (базы без files_fts пропускаются,
-например research.db — у неё своя схема findings/tasks).
+"""Search ALL workspace databases at once (srclight multi-repo pattern:
+ATTACH + UNION). "Where does this live" in a single query — across all
+agent, wiki and project databases db/*.db (databases without files_fts
+are skipped, e.g. research.db — it has its own findings/tasks schema).
 
-Использование:
-    python3 db-tools/search_all.py "прошивка"
+Usage:
+    python3 db-tools/search_all.py "firmware"
     python3 db-tools/search_all.py "load_mix" --limit 15
-    python3 db-tools/search_all.py "настройк" --substring
+    python3 db-tools/search_all.py "legacy" --substring
 """
 import argparse
 import sqlite3
@@ -23,7 +23,7 @@ DB_DIR = chulan_root() / "db"
 
 
 def list_searchable_dbs(db_dir=None) -> list:
-    """Базы каталога db/ с таблицей files_fts (или files_fts_trigram)."""
+    """Databases in the db/ directory that have a files_fts (or files_fts_trigram) table."""
     ddir = Path(db_dir) if db_dir else DB_DIR
     out = []
     for p in sorted(ddir.glob("*.db")):
@@ -43,7 +43,7 @@ def list_searchable_dbs(db_dir=None) -> list:
 
 def search_all(query: str, limit: int = 5, substring: bool = False,
                db_dir=None) -> list:
-    """[(база, rel_path, сниппет), ...] по всем базам."""
+    """[(db, rel_path, snippet), ...] across all databases."""
     results = []
     idx = "files_fts_trigram" if substring else "files_fts"
     for p in list_searchable_dbs(db_dir):
@@ -64,21 +64,21 @@ def search_all(query: str, limit: int = 5, substring: bool = False,
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("query", help="запрос (>= 3 символа)")
+    ap.add_argument("query", help="query (>= 3 characters)")
     ap.add_argument("--limit", type=int, default=5,
-                    help="результатов на базу")
+                    help="results per database")
     ap.add_argument("--substring", action="store_true",
-                    help="триграм-подстрока вместо слов (склонения)")
+                    help="trigram substring instead of words (declensions)")
     args = ap.parse_args()
     results = search_all(args.query, limit=args.limit,
                          substring=args.substring)
     if not results:
-        print("ничего не найдено ни в одной базе")
+        print("not found in any database")
         return 1
     for name, rel_path, snip in results:
         print(f"[{name}] {rel_path}")
         print(f"  {snip}")
-    print(f"\nитого: {len(results)} в {len({n for n, _, _ in results})} базах")
+    print(f"\ntotal: {len(results)} in {len({n for n, _, _ in results})} databases")
     return 0
 
 

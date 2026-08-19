@@ -111,6 +111,20 @@ def check_adapters() -> tuple[bool, str]:
     return (not missing, "all targets exist" if not missing
             else "; ".join(missing))
 
+def check_override() -> tuple[bool, str]:
+    ov = KIT / ".override.md"
+    if not ov.exists():
+        return (True, "no .override.md")
+    m = re.search(r"^\s*MODE:\s*(\S+)",
+                  ov.read_text(encoding="utf-8"), re.M)
+    if not m:
+        return (False, ".override.md present but no MODE: line")
+    mode = m.group(1).strip()
+    if mode in ("EXPLORATORY_PROTOTYPE", "STRICT_AUDIT"):
+        return (True, f"{mode} (valid)")
+    return (False, f"unknown mode {mode!r} — allowed: "
+                   "EXPLORATORY_PROTOTYPE, STRICT_AUDIT. Typo?")
+
 
 def main() -> int:
     checks = [
@@ -120,6 +134,7 @@ def main() -> int:
         ("file-size gate", check_gate()),
         ("memory+db", check_memory()),
         ("adapters", check_adapters()),
+        ("override", check_override()),
     ]
     fails = 0
     print(f"{'CHECK':<16} {'RESULT':<6} DETAIL")

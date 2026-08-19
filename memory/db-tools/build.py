@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 
 
-"""Сборка базы файлов из папки проекта.
+"""Build a file database from a project folder.
 
-По умолчанию — ИНКРЕМЕНТАЛЬНО: сравнивает mtime/размер файлов с базой и
-обновляет только изменённые/добавленные/удалённые. FTS-индекс
-синхронизируется триггерами сам. Полная пересборка — только при смене
-схемы или с флагом --full.
+By default — INCREMENTAL: compares file mtime/size against the database
+and updates only changed/added/deleted. The FTS index is synchronized
+by triggers itself. Full rebuild — only on a schema change or with the
+--full flag.
 
-Запуск:
+Run:
     python3 build.py                                    # memory -> wiki.db
     python3 build.py -r ../projects/sherpa-voice -o ../db/sherpa-voice.db
-    python3 build.py --full                             # полная пересборка
+    python3 build.py --full                             # full rebuild
 """
 import argparse
 import fnmatch
@@ -26,32 +26,32 @@ import _compat
 
 ROOT = _compat.chulan_root()
 
-# Windows-консоль по умолчанию cp1251 — русский вывод падает с
-# UnicodeEncodeError. Переключаем на UTF-8 (Python 3.7+).
+# Windows console defaults to cp1251 — Russian output crashes with
+# UnicodeEncodeError. Switching to UTF-8 (Python 3.7+).
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:  # noqa: S110,BLE001 — reconfigure опционален, без него живём
+except Exception:  # noqa: S110,BLE001 — reconfigure is optional, fine without it
     pass
 
-# Вендор/стороннее — не индексируем (паттерн .cursorignore/EXCLUDED):
-# agent/ — внутренние агенты (reverser): своя база db/agent.db, из общей
-# исключён (изоляция знаний агентов, решение владельца 12.08.2026, id=351).
-# Вендор fable-method исключается ТОЛЬКО на корневом уровне (ROOT_SKIP_DIRS):
-# канон skills/fable-method/ (SKILL.md + references + eval/ + LICENSE)
-# индексируется — по нему ищут в базе (12.08.2026, id=357).
+# Vendor/third-party — not indexed (the .cursorignore/EXCLUDED pattern):
+# agent/ — internal agents (reverser): own db/agent.db, excluded from the
+# shared one (agent knowledge isolation, owner decision 12.08.2026, id=351).
+# Vendor fable-method is excluded ONLY at the root level (ROOT_SKIP_DIRS):
+# the canon skills/fable-method/ (SKILL.md + references + eval/ + LICENSE)
+# is indexed — it is searched in the database (12.08.2026, id=357).
 DEFAULT_SKIP_DIRS = {"db", "venv", "models", ".git", "__pycache__",
                      ".reasonix", "agent"}
 ROOT_SKIP_DIRS = {"fable-method"}
 DEFAULT_SKIP_FILES = {".env", "wiki.db", "sherpa-voice.db"}
 
-# --- JS/TS через tree-sitter (tree_sitter_language_pack уже в venv —
-# приходит с code-review-graph; тот же движок, что у GitHub/NeoVim). ---
+# --- JS/TS via tree-sitter (tree_sitter_language_pack is already in the
+# venv — comes with code-review-graph; same engine as GitHub/NeoVim). ---
 import os
 import sys
 
 import _compat
-from parsers import (  # noqa: F401 — контракт (тесты: build.extract_*)
+from parsers import (  # noqa: F401 — the contract (tests: build.extract_*)
     extract_calls,
     extract_errors,
     extract_imports,
@@ -61,7 +61,7 @@ from parsers import (  # noqa: F401 — контракт (тесты: build.extr
 
 
 def read_hashed(full):
-    """Читает файл: (sha256, контент). Хеш — авторитет изменений."""
+    """Read a file: (sha256, content). Hash is the change authority."""
     with open(full, "rb") as f:
         data = f.read()
     return hashlib.sha256(data).hexdigest(), data.decode("utf-8",
@@ -72,18 +72,18 @@ _BINARY_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".bmp"}
 
 
 def is_artifact(fn):
-    """Служебные файлы sqlite, бэкапы и изображения — в текстовую базу не
-    заносим. .bak/.orig — резервные копии (gen_index пишет index.md.bak
-    перед перезаписью): они дублируют содержимое и мусорят поиск
-    (кейс 14.08.2026: фантом index.md.bak в wiki.db, research.db id=489)."""
+    """Service sqlite files, backups and images — not put into the text
+    database. .bak/.orig — backup copies (gen_index writes index.md.bak
+    before overwriting): they duplicate content and pollute search
+    (case 14.08.2026: phantom index.md.bak in wiki.db, research.db id=489)."""
     return fn.endswith((".db", ".db-shm", ".db-wal", ".db-journal",
                         ".bak", ".orig")) or \
         os.path.splitext(fn)[1].lower() in _BINARY_EXTS
 
 
 def load_gitignore(root):
-    """Минимальный парсер .gitignore: имена папок (как skip_dirs) и
-    fnmatch-паттерны для файлов. Правила '!' (не-игнор) не обрабатываем."""
+    """Minimal .gitignore parser: folder names (like skip_dirs) and
+    fnmatch patterns for files. '!' (un-ignore) rules are not handled."""
     ignore_dirs, ignore_files = set(), []
     p = os.path.join(root, ".gitignore")
     if not os.path.isfile(p):
@@ -106,15 +106,15 @@ def load_gitignore(root):
 
 def scan_files(root, skip_dirs, skip_files, use_gitignore=False,
                root_skip_dirs=ROOT_SKIP_DIRS):
-    """Быстрый проход без чтения контента: rel -> (mtime, size)."""
+    """Fast pass without reading content: rel -> (mtime, size)."""
     out = {}
     gi_dirs, gi_files = load_gitignore(root) if use_gitignore else (set(), [])
     skip = set(skip_dirs) | gi_dirs
     root_abs = os.path.abspath(root)
     for dirpath, dirnames, filenames in os.walk(root):
-        # root_skip_dirs исключаются ТОЛЬКО на корневом уровне (вендор в
-        # корне), а не по имени везде: канон skills/fable-method/ должен
-        # индексироваться.
+        # root_skip_dirs are excluded ONLY at the root level (vendor at
+        # the root), not by name everywhere: the canon skills/fable-method/
+        # must be indexed.
         dirnames[:] = [d for d in dirnames
                        if d not in skip
                        and not (os.path.abspath(dirpath) == root_abs
@@ -202,8 +202,8 @@ CREATE VIRTUAL TABLE IF NOT EXISTS files_fts_trigram USING fts5(
     content='files', content_rowid='id', tokenize='trigram'
 );
 
--- WHEN: триггеры не срабатывают при touch-обновлении (mtime/size),
--- когда контент не менялся — иначе каждая переиндексация переписывала бы FTS.
+-- WHEN: triggers don't fire on touch-updates (mtime/size) when content
+-- has not changed — otherwise every reindexing would rewrite the FTS.
 
 CREATE TRIGGER IF NOT EXISTS files_ai AFTER INSERT ON files BEGIN
     INSERT INTO files_fts(rowid, rel_path, content)
@@ -244,8 +244,8 @@ END;
 
 
 def collect_extra(extra_files):
-    """Внешние файлы вне root (например, история транскриптов): полный путь
-    используется и как идентификатор, и как точка чтения."""
+    """External files outside root (e.g. transcript history): the full path
+    is used both as the identifier and as the read point."""
     out = {}
     for p in (extra_files or []):
         full = os.path.abspath(os.path.expanduser(p))
@@ -256,9 +256,9 @@ def collect_extra(extra_files):
 
 def upsert_file(cur, rel, full, mtime, size, stats, action, content_hash=None,
                 content=None):
-    """Читает файл и вставляет/обновляет его (контент + символы + рёбра).
-    Хеш и контент можно передать заранее (уже прочитаны при сравнении),
-    чтобы не читать файл дважды."""
+    """Read the file and insert/update it (content + symbols + edges).
+    Hash and content can be passed in advance (already read during
+    comparison) to avoid reading the file twice."""
     if content is None:
         content_hash, content = read_hashed(full)
     lines = content.count("\n") + 1
@@ -311,7 +311,7 @@ def upsert_file(cur, rel, full, mtime, size, stats, action, content_hash=None,
 
 def full_build(con, root, skip_dirs, skip_files, extra=None,
                use_gitignore=False):
-    """Полная пересборка: DROP + CREATE + все файлы."""
+    """Full rebuild: DROP + CREATE + all files."""
     cur = con.cursor()
     cur.executescript(
         "DROP TABLE IF EXISTS files_fts_trigram; "
@@ -331,13 +331,13 @@ def full_build(con, root, skip_dirs, skip_files, extra=None,
 
 def incremental_build(con, root, skip_dirs, skip_files, extra=None,
                       use_gitignore=False):
-    """mtime-then-hash: mtime/размер — дешёвый гейт, sha256 — авторитет.
+    """mtime-then-hash: mtime/size — cheap gate, sha256 — authority.
 
-    mtime совпал -> файл не трогаем (fast path, без чтения).
-    mtime/размер отличаются -> читаем и хешируем; хеш совпал с хранимым
-    (cp -p, restore, LiveSync переписали байты идентично) -> обновляем
-    только mtime/размер, контент и FTS не трогаем. Хеш различается ->
-    полный upsert. Триггеры синхронизируют оба FTS-индекса."""
+    mtime matches -> leave the file alone (fast path, no reading).
+    mtime/size differ -> read and hash; hash matches the stored one
+    (cp -p, restore, LiveSync rewrote bytes identically) -> update only
+    mtime/size, content and FTS untouched. Hash differs -> full upsert.
+    Triggers keep both FTS indexes in sync."""
     cur = con.cursor()
     cur.execute("SELECT rel_path, mtime, size_bytes, content_hash FROM files")
     db_files = {r[0]: (r[1], r[2], r[3]) for r in cur.fetchall()}
@@ -392,13 +392,13 @@ def incremental_build(con, root, skip_dirs, skip_files, extra=None,
 
 
 def schema_ok(con):
-    """База подходит для инкрементального обновления (текущая схема)."""
+    """Database is suitable for incremental updates (current schema)."""
     try:
         cur = con.cursor()
         for t in ("files", "symbols", "imports", "calls", "inherits",
                   "errors"):
-            # t — только из фиксированного кортежа выше, не пользовательский ввод
-            cur.execute(f"SELECT 1 FROM {t} LIMIT 1")  # noqa: S608 — t из фикс. кортежа; nosemgrep
+            # t — only from the fixed tuple above, not user input
+            cur.execute(f"SELECT 1 FROM {t} LIMIT 1")  # noqa: S608 — t from the fixed tuple above; nosemgrep
         file_cols = [r[1] for r in cur.execute("PRAGMA table_info(files)")]
         sym_cols = [r[1] for r in cur.execute("PRAGMA table_info(symbols)")]
         return "lines" in file_cols and "content_hash" in file_cols and \
@@ -408,22 +408,22 @@ def schema_ok(con):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Сборка базы файлов в sqlite")
+    ap = argparse.ArgumentParser(description="Build a file database in sqlite")
     ap.add_argument("-r", "--root", default=str(ROOT))
-    ap.add_argument("-o", "--out", help="путь к базе (по умолчанию <root>/<имя папки>.db)")
-    ap.add_argument("--full", action="store_true", help="полная пересборка вместо инкрементальной")
-    ap.add_argument("--skip-dirs", nargs="*", default=[], help="дополнительные папки для исключения")
-    ap.add_argument("--skip-files", nargs="*", default=[], help="дополнительные файлы для исключения")
+    ap.add_argument("-o", "--out", help="path to the database (default <root>/<folder-name>.db)")
+    ap.add_argument("--full", action="store_true", help="full rebuild instead of incremental")
+    ap.add_argument("--skip-dirs", nargs="*", default=[], help="additional folders to exclude")
+    ap.add_argument("--skip-files", nargs="*", default=[], help="additional files to exclude")
     ap.add_argument("--gitignore", action="store_true",
-                    help="учитывать .gitignore корня (по умолчанию выкл: база индексирует всё, "
-                         "включая вложенные проекты)")
+                    help="respect the root .gitignore (default off: the database indexes everything, "
+                         "including nested projects)")
     ap.add_argument("--extra-files", nargs="*", default=[],
-                    help="внешние файлы вне root (например ~/.cache/sherpa-voice/history.md)")
+                    help="external files outside root (e.g. ~/.cache/sherpa-voice/history.md)")
     args = ap.parse_args()
 
     root = os.path.abspath(args.root)
     if not os.path.isdir(root):
-        print(f"нет такой папки: {root}", file=sys.stderr)
+        print(f"no such folder: {root}", file=sys.stderr)
         sys.exit(1)
     db_path = (os.path.abspath(args.out) if args.out
                else os.path.join(ROOT, "db", "wiki.db"))
@@ -439,28 +439,28 @@ def main():
     if args.full or not existed or not schema_ok(con):
         stats = full_build(con, root, skip_dirs, skip_files, extra,
                            args.gitignore)
-        mode = "полная"
+        mode = "full"
     else:
         stats = incremental_build(con, root, skip_dirs, skip_files, extra,
                                   args.gitignore)
-        mode = "инкрементальная"
+        mode = "incremental"
 
     con.commit()
     cur = con.cursor()
     n = cur.execute("SELECT COUNT(*) FROM files").fetchone()[0]
     total = cur.execute("SELECT SUM(LENGTH(content)) FROM files").fetchone()[0]
     nsym = cur.execute("SELECT COUNT(*) FROM symbols").fetchone()[0]
-    print(f"ok [{mode}]: {n} файлов, {nsym} символов, {total} символов текста "
+    print(f"ok [{mode}]: {n} files, {nsym} symbols, {total} chars of text "
           f"-> {db_path}")
-    print(f"    обработано: +{stats['new']} / ~{stats['changed']} / "
-          f"-{stats['del']}, без изменений: {stats['same']}, "
-          f"touch (mtime, контент тот же): {stats.get('touch', 0)}")
+    print(f"    processed: +{stats['new']} / ~{stats['changed']} / "
+          f"-{stats['del']}, unchanged: {stats['same']}, "
+          f"touch (mtime, content identical): {stats.get('touch', 0)}")
     con.close()
 
 
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:  # noqa: BLE001 — CLI-обёртка: любая ошибка наружу с кодом 1
-        print(f"ошибка: {e}", file=sys.stderr)
+    except Exception as e:  # noqa: BLE001 — CLI wrapper: surface any error with exit code 1
+        print(f"error: {e}", file=sys.stderr)
         sys.exit(1)

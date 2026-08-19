@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
-"""Repo-map: карта файла/проекта из базы для промпта агента.
+"""Repo-map: file/project map from the database for an agent prompt.
 
-Паттерн индустрии (aider repomap / goldfish / repomap-mcp / CodeGraphX):
-агент тратит 40-60% токенов на ориентацию в коде (греп, чтение файлов);
-карта — PageRank по символьному/импорт-графу из базы + рендер в
-токен-бюджет. Сырьё уже в базе: symbols (имя/kind/строка/сигнатура),
-imports (rel_path → module), calls (rel_path → callee). PageRank —
-чистый python (power iteration), без numpy (паттерн repomap-mcp).
+Industry pattern (aider repomap / goldfish / repomap-mcp / CodeGraphX):
+an agent spends 40-60% of tokens on code orientation (grep, reading files);
+the map is PageRank over the symbol/import graph from the database + render
+into a token budget. Raw material is already in the DB: symbols (name/kind/line/signature),
+imports (rel_path → module), calls (rel_path → callee). PageRank is
+pure python (power iteration), no numpy (repomap-mcp pattern).
 
-Использование:
+Usage:
     python3 db-tools/repomap.py project --db db/wiki.db --tokens 1500
     python3 db-tools/repomap.py project --focus db-tools/search.py
     python3 db-tools/repomap.py file db-tools/search.py --db db/wiki.db
@@ -20,12 +20,12 @@ import sqlite3
 import sys
 from pathlib import Path
 
-from _compat import chulan_root, fix_encoding  # noqa: E402 — единый хелпер канона
+from _compat import chulan_root, fix_encoding  # noqa: E402 — shared canon helper
 
 fix_encoding()
 
 DEFAULT_DB = chulan_root() / "db" / "wiki.db"
-CHAR_PER_TOKEN = 3  # грубая оценка: код ~3-4 симв/токен, русский ~2.5
+CHAR_PER_TOKEN = 3  # rough estimate: code ~3-4 chars/token, Russian text ~2.5
 
 
 def _connect(db):
@@ -33,7 +33,7 @@ def _connect(db):
 
 
 def _module_index(conn) -> dict:
-    """module → [rel_path, ...] по всем файлам базы."""
+    """module → [rel_path, ...] for all files in the database."""
     idx = {}
     for (rel_path,) in conn.execute("SELECT rel_path FROM files"):
         stem = rel_path.replace("\\", "/").rsplit("/", 1)[-1]
@@ -43,7 +43,7 @@ def _module_index(conn) -> dict:
 
 
 def file_graph(conn) -> tuple[dict, dict]:
-    """Граф импортов между файлами: {file: {target: w}} + reverse."""
+    """Import graph between files: {file: {target: w}} + reverse."""
     midx = _module_index(conn)
     graph, reverse = {}, {}
     for rel_path, module in conn.execute(
@@ -61,7 +61,7 @@ def file_graph(conn) -> tuple[dict, dict]:
 
 def page_rank(graph: dict, focus: list | None = None,
               iters: int = 20) -> dict:
-    """PageRank по взвешенному графу; focus — список путей для буста."""
+    """PageRank over the weighted graph; focus — list of paths to boost."""
     nodes = set(graph)
     for edges in graph.values():
         nodes |= set(edges)
@@ -98,8 +98,8 @@ def _callers_of(conn, callees: set, limit: int = 12) -> list:
         return []
     q = "SELECT DISTINCT rel_path, callee FROM calls WHERE callee IN (%s)" % (
         ",".join("?" * len(callees)))
-    # параметризованный sqlite3 (?-плейсхолдеры, значения — через params);
-    # semgrep-правило рассчитано на SQLAlchemy — см. search.py:237
+    # parameterized sqlite3 (?-placeholders, values passed via params);
+    # the semgrep rule targets SQLAlchemy — see search.py:237
     rows = conn.execute(q, list(callees)).fetchall()  # nosemgrep: sqlalchemy-execute-raw-query
     seen, out = set(), []
     for rel_path, callee in rows:
@@ -114,19 +114,19 @@ def _callers_of(conn, callees: set, limit: int = 12) -> list:
 
 
 def map_file(conn, rel_path: str, tokens: int = 800) -> str:
-    """Карта одного файла: символы + кто зовёт его функции + кого зовёт."""
+    """Map of a single file: symbols + who calls its functions + what it calls."""
     rel_path = rel_path.replace("\\", "/")
     candidates = {rel_path, rel_path.replace("/", "\\")}
     row = conn.execute(
         "SELECT rel_path FROM files WHERE rel_path IN (?,?) LIMIT 1",
         tuple(candidates)).fetchone()
     if row:
-        rel_path = row[0]  # канонический вид из базы
+        rel_path = row[0]  # canonical form from the DB
     syms = _symbols_of(conn, rel_path)
     if not syms:
-        return f"файл не найден или без символов: {rel_path}"
+        return f"file not found or without symbols: {rel_path}"
     budget = tokens * CHAR_PER_TOKEN
-    out = [f"# {rel_path} ({len(syms)} символов)"]
+    out = [f"# {rel_path} ({len(syms)} symbols)"]
     used = len(out[0])
     shown = []
     for name, kind, line in syms:
@@ -141,24 +141,24 @@ def map_file(conn, rel_path: str, tokens: int = 800) -> str:
     callers = _callers_of(conn, names)
     if callers:
         cset = sorted({f"{c} → {n}" for c, n in callers})
-        out.append("// зовут его: " + ", ".join(cset[:10]))
+        out.append("// called by: " + ", ".join(cset[:10]))
     out_edges = conn.execute(
         "SELECT DISTINCT callee FROM calls WHERE rel_path=? LIMIT 20",
         (rel_path,)).fetchall()
     if out_edges:
-        out.append("// он зовёт: " + ", ".join(
+        out.append("// it calls: " + ", ".join(
             c[0] for c in out_edges))
     return "\n".join(out)[:budget]
 
 
 def map_project(conn, tokens: int = 2000, focus: list | None = None) -> str:
-    """Карта проекта: PageRank по импорт-графу → топ-файлы с символами."""
+    """Project map: PageRank over the import graph → top files with symbols."""
     graph, reverse = file_graph(conn)
     ranks = page_rank(graph, focus=focus)
     budget = tokens * CHAR_PER_TOKEN
     order = sorted(ranks, key=ranks.get, reverse=True)
     total_files = len(order)
-    out = [f"# Карта проекта ({total_files} файлов, бюджет ~{tokens} ток)"]
+    out = [f"# Project map ({total_files} files, budget ~{tokens} tok)"]
     used = len(out[0])
     shown = 0
     for rel_path in order:
@@ -166,10 +166,10 @@ def map_project(conn, tokens: int = 2000, focus: list | None = None) -> str:
         if not syms:
             continue
         names = ", ".join(n for n, _, _ in syms[:12])
-        head = f"\n{rel_path} · {len(syms)} симв · входящих {len(reverse.get(rel_path, {}))}"
+        head = f"\n{rel_path} · {len(syms)} syms · incoming {len(reverse.get(rel_path, {}))}"
         line = f"{head}\n  {names}"
         if used + len(line) > budget:
-            out.append(f"\n… (показано {shown} из {total_files})")
+            out.append(f"\n… (shown {shown} of {total_files})")
             break
         out.append(line)
         used += len(line)
@@ -177,7 +177,7 @@ def map_project(conn, tokens: int = 2000, focus: list | None = None) -> str:
     return "\n".join(out)
 
 def _findings_for(rel_path: str) -> str:
-    """Находки research.db, привязанные к файлу (findings.py add --file)."""
+    """research.db findings attached to a file (findings.py add --file)."""
     try:
         con = sqlite3.connect(chulan_root() / "db" / "research.db")
         con.row_factory = sqlite3.Row
@@ -186,11 +186,11 @@ def _findings_for(rel_path: str) -> str:
             "WHERE file = ? OR file LIKE ? ORDER BY id DESC",
             (rel_path, f"{rel_path}%")).fetchall()
         con.close()
-    except Exception:  # research.db может не быть — карта не ломается
+    except Exception:  # research.db may not exist — the map must not break
         return ""
     if not rows:
         return ""
-    out = [f"\nНаходки по файлу ({len(rows)}):"]
+    out = [f"\nFindings for this file ({len(rows)}):"]
     for r in rows:
         sym = f":{r['symbol']}" if r["symbol"] else ""
         out.append(f"  #research {r['id']} {r['topic']} [{rel_path}{sym}]")
@@ -200,14 +200,14 @@ def _findings_for(rel_path: str) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="what", required=True)
-    p = sub.add_parser("project", help="карта всего проекта (PageRank)")
-    f = sub.add_parser("file", help="карта одного файла")
+    p = sub.add_parser("project", help="map of the whole project (PageRank)")
+    f = sub.add_parser("file", help="map of a single file")
     for sp in (p, f):
         sp.add_argument("--db", default=str(DEFAULT_DB))
         sp.add_argument("--tokens", type=int, default=2000 if sp is p else 800)
     p.add_argument("--focus", nargs="*", default=None,
-                   help="буст файлов в ранжировании")
-    f.add_argument("path", help="rel_path файла")
+                   help="boost files in ranking")
+    f.add_argument("path", help="rel_path of the file")
     args = ap.parse_args()
     conn = _connect(args.db)
     try:

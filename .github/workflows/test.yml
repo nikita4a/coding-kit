@@ -1,0 +1,22 @@
+name: kit gates
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  gates:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Bootstrap memory (engine self-test)
+        run: python scripts/install.py
+      - name: Doctor (manifest, versions, frontmatter, db integrity)
+        run: python scripts/doctor.py
+      - name: File-size gate
+        run: python scripts/tools/check_file_sizes.py --ci
+      - name: Trap-suite (dry-run validation)
+        run: python eval/runner.py

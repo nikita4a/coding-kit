@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
-"""История файлов из git в research.db — history-aware поиск (паттерн
-Sourcegraph/zoekt: «кто менял файл и когда» из индекса, а не из памяти).
+"""File history from git into research.db — history-aware search (pattern
+Sourcegraph/zoekt: "who changed the file and when" from the index, not from memory).
 
-Замер 13.08.2026: git log по всему memory — 0.00с, 7.6 МБ пик RAM
-(пренебрежимо для бюджета 8 ГБ / CPU×0.5).
+Measured 13.08.2026: git log over the whole memory — 0.00s, 7.6 MB peak RAM
+(negligible for the 8 GB / CPU x0.5 budget).
 
-Примеры:
-    python3 githist.py refresh                 # перечитать историю (идемпотентно)
-    python3 githist.py file scripts/doctor/doctor.py  # кто менял файл, когда, как часто
-    python3 githist.py hotspots --top 10       # файлы-лидеры по числу правок
+Examples:
+    python3 githist.py refresh                 # re-read history (idempotently)
+    python3 githist.py file scripts/doctor/doctor.py  # who changed a file, when, how often
+    python3 githist.py hotspots --top 10       # top files by number of edits
     python3 githist.py commits --since 2026-08-01 --limit 10
 """
 import argparse
@@ -27,7 +27,7 @@ ROOT = _compat.chulan_root()
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:  # noqa: S110,BLE001 — reconfigure опционален, без него живём
+except Exception:  # noqa: S110,BLE001 — reconfigure is optional, fine without it
     pass
 
 
@@ -72,13 +72,13 @@ def connect():
 
 
 def _git_log(repo):
-    """git log всего репозитория: [(hash, date, author, subject, [files])]."""
+    """git log of the whole repository: [(hash, date, author, subject, [files])]."""
     out = subprocess.run(
         ["git", "-C", repo, "log", "--name-only",
          "--pretty=format:%H|%ai|%an|%s"],
         capture_output=True, text=True, timeout=60)
     if out.returncode != 0:
-        return None, out.stderr.strip() or "git недоступен"
+        return None, out.stderr.strip() or "git unavailable"
     commits = []
     cur = None
     for line in out.stdout.splitlines():
@@ -136,8 +136,8 @@ def cmd_refresh(args):
                 (f, repo, rec["n"], rec["first"], rec["last"],
                  ", ".join(sorted(rec["authors"]))))
         con.commit()
-        print(f"[✓] {repo}: {len(commits)} коммитов, "
-              f"{len(per_file)} файлов в истории")
+        print(f"[✓] {repo}: {len(commits)} commits, "
+              f"{len(per_file)} files in history")
     con.close()
 
 
@@ -149,12 +149,12 @@ def cmd_file(args):
         "SELECT * FROM file_history WHERE file=? OR file LIKE ?",
         (target, f"%{target}")).fetchone()
     if not row:
-        print(f"файл «{args.file}» в git-истории не найден")
+        print(f"file '{args.file}' not found in git history")
         con.close()
         return
-    print(f"{row['file']}: правок {row['commits']}, "
-          f"{row['first'][:10]} → {row['last'][:10]}, "
-          f"авторы: {row['authors']}\n")
+    print(f"{row['file']}: edits {row['commits']}, "
+          f"{row['first'][:10]} -> {row['last'][:10]}, "
+          f"authors: {row['authors']}\n")
     rows = cur.execute(
         "SELECT c.date, c.author, c.subject FROM commits c "
         "JOIN commit_files cf ON cf.hash = c.hash "
@@ -173,9 +173,9 @@ def cmd_hotspots(args):
     rows = cur.execute(
         "SELECT file, commits, last FROM file_history "
         "ORDER BY commits DESC LIMIT ?", (args.top,)).fetchall()
-    print(f"топ-{args.top} файлов по числу правок:\n")
+    print(f"top-{args.top} files by number of edits:\n")
     for r in rows:
-        print(f"  {r['commits']:3}  {r['file']:50}  последняя: {r['last'][:10]}")
+        print(f"  {r['commits']:3}  {r['file']:50}  last: {r['last'][:10]}")
     con.close()
 
 
@@ -200,25 +200,25 @@ def cmd_commits(args):
 
 def main():
     ap = argparse.ArgumentParser(
-        description="История файлов из git (research.db)")
+        description="File history from git (research.db)")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    p_refresh = sub.add_parser("refresh", help="перечитать git-историю")
+    p_refresh = sub.add_parser("refresh", help="re-read git history")
     p_refresh.set_defaults(fn=cmd_refresh)
 
-    p_file = sub.add_parser("file", help="история одного файла")
-    p_file.add_argument("file", help="путь к файлу")
+    p_file = sub.add_parser("file", help="history of one file")
+    p_file.add_argument("file", help="path to the file")
     p_file.add_argument("--limit", type=int, default=15,
-                        help="сколько коммитов показать")
+                        help="how many commits to show")
     p_file.set_defaults(fn=cmd_file)
 
-    p_hot = sub.add_parser("hotspots", help="файлы-лидеры по правкам")
+    p_hot = sub.add_parser("hotspots", help="top files by edits")
     p_hot.add_argument("--top", type=int, default=10)
     p_hot.set_defaults(fn=cmd_hotspots)
 
-    p_cm = sub.add_parser("commits", help="список коммитов")
-    p_cm.add_argument("--since", default="", help="с даты (YYYY-MM-DD)")
-    p_cm.add_argument("--file", default="", help="фильтр: файл (подстрока)")
+    p_cm = sub.add_parser("commits", help="list commits")
+    p_cm.add_argument("--since", default="", help="since date (YYYY-MM-DD)")
+    p_cm.add_argument("--file", default="", help="filter: file (substring)")
     p_cm.add_argument("--limit", type=int, default=20)
     p_cm.set_defaults(fn=cmd_commits)
 

@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
 
-"""Авто-разбор истории сессий → кандидаты в research.db (пункт #1 обшивки).
+"""Auto-parse session history -> candidates for research.db (wrapping item #1).
 
-Проблема: знания из разговоров (транскрипты sherpa-voice, истории чатов)
-умирают в логах — findings добавляются только вручную. Скрипт пробегает по
-истории, находит строки с маркерами идей/решений/проблем и показывает их
-кандидатами. Полу-авто: по умолчанию только показывает (--dry-run), добавка
-в базу — по номерам (--add 1,3,5).
+Problem: knowledge from conversations (sherpa-voice transcripts, chat
+histories) dies in logs — findings are only added manually. The script runs
+through the history, finds lines with idea/decision/problem markers and
+shows them as candidates. Semi-auto: by default it only shows (--dry-run),
+adding to the database is by number (--add 1,3,5).
 
-Поддерживаемые форматы:
-  - sherpa-voice history.md:  "## 2026-08-08" + "- `2026-08-08 13:05:15` текст"
-  - sherpa-voice history.txt: "[2026-08-08 13:05:15] текст"
-  - произвольный текст: строки как есть (--file)
+Supported formats:
+  - sherpa-voice history.md:  "## 2026-08-08" + "- `2026-08-08 13:05:15` text"
+  - sherpa-voice history.txt: "[2026-08-08 13:05:15] text"
+  - arbitrary text: lines as-is (--file)
 
-Примеры:
-    python3 extract_findings.py                          # кандидаты из history.md
-    python3 extract_findings.py --file any.txt           # свой файл
-    python3 extract_findings.py --add 1,3,7              # добавить выбранные в базу
-    python3 extract_findings.py --min-len 80             # длиннее строки
-    python3 extract_findings.py --tags session ideas     # свои теги при добавке
+Examples:
+    python3 extract_findings.py                          # candidates from history.md
+    python3 extract_findings.py --file any.txt           # your own file
+    python3 extract_findings.py --add 1,3,7              # add selected to the database
+    python3 extract_findings.py --min-len 80             # longer lines
+    python3 extract_findings.py --tags session ideas     # your own tags when adding
 """
 import argparse
 import datetime
@@ -37,16 +37,16 @@ ROOT = _compat.chulan_root()
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:  # noqa: S110,BLE001 — reconfigure опционален
+except Exception:  # noqa: S110,BLE001 — reconfigure is optional
     pass
 
 
 DEFAULT_HISTORY = os.path.expanduser("~/.cache/sherpa-voice/history.md")
 DB = os.path.join(ROOT, "db", "research.db")
 
-# Маркеры «здесь есть знание»: предложение, решение, проблема, урок.
-# Слова раздельно, чтобы не ловить «добавить» в «добавление» шумно,
-# но по-русски без стемминга — ловим по подстроке с учётом контекста.
+# Markers for "knowledge here": suggestion, decision, problem, lesson.
+# Words matched separately so a marker doesn't fire noisily inside longer
+# words; without Russian stemming we match by substring with context.
 MARKERS = (
     "предлагаю", "нужно добавить", "надо добавить", "добавить", "давай добавим",
     "проблема", "не работает", "ошибка", "баг", "грабля", "урок", "вывод",
@@ -56,27 +56,27 @@ MARKERS = (
     "а что если", "давай попробуем", "проверить",
 )
 
-# Сильные маркеры: знание, даже если строка — вопрос или жалоба.
+# Strong markers: knowledge even if the line is a question or a complaint.
 STRONG = ("предлагаю", "нужно добавить", "надо добавить", "давай добавим",
           "проблема", "не работает", "ошибка", "баг", "грабля", "урок",
           "вывод", "решение", "прикол в том", "сломалось", "обнаружил",
           "выяснил", "получилось")
 
-# Короткие/служебные строки, которые не знание: приветствия, проверки связи.
+# Short/service lines that are not knowledge: greetings, ping checks.
 NOISE = (
     "привет", "тест", "алло", "ха-ха", "проверка", "ау", "ок", "окей",
     "спасибо", "понятно", "ага", "угу", "да", "нет", "ну", "как дела",
     "как твои дела", "кто ты", "что делаешь", "занят", "пока", "до связи",
 )
 
-# Вопросительные без маркеров — не кандидаты (вопрос ≠ вывод), но с
-# маркером «почему/а что если» — кандидаты (это ход мысли).
+# Questions without markers are not candidates (a question != a conclusion), but with
+# a "why/what if" marker they are candidates (a line of thought).
 QUESTION_WORDS = ("как сделать", "как работает", "как устроен", "расскажи",
                   "объясни", "что такое", "что думаешь")
 
 
 def parse_history(path):
-    """Строки из файла: [(дата_или_None, текст)]. Форматы выше."""
+    """Lines from the file: [(date_or_None, text)]. Formats above."""
     lines = []
     cur_date = None
     with open(path, "r", encoding="utf-8", errors="replace") as f:
@@ -89,7 +89,7 @@ def parse_history(path):
                 cur_date = m.group(1)
                 continue
             if line.startswith("## "):
-                continue  # заголовок-не-дата (вставленные промты/правила) — не знание
+                continue  # non-date header (inserted prompts/rules) — not knowledge
             m = re.match(r"^-\s*`([^`]+)`\s*(.*)$", line)       # history.md
             if m:
                 lines.append((cur_date or m.group(1)[:10], m.group(2)))
@@ -99,7 +99,7 @@ def parse_history(path):
                 lines.append((cur_date or m.group(1)[:10], m.group(2)))
                 continue
             if line.startswith("- "):
-                continue  # markdown-список (вставленные правила/промты) — не речь
+                continue  # markdown list (inserted rules/prompts) — not speech
             lines.append((cur_date, line))
     return lines
 
@@ -112,11 +112,11 @@ def is_candidate(text, min_len):
         return False
     if not any(m in low for m in MARKERS):
         return False
-    # Вопрос («как сделать X») без сильного маркера — не знание, а запрос.
+    # A question ("how to do X") without a strong marker is a request, not knowledge.
     if any(q in low for q in QUESTION_WORDS) and \
             not any(m in low for m in STRONG):
         return False
-    if len(text) > 300:  # длинные рассуждения — кандидат только с сильным маркером
+    if len(text) > 300:  # long musings — candidate only with a strong marker
         return any(m in low for m in STRONG)
     return True
 
@@ -127,7 +127,7 @@ def candidates(path, min_len):
     for date, text in parse_history(path):
         if not is_candidate(text, min_len):
             continue
-        # Нормализация для дедупа: буквы/цифры в нижнем регистре, первые 80.
+        # Normalization for dedup: letters/digits lowercased, first 80.
         norm = "".join(c for c in " ".join(text.split()).lower()
                        if c.isalnum())[:80]
         if not norm or norm in seen:
@@ -138,13 +138,13 @@ def candidates(path, min_len):
 
 
 def topic_of(text):
-    """Тема из текста: первые слова до ~60 символов, без хвоста."""
+    """Topic from text: first words up to ~60 chars, no tail."""
     t = " ".join(text.split())
     return t[:60] + ("…" if len(t) > 60 else "")
 
 
 def already_exists(con, topic):
-    """Проверка дубликата: та же тема (обрезанная) или точное совпадение."""
+    """Deduplication check: same topic (truncated) or exact match."""
     r = con.execute(
         "SELECT 1 FROM findings WHERE topic = ? OR topic = ? LIMIT 1",
         (topic, topic.rstrip("…"))).fetchone()
@@ -154,38 +154,38 @@ def already_exists(con, topic):
 def cmd_main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--file", default=DEFAULT_HISTORY,
-                    help="файл истории (по умолчанию history.md sherpa-voice)")
+                    help="history file (default sherpa-voice history.md)")
     ap.add_argument("--min-len", type=int, default=40,
-                    help="минимальная длина строки-кандидата (по умолчанию 40)")
+                    help="minimum length of a candidate line (default 40)")
     ap.add_argument("--add", default="",
-                    help="добавить кандидатов по номерам: 1,3,7 (по умолчанию "
-                         "только показ, dry-run)")
+                    help="add candidates by number: 1,3,7 (by default "
+                         "show only, dry run)")
     ap.add_argument("--tags", default="session",
-                    help="теги для добавляемых находок (по умолчанию 'session')")
+                    help="tags for added findings (default 'session')")
     ap.add_argument("--limit", type=int, default=30,
-                    help="сколько кандидатов показать (по умолчанию 30)")
+                    help="how many candidates to show (default 30)")
     args = ap.parse_args()
 
     if not os.path.isfile(args.file):
-        print(f"нет файла истории: {args.file}", file=sys.stderr)
+        print(f"no history file: {args.file}", file=sys.stderr)
         sys.exit(1)
 
     cands = candidates(args.file, args.min_len)
     if not cands:
-        print(f"кандидатов не найдено в {args.file} (min_len={args.min_len})")
+        print(f"no candidates found in {args.file} (min_len={args.min_len})")
         return
 
-    print(f"кандидатов: {len(cands)} (из {args.file})\n")
+    print(f"candidates: {len(cands)} (from {args.file})\n")
     for i, (date, text) in enumerate(cands[:args.limit], 1):
         one = " ".join(text.split())
         print(f"[{i}] {date or '????-??-??'}  {one[:110]}")
         if len(one) > 110:
             print(f"      …{one[110:220]}")
     if len(cands) > args.limit:
-        print(f"\n…и ещё {len(cands) - args.limit} (поднимите --limit)")
+        print(f"\n...and {len(cands) - args.limit} more (raise --limit)")
 
     if not args.add:
-        print("\nдобавка в базу — по номерам: --add 1,3,7 (см. --help)")
+        print("\nadd to the database by numbers: --add 1,3,7 (see --help)")
         return
 
     wanted = set()
@@ -194,7 +194,7 @@ def cmd_main():
         if part.isdigit() and 1 <= int(part) <= len(cands):
             wanted.add(int(part))
     if not wanted:
-        print("неверные номера для --add", file=sys.stderr)
+        print("invalid numbers for --add", file=sys.stderr)
         sys.exit(1)
 
     con = sqlite3.connect(DB)
@@ -206,19 +206,19 @@ def cmd_main():
             continue
         topic = topic_of(text)
         if already_exists(con, topic):
-            print(f"[!] пропуск дубликата [{i}]: {topic}")
+            print(f"[!] skipping duplicate [{i}]: {topic}")
             skipped += 1
             continue
         con.execute(
             "INSERT INTO findings (created, topic, text, tags, source) "
             "VALUES (?,?,?,?,?)",
-            (now, topic, f"{text}\n\n[из истории {args.file} от {date}]",
+            (now, topic, f"{text}\n\n[from history {args.file} on {date}]",
              args.tags, args.file))
-        print(f"[✓] добавлено [{i}] id={con.execute('SELECT last_insert_rowid()').fetchone()[0]}: {topic}")
+        print(f"[✓] added [{i}] id={con.execute('SELECT last_insert_rowid()').fetchone()[0]}: {topic}")
         added += 1
     con.commit()
     con.close()
-    print(f"\nитог: добавлено {added}, пропущено дубликатов {skipped}")
+    print(f"\ntotal: added {added}, duplicates skipped {skipped}")
 
 
 if __name__ == "__main__":

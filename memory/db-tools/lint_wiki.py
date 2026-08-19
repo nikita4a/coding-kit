@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""lint_wiki.py — проверка целостности Wiki-библиотеки (паттерн LLM Wiki Карпатого).
+"""lint_wiki.py — checks the integrity of the Wiki library (Karpathy LLM Wiki pattern).
 
-Проверяет у каждого поста (все *.md, кроме служебных):
-  - наличие YAML-frontmatter;
-  - обязательные поля: type, title, description, date, tags;
-  - теги: нижний регистр, без пробелов;
-  - имя файла: kebab-case.
+For each post (all *.md except service files):
+  - YAML frontmatter presence;
+  - required fields: type, title, description, date, tags;
+  - tags: lowercase, no spaces;
+  - file name: kebab-case.
 
-Выводит отчёт об ошибках и статистику тегов. Код возврата 0 = чисто, 1 = есть ошибки.
+Prints an error report and tag statistics. Exit code 0 = clean, 1 = errors found.
 
-Использование:
-  python3 lint_wiki.py [путь-к-Wiki]
+Usage:
+  python3 lint_wiki.py [path-to-Wiki]
 """
 import re
 import sys
@@ -28,7 +28,7 @@ SKIP_DIRS = {"_templates", "raw", "assets"}
 
 
 def parse_frontmatter(text: str) -> dict | None:
-    """Возвращает dict из YAML-frontmatter или None, если его нет."""
+    """Return a dict from the YAML frontmatter, or None if absent."""
     if not text.startswith("---"):
         return None
     end = text.find("\n---", 3)
@@ -40,9 +40,9 @@ def parse_frontmatter(text: str) -> dict | None:
             data = yaml.safe_load(block)
             return data if isinstance(data, dict) else None
         except yaml.YAMLError as exc:
-            print(f"  ⚠ YAML-ошибка в frontmatter: {exc}", file=sys.stderr)
+            print(f"  ⚠ YAML error in frontmatter: {exc}", file=sys.stderr)
             return None
-    # fallback без yaml: только ключи верхнего уровня
+    # fallback without yaml: top-level keys only
     data = {}
     for line in block.splitlines():
         m = re.match(r"^([a-z_]+):\s*(.*)$", line)
@@ -75,33 +75,33 @@ def main() -> int:
         text = path.read_text(encoding="utf-8")
         fm = parse_frontmatter(text)
         if fm is None:
-            errors.append(f"{rel}: нет YAML-frontmatter (начинается с '---' и закрыт '---')")
+            errors.append(f"{rel}: no YAML frontmatter (starts with '---' and closed by '---')")
             continue
         for field in REQUIRED:
             value = fm.get(field)
             if value in (None, ""):
-                errors.append(f"{rel}: отсутствует обязательное поле '{field}'")
+                errors.append(f"{rel}: missing required field '{field}'")
         tags = fm.get("tags") or []
         if not isinstance(tags, list):
-            errors.append(f"{rel}: 'tags' должен быть списком [a, b]")
+            errors.append(f"{rel}: 'tags' must be a list [a, b]")
             tags = []
         for tag in tags:
             tag = str(tag)
             if tag != tag.lower() or " " in tag:
-                errors.append(f"{rel}: тег '{tag}' — нужен нижний регистр без пробелов")
+                errors.append(f"{rel}: tag '{tag}' — must be lowercase without spaces")
             tag_counter[tag] += 1
         if not is_kebab(path.name):
-            errors.append(f"{rel}: имя файла не kebab-case")
+            errors.append(f"{rel}: file name is not kebab-case")
 
-    print(f"Постов: {len(posts)}")
+    print(f"Posts: {len(posts)}")
     if tag_counter:
-        print("Теги: " + ", ".join(f"{t} ({n})" for t, n in tag_counter.most_common()))
+        print("Tags: " + ", ".join(f"{t} ({n})" for t, n in tag_counter.most_common()))
     if errors:
-        print(f"\nОшибок: {len(errors)}")
+        print(f"\nErrors: {len(errors)}")
         for err in errors:
             print(f"  ✗ {err}")
         return 1
-    print("Ошибок: 0 — библиотека в порядке")
+    print("Errors: 0 — library clean")
     return 0
 
 

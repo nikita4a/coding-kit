@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 
-"""Лог поисков в research.db — метрики использования баз (пункт #4 обшивки).
+"""Search log in research.db — database usage metrics (point #4 of the harness).
 
-Каждый поиск по базе (search.py, MCP db-tools) пишет строку в search_log:
-когда, чем, в какой базе, какой запрос, сколько нашлось. Это позволяет
-отвечать на «что мы реально ищем, что находим, где пусто» — а не гадать.
+Every database search (search.py, MCP db-tools) writes a row to search_log:
+when, with what, in which database, what query, how many hits. This lets us
+answer "what do we actually search for, what do we find, where is it empty" — instead of guessing.
 
-Использование:
+Usage:
     from log import log_search, search_stats
-    log_search("search.py", "memory", "канон", 3)
+    log_search("search.py", "memory", "canon", 3)
     print(search_stats(20))
 
-Таблица создаётся лениво при первом логировании — отдельная миграция не
-нужна (research.db хранит и findings, и метрики).
+The table is created lazily on first logging — no separate migration
+needed (research.db stores both findings and metrics).
 """
 import datetime
 
@@ -52,7 +52,7 @@ def _connect():
 
 
 def log_search(tool, db_name, query, hits):
-    """Записать один поиск. Ошибки не роняют поиск — метрика вторична."""
+    """Record one search. Errors must not break the search — the metric is secondary."""
     try:
         con = _connect()
         con.execute(
@@ -67,7 +67,7 @@ def log_search(tool, db_name, query, hits):
 
 
 def search_stats(limit=20):
-    """Сводка использования: всего, пустых, топ запросов, последние."""
+    """Usage summary: total, empty, top queries, latest."""
     con = _connect()
     cur = con.cursor()
     total = cur.execute("SELECT COUNT(*) FROM search_log").fetchone()[0]
@@ -91,9 +91,9 @@ def search_stats(limit=20):
 
 
 def empty_queries(limit=30):
-    """Майнинг пустых запросов: какие темы ищут и НЕ находят (все прогоны
-    пустые) — кандидаты в доки/wiki (аудит 14.08, research.db id=489).
-    Исключаем обрубки (одно слово без смысла) и служебный мусор."""
+    """Mine empty queries: which topics are searched but NOT found (all runs
+    empty) — candidates for docs/wiki (audit 14.08, research.db id=489).
+    Exclude fragments (a single meaningless word) and utility junk."""
     con = _connect()
     rows = con.execute(
         "SELECT query, COUNT(*) n, MAX(ts) last_ts, db_name "

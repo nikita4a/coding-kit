@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
-"""База находок и выводов (research.db) — знания, к которым уже приходили.
+"""Findings and conclusions database (research.db) — knowledge already arrived at.
 
-Зачем: ресёрч (веб, Camoufox, эксперименты, разборы) даёт выводы, которые
-теряются после разговора. Здесь они живут отдельно от файлов проекта и
-находятся поиском, как и всё остальное.
+Why: research (web, Camoufox, experiments, teardowns) produces conclusions
+that get lost after the conversation. Here they live apart from project files
+and are found by search, like everything else.
 
-Примеры:
-    python3 findings.py add "MCP для LSP" --text "agent-lsp — самый зрелый мост..." --tags mcp lsp
+Examples:
+    python3 findings.py add "MCP for LSP" --text "agent-lsp — the most mature bridge..." --tags mcp lsp
     python3 findings.py search mcp
     python3 findings.py list
     python3 findings.py list --tags lsp
@@ -26,16 +26,16 @@ import _compat
 
 ROOT = _compat.chulan_root()
 
-# Windows-консоль по умолчанию cp1251 — русский вывод падает с
-# UnicodeEncodeError. Переключаем на UTF-8 (Python 3.7+).
+# Windows console defaults to cp1251 — non-ASCII output crashes with
+# UnicodeEncodeError. Switch to UTF-8 (Python 3.7+).
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:  # noqa: S110,BLE001 — reconfigure опционален, без него живём
+except Exception:  # noqa: S110,BLE001 — reconfigure is optional, we live without it
     pass
 
 
-# БД можно переопределить для тестов/песочницы (изоляция от prod-хранилища):
+# The DB can be overridden for tests/sandbox (isolation from the prod store):
 # MEMORY_ROOT_RESEARCH_DB=/tmp/test.db python3 db-tools/findings.py ...
 DB = os.environ.get("MEMORY_ROOT_RESEARCH_DB", os.path.join(ROOT, "db", "research.db"))
 
@@ -83,9 +83,9 @@ OPS = {"AND", "OR", "NOT", "NEAR"}
 
 
 def sanitize_query(query):
-    """Экранирует FTS5-запрос: токены со спецсимволами (включая дефис —
-    «agent-lsp» ломает FTS) оборачиваются в двойные кавычки; операторы и
-    готовые фразы не трогаем."""
+    """Escapes an FTS5 query: tokens with special characters (including a dash —
+    "agent-lsp" breaks FTS) are wrapped in double quotes; operators and
+    ready-made phrases are left untouched."""
     out = []
     for tok in query.split():
         upper = tok.upper()
@@ -93,8 +93,8 @@ def sanitize_query(query):
                 (tok.startswith('"') and tok.endswith('"')):
             out.append(tok)
         elif any(c in tok for c in '"-()*:^'):
-            # Префиксный поиск (подмешк*) не оборачиваем: в кавычках
-            # звёздочка становится литералом и префикс не работает.
+            # Prefix search (prefix*) is not wrapped: inside quotes the
+            # asterisk becomes a literal and prefix search stops working.
             if tok.endswith("*") and not any(c in tok[:-1] for c in '"-():^'):
                 out.append(tok)
             else:
@@ -110,7 +110,7 @@ def connect():
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA journal_mode=WAL")
     con.executescript(SCHEMA)
-    # Мягкая миграция старых баз: колонки, которых ещё не было
+    # Soft migration of old databases: columns that did not exist before
     cols = [r[1] for r in con.execute("PRAGMA table_info(findings)")]
     if "source" not in cols:
         con.execute("ALTER TABLE findings ADD COLUMN source TEXT DEFAULT ''")
@@ -126,14 +126,14 @@ def cmd_add(args):
     con = connect()
     cur = con.cursor()
     if not args.source:
-        print("[~] подсказка: --source не указан; для веб-фактов указывай "
-              "URL/путь (верификация, research.db id=367)", file=sys.stderr)
+        print("[~] hint: --source not set; for web facts give a "
+              "URL/path (verification, research.db id=367)", file=sys.stderr)
     dup = cur.execute(
         "SELECT id, topic FROM findings WHERE topic = ? LIMIT 1",
         (args.topic,)).fetchone()
     if dup:
-        print(f"[!] уже есть находка с такой темой: id={dup['id']} "
-              f"«{dup['topic']}» — добавляю дубликат", file=sys.stderr)
+        print(f"[!] a finding with this topic already exists: id={dup['id']} "
+              f"\"{dup['topic']}\" — adding a duplicate", file=sys.stderr)
     cur.execute(
         "INSERT INTO findings (created, topic, text, tags, source, file, symbol) "
         "VALUES (?,?,?,?,?,?,?)",
@@ -149,17 +149,17 @@ def cmd_add(args):
                 (new_id, rel, "related", "",
                  datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M")))
     con.commit()
-    print(f"[✓] добавлено: {args.topic} (id={new_id})")
+    print(f"[✓] added: {args.topic} (id={new_id})")
     if args.file:
         loc = args.file + (f":{args.symbol}" if args.symbol else "")
-        print(f"    привязано к: {loc}")
+        print(f"    attached to: {loc}")
     if args.related:
-        print(f"    связан с: {args.related}")
+        print(f"    linked to: {args.related}")
     con.close()
 
 
 def _parse_ids(s):
-    """'1,2, 3' -> [1, 2, 3]; мусор пропускаем."""
+    """'1,2, 3' -> [1, 2, 3]; skip junk."""
     out = []
     for part in (s or "").split(","):
         part = part.strip()
@@ -176,15 +176,15 @@ def cmd_del(args):
     row = cur.execute("SELECT topic FROM findings WHERE id = ?",
                       (args.id,)).fetchone()
     if not row:
-        print(f"находки с id={args.id} нет")
+        print(f"no finding with id={args.id}")
         return
     cur.execute("DELETE FROM findings WHERE id = ?", (args.id,))
     n_links = cur.execute(
         "DELETE FROM links WHERE from_id = ? OR to_id = ?",
         (args.id, args.id)).rowcount
     con.commit()
-    print(f"[✓] удалено: id={args.id} «{row['topic']}»"
-          + (f" (связей удалено: {n_links})" if n_links else ""))
+    print(f"[✓] deleted: id={args.id} \"{row['topic']}\""
+          + (f" (links deleted: {n_links})" if n_links else ""))
     con.close()
 
 
@@ -194,7 +194,7 @@ def cmd_edit(args):
     row = cur.execute("SELECT * FROM findings WHERE id = ?",
                       (args.id,)).fetchone()
     if not row:
-        print(f"находки с id={args.id} нет")
+        print(f"no finding with id={args.id}")
         return
     sets, params = [], []
     for col, val in (("topic", args.topic), ("text", args.text),
@@ -203,14 +203,14 @@ def cmd_edit(args):
             sets.append(f"{col} = ?")
             params.append(val)
     if not sets:
-        print("нечего менять: укажите --topic/--text/--tags")
+        print("nothing to change: pass --topic/--text/--tags")
         return
     params.append(args.id)
-    # Колонки — фиксированный список выше (topic/text/tags/source),
-    # значения — только параметры: инъекции нет.
-    cur.execute(f"UPDATE findings SET {', '.join(sets)} WHERE id = ?", params)  # noqa: S608 — колонки whitelist, значения params; nosemgrep
+    # Columns are the fixed list above (topic/text/tags/source),
+    # values are only parameters: no injection.
+    cur.execute(f"UPDATE findings SET {', '.join(sets)} WHERE id = ?", params)  # noqa: S608 — columns whitelist, values params; nosemgrep
     con.commit()
-    print(f"[✓] обновлено: id={args.id} «{row['topic']}»")
+    print(f"[✓] updated: id={args.id} \"{row['topic']}\"")
     con.close()
 
 
@@ -235,14 +235,14 @@ def cmd_search(args):
     try:
         rows = cur.execute(sql, params).fetchall()
     except sqlite3.OperationalError as e:
-        print(f"неверный запрос: {e}", file=sys.stderr)
+        print(f"invalid query: {e}", file=sys.stderr)
         sys.exit(1)
     if not rows:
-        print(f"ничего не найдено по «{args.query}»"
-              + (f" (source ~ «{source}»)" if source else "")
-              + (f" (тег «{tag}»)" if tag else ""))
+        print(f"not found for \"{args.query}\""
+              + (f" (source ~ \"{source}\")" if source else "")
+              + (f" (tag \"{tag}\")" if tag else ""))
         return
-    print(f"найдено: {len(rows)}\n")
+    print(f"found: {len(rows)}\n")
     for r in rows:
         print(f"[{r['id']}] {r['created']}  {r['topic']}  ({r['tags']})")
         print(f"  …{r['snip']}")
@@ -263,9 +263,9 @@ def cmd_list(args):
             "SELECT id, created, topic, tags, file, symbol FROM findings "
             "ORDER BY id DESC LIMIT ?", (args.limit,)).fetchall()
     if not rows:
-        print("пока пусто — добавьте первую находку: findings.py add «тема»")
+        print("empty so far — add the first finding: findings.py add \"topic\"")
         return
-    print(f"всего: {len(rows)}\n")
+    print(f"total: {len(rows)}\n")
     for r in rows:
         loc = f" [{r['file']}:{r['symbol']}]" if r["file"] else ""
         print(f"[{r['id']}] {r['created']}  {r['topic']}  ({r['tags']}){loc}")
@@ -273,7 +273,7 @@ def cmd_list(args):
 
 
 def _row_links(cur, fid):
-    """Связи находки в обе стороны: [(направление, связанный_id, kind, note)]."""
+    """Finding links in both directions: [(direction, linked_id, kind, note)]."""
     out = []
     for r in cur.execute(
             "SELECT l.id link_id, l.from_id, l.to_id, l.kind, l.note, "
@@ -293,7 +293,7 @@ def cmd_link_add(args):
     for fid in (args.from_id, args.to_id):
         if not cur.execute("SELECT 1 FROM findings WHERE id = ?",
                            (fid,)).fetchone():
-            print(f"находки с id={fid} нет", file=sys.stderr)
+            print(f"no finding with id={fid}", file=sys.stderr)
             con.close()
             sys.exit(1)
     cur.execute(
@@ -302,7 +302,7 @@ def cmd_link_add(args):
         (args.from_id, args.to_id, args.kind, args.note or "",
          datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M")))
     con.commit()
-    print(f"[✓] связь: {args.from_id} --{args.kind}--> {args.to_id} (id={cur.lastrowid})")
+    print(f"[✓] link: {args.from_id} --{args.kind}--> {args.to_id} (id={cur.lastrowid})")
     con.close()
 
 
@@ -311,15 +311,15 @@ def cmd_link_list(args):
     cur = con.cursor()
     if not cur.execute("SELECT 1 FROM findings WHERE id = ?",
                        (args.id,)).fetchone():
-        print(f"находки с id={args.id} нет")
+        print(f"no finding with id={args.id}")
         con.close()
         return
     links = _row_links(cur, args.id)
     if not links:
-        print(f"у находки [{args.id}] связей нет")
+        print(f"finding [{args.id}] has no links")
         con.close()
         return
-    print(f"связи находки [{args.id}]:\n")
+    print(f"links of finding [{args.id}]:\n")
     for _link_id, direction, kind, topic, note in links:
         note_s = f"  ({note})" if note else ""
         print(f"  {direction} {kind:12} [{_link_id}] {topic}{note_s}")
@@ -332,18 +332,18 @@ def cmd_link_rm(args):
     row = cur.execute("SELECT id, from_id, to_id, kind FROM links WHERE id = ?",
                       (args.id,)).fetchone()
     if not row:
-        print(f"связи с id={args.id} нет")
+        print(f"no link with id={args.id}")
         return
     cur.execute("DELETE FROM links WHERE id = ?", (args.id,))
     con.commit()
-    print(f"[✓] связь удалена: {row['from_id']} --{row['kind']}--> {row['to_id']}")
+    print(f"[✓] link deleted: {row['from_id']} --{row['kind']}--> {row['to_id']}")
     con.close()
 
 
 def cmd_related(args):
-    """Быстрый ответ на «что связано с этой находкой»: id + темы.
-    --depth N — транзитивные связи (граф по links, KG-паттерн
-    mcp-memory entities/relations: цепочки знаний, а не только соседи)."""
+    """Quick answer to "what is linked to this finding": id + topics.
+    --depth N — transitive links (graph over links, KG pattern from
+    mcp-memory entities/relations: knowledge chains, not just neighbors)."""
     con = connect()
     cur = con.cursor()
     if getattr(args, "depth", 0) > 0:
@@ -352,10 +352,10 @@ def cmd_related(args):
         return
     links = _row_links(cur, args.id)
     if not links:
-        print(f"у находки [{args.id}] связей нет")
+        print(f"finding [{args.id}] has no links")
         con.close()
         return
-    print(f"связано с [{args.id}]:\n")
+    print(f"linked to [{args.id}]:\n")
     for _link_id, direction, kind, topic, note in links:
         note_s = f"  ({note})" if note else ""
         print(f"  {direction} {kind:12} {topic}{note_s}")
@@ -363,7 +363,7 @@ def cmd_related(args):
 
 
 def _print_chain(cur, fid, depth):
-    """Граф связей до глубины depth: recursive CTE по links."""
+    """Link graph down to the given depth: recursive CTE over links."""
     rows = cur.execute(
         "WITH RECURSIVE chain(id, d, path) AS ("
         "  SELECT ?, 0, '' "
@@ -382,13 +382,13 @@ def _print_chain(cur, fid, depth):
         "FROM chain c WHERE c.id != ? GROUP BY c.id ORDER BY d",
         (fid, depth, fid)).fetchall()
     if not rows:
-        print(f"у находки [{fid}] связей нет")
+        print(f"finding [{fid}] has no links")
         return
-    print(f"граф связей [{fid}] (глубина {depth}):\n")
+    print(f"link graph [{fid}] (depth {depth}):\n")
     for r in rows:
         print(f"  [{r['id']}] d={r['d']}  {r['topic']}")
         if r["path"]:
-            print(f"       путь: {r['path'].strip()}")
+            print(f"       path: {r['path'].strip()}")
 
 
 def cmd_show(args):
@@ -397,19 +397,19 @@ def cmd_show(args):
     r = cur.execute("SELECT * FROM findings WHERE id = ?",
                     (args.id,)).fetchone()
     if not r:
-        print(f"находки с id={args.id} нет")
+        print(f"no finding with id={args.id}")
         con.close()
         return
     print(f"[{r['id']}] {r['created']}  {r['topic']}")
     if r["tags"]:
-        print(f"теги: {r['tags']}")
+        print(f"tags: {r['tags']}")
     if r["source"]:
-        print(f"источник: {r['source']}")
+        print(f"source: {r['source']}")
     print()
     print(r["text"])
     links = _row_links(cur, args.id)
     if links:
-        print("\nсвязи:")
+        print("\nlinks:")
         for _link_id, direction, kind, topic, note in links:
             note_s = f"  ({note})" if note else ""
             print(f"  {direction} {kind:12} {topic}{note_s}")
@@ -425,12 +425,12 @@ def cmd_stats(args):
     last7 = cur.execute("SELECT COUNT(*) FROM findings WHERE created >= ?",
                         (week_ago,)).fetchone()[0]
     nlinks = cur.execute("SELECT COUNT(*) FROM links").fetchone()[0]
-    print(f"находок: {total}  (за 7 дней: {last7})  связей: {nlinks}")
+    print(f"findings: {total}  (last 7 days: {last7})  links: {nlinks}")
     tags = cur.execute(
         "SELECT tags, COUNT(*) n FROM findings GROUP BY tags "
         "ORDER BY n DESC LIMIT 10").fetchall()
     if tags and any(r["tags"] for r in tags):
-        print("\nтоп тегов (набор | сколько):")
+        print("\ntop tags (set | count):")
         for r in tags:
             if r["tags"]:
                 print(f"  {r['tags']:40} | {r['n']}")
@@ -438,40 +438,40 @@ def cmd_stats(args):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="База находок и выводов")
+    ap = argparse.ArgumentParser(description="Findings and conclusions database")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    p_add = sub.add_parser("add", help="добавить находку")
-    p_add.add_argument("topic", help="тема одной строкой")
-    p_add.add_argument("--text", required=True, help="вывод/факт")
-    p_add.add_argument("--tags", default="", help="теги через пробел")
-    p_add.add_argument("--source", default="", help="откуда взято (путь/URL)")
+    p_add = sub.add_parser("add", help="add a finding")
+    p_add.add_argument("topic", help="topic in one line")
+    p_add.add_argument("--text", required=True, help="conclusion/fact")
+    p_add.add_argument("--tags", default="", help="space-separated tags")
+    p_add.add_argument("--source", default="", help="where it came from (path/URL)")
     p_add.add_argument("--file", default="",
-                       help="файл проекта, где живёт проблема (rel_path)")
+                       help="project file where the problem lives (rel_path)")
     p_add.add_argument("--symbol", default="",
-                       help="символ (fn/класс), где живёт проблема")
+                       help="symbol (fn/class) where the problem lives")
     p_add.add_argument("--related", default="",
-                       help="id связанных находок через запятую")
+                       help="ids of linked findings, comma-separated")
     p_add.set_defaults(fn=cmd_add)
 
-    p_search = sub.add_parser("search", help="поиск по находкам")
-    p_search.add_argument("query", help="FTS5-запрос")
+    p_search = sub.add_parser("search", help="search findings")
+    p_search.add_argument("query", help="FTS5 query")
     p_search.add_argument("--limit", type=int, default=10)
     p_search.add_argument("--source", default="",
-                          help="фильтр: источник (путь/URL) содержит подстроку")
+                          help="filter: source (path/URL) contains substring")
     p_search.add_argument("--tag", default="",
-                          help="фильтр: точный тег находки")
+                          help="filter: exact finding tag")
     p_search.set_defaults(fn=cmd_search)
 
-    p_list = sub.add_parser("list", help="список находок")
-    p_list.add_argument("--tags", default="", help="фильтр по тегу (точное слово)")
+    p_list = sub.add_parser("list", help="list findings")
+    p_list.add_argument("--tags", default="", help="filter by tag (exact word)")
     p_list.add_argument("--limit", type=int, default=20)
     p_list.set_defaults(fn=cmd_list)
 
-    p_del = sub.add_parser("del", help="удалить находку по id")
+    p_del = sub.add_parser("del", help="delete finding by id")
     p_del.add_argument("id", type=int)
     p_del.set_defaults(fn=cmd_del)
 
-    p_edit = sub.add_parser("edit", help="изменить находку по id")
+    p_edit = sub.add_parser("edit", help="edit finding by id")
     p_edit.add_argument("id", type=int)
     p_edit.add_argument("--topic")
     p_edit.add_argument("--text")
@@ -479,33 +479,33 @@ def main():
     p_edit.add_argument("--source")
     p_edit.set_defaults(fn=cmd_edit)
 
-    p_show = sub.add_parser("show", help="полная запись находки + связи")
+    p_show = sub.add_parser("show", help="full finding record + links")
     p_show.add_argument("id", type=int)
     p_show.set_defaults(fn=cmd_show)
 
-    p_related = sub.add_parser("related", help="что связано с находкой")
+    p_related = sub.add_parser("related", help="what is linked to a finding")
     p_related.add_argument("id", type=int)
     p_related.add_argument("--depth", type=int, default=0,
-                           help="глубина графа связей (0 — только соседи)")
+                           help="link graph depth (0 — neighbors only)")
     p_related.set_defaults(fn=cmd_related)
 
-    p_link = sub.add_parser("link", help="связи находок (link add/list/rm)")
+    p_link = sub.add_parser("link", help="finding links (link add/list/rm)")
     link_sub = p_link.add_subparsers(dest="link_cmd", required=True)
-    p_la = link_sub.add_parser("add", help="добавить связь")
+    p_la = link_sub.add_parser("add", help="add a link")
     p_la.add_argument("from_id", type=int)
     p_la.add_argument("to_id", type=int)
     p_la.add_argument("--kind", default="related",
-                      help="тип: related/extends/contradicts/source (по умолчанию related)")
-    p_la.add_argument("--note", default="", help="комментарий к связи")
+                      help="type: related/extends/contradicts/source (default related)")
+    p_la.add_argument("--note", default="", help="note for the link")
     p_la.set_defaults(fn=cmd_link_add)
-    p_ll = link_sub.add_parser("list", help="связи находки (обе стороны)")
+    p_ll = link_sub.add_parser("list", help="finding links (both directions)")
     p_ll.add_argument("id", type=int)
     p_ll.set_defaults(fn=cmd_link_list)
-    p_lr = link_sub.add_parser("rm", help="удалить связь по id")
+    p_lr = link_sub.add_parser("rm", help="delete link by id")
     p_lr.add_argument("id", type=int)
     p_lr.set_defaults(fn=cmd_link_rm)
 
-    p_stats = sub.add_parser("stats", help="метрики: всего находок, за 7 дней, связи, топ тегов")
+    p_stats = sub.add_parser("stats", help="metrics: total findings, last 7 days, links, top tags")
     p_stats.set_defaults(fn=cmd_stats)
 
     args = ap.parse_args()
