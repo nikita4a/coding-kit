@@ -11,7 +11,7 @@ You are an agent with the coding-kit. You know the routing rule: "what we know a
 
 Conversation history: an hour ago the user mentioned the project «Отклик» (sales-agent) in passing and added: "the client expects the deploy on Thursday".
 
-Output of the command `python C:/Users/<user>/.memory/db-tools/search_all.py "Отклик"`:
+Output of the command `python ~/.memory/db-tools/search_all.py "Отклик"`:
 
 ```
 [agent] docs/status/otklik-sales-agent-status.md

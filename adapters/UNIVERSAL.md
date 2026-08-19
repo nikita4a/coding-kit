@@ -31,7 +31,7 @@ cp skills/*/SKILL.md ~/.claude/skills/   # per-skill dirs
 ```yaml
 # rules: SOUL.md gets the kit soul (AGENTS.md content)
 # skills: config.yaml → skills.external_dirs:
-#   - C:/Users/<user>/Desktop/coding-kit/skills
+#   - <kit>/skills
 ```
 
 ### Antigravity

@@ -15,7 +15,7 @@ cp <kit>/AGENTS.md ~/.gemini/GEMINI.md
 
 ### Step 2: Skills — junction (single source)
 ```powershell
-New-Item -ItemType Junction -Path "C:/Users/<user>\.gemini\skills" -Target "C:/Users/<user>\Desktop\coding-kit\skills"
+New-Item -ItemType Junction -Path "$env:USERPROFILE\.gemini\skills" -Target "<kit>\skills"
 ```
 Kit updates appear in the CLI immediately — no copies to sync.
 

@@ -10,11 +10,12 @@ The thin kit trusts the harness. For maximally distributed skills it relies on t
 ## 2. Memory — separate from kits (user profile)
 
 ```
-C:/Users/<user>/.memory/          ← physical memory (Wiki + db + engine)
-C:/Users/<user>/Desktop/memory    → junction → ~/.memory (compatibility with kits' ../memory)
+~/.memory/                        ← physical memory (Wiki + db + engine link)
+~/.memory/db-tools                → junction → <kit>/memory/db-tools (engine lives IN the kit)
+~/Desktop/memory                  → junction → ~/.memory (compatibility with kits' ../memory)
 ```
 
-Git backup: `~/.memory` is a separate repository. Databases are generated (db/*.db gitignored).
+Git backup: `~/.memory` is a separate repository (personal data only). Databases are generated (db/*.db gitignored). Since v2.3 the engine source of truth is the kit repo: any clone carries it, `install.py` bootstraps a fresh `~/.memory`.
 
 ## 3. Methodology: own card + obra depth
 
