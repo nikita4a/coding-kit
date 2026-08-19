@@ -114,6 +114,16 @@ python ~/.memory/db-tools/search_all.py "X"
 - `python ~/.memory/db-tools/search.py --calls <fn>` / `--imports` / `--inherits` — dependency graphs
 - `python ~/.memory/db-tools/search_all.py "topic"` — search all databases at once
 
+**Upgrading the kit (data survival).** Irreplaceable: `Wiki/` (markdown, in the memory repo's git) and `db/research.db` (findings+links — **gitignored, back it up yourself**). Everything else in `db/` is a rebuildable index.
+```bash
+cp ~/.memory/db/research.db ~/research.db.bak   # the only manual backup
+git pull && python scripts/install.py           # new engine, indexes rebuilt
+python scripts/doctor.py                        # verify
+# search broken after an engine schema change? Rebuild indexes from source:
+find ~/.memory/db -name '*.db*' ! -name 'research.db*' -delete
+python scripts/install.py   # NEVER delete research.db
+```
+
 ## 6. 📚 SKILLS
 
 ### Always-on
