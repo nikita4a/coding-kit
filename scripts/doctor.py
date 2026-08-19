@@ -126,6 +126,16 @@ def check_override() -> tuple[bool, str]:
                    "EXPLORATORY_PROTOTYPE, STRICT_AUDIT. Typo?")
 
 
+def check_engine_sync() -> tuple[bool, str]:
+    """The kit ships _compat.py twice (db-tools/ imports it, scripts/ is
+    copied to ~/.memory); drift between the copies bit the v2.5 review."""
+    a = KIT / "memory" / "db-tools" / "_compat.py"
+    b = KIT / "memory" / "scripts" / "_compat.py"
+    if a.read_bytes() == b.read_bytes():
+        return (True, "_compat copies identical")
+    return (False, "memory/db-tools/_compat.py != memory/scripts/_compat.py")
+
+
 def main() -> int:
     checks = [
         ("manifest", check_manifest()),
@@ -135,6 +145,7 @@ def main() -> int:
         ("memory+db", check_memory()),
         ("adapters", check_adapters()),
         ("override", check_override()),
+        ("engine sync", check_engine_sync()),
     ]
     fails = 0
     print(f"{'CHECK':<16} {'RESULT':<6} DETAIL")

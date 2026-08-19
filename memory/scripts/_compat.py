@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
-"""Shared cross-platform memory module: stdout encoding, venv paths,
-platform helpers. One place instead of copying into every script
-(recommendation from the Windows bug report: "duplicate into a shared module
-rather than copying into 6 files").
+"""Shared cross-platform module for memory: stdout encoding, venv paths,
+platform helpers. A single place instead of copying into every script
+(recommendation from the Windows bug report: "put it in a shared module,
+not copied into 6 files").
 
 Usage:
     import sys, os
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__))))
     import _compat
-    _compat.fix_encoding()          # stdout/stderr → UTF-8 (Windows cp1251)
-    py = _compat.venv_python()      # path to the project python (bin/ vs Scripts/)
+    _compat.fix_encoding()          # stdout/stderr -> UTF-8 (Windows cp1251)
+    py = _compat.venv_python()      # path to project python (bin/ vs Scripts/)
 """
 
 import os
@@ -25,12 +25,12 @@ IS_CI = os.environ.get("CI") == "true"
 
 def fix_encoding():
     """Windows console defaults to cp1251 — Russian output (✓/✗/Cyrillic)
-    fails with UnicodeEncodeError. Switch to UTF-8 (Python 3.7+).
+    crashes with UnicodeEncodeError. Switching to UTF-8 (Python 3.7+).
     Call at the start of every CLI script."""
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:  # noqa: S110,BLE001 — reconfigure is optional, we can live without it
+    except Exception:  # noqa: S110,BLE001 — reconfigure is optional, fine without it
         pass
 
 
@@ -38,12 +38,12 @@ def run(cmd, *, timeout=None, cwd=None, env=None, check=False):
     """subprocess.run for CLI scripts: cross-platform encoding.
 
     Windows gotcha (bug report v2.4 BUG-1/4): text=True without an explicit
-    encoding uses the ANSI code page (locale.getencoding — cp1251), while
+    encoding picks the ANSI code page (locale.getencoding — cp1251), while
     console children write in OEM (cp866) — UnicodeDecodeError in reader
-    threads or mojibake (CPython issue #105312). Fix from both sides:
-    (1) pass PYTHONUTF8=1 to python children — they write UTF-8;
-    (2) decode output as utf-8 + errors="replace" — never crash on a foreign
-    encoding (PowerShell children switch themselves via
+    streams or mojibake (CPython issue #105312). Fix on both sides:
+    (1) python children get PYTHONUTF8=1 — they write UTF-8;
+    (2) output is decoded as utf-8 + errors="replace" — we never crash on
+    a foreign encoding (PowerShell children switch themselves via
     [Console]::OutputEncoding, see run_tests.ps1).
     """
     child_env = os.environ.copy() if env is None else {**os.environ, **env}
@@ -54,20 +54,20 @@ def run(cmd, *, timeout=None, cwd=None, env=None, check=False):
                           timeout=timeout, cwd=cwd, env=child_env, check=check)
 
 
-# Memory root markers: files/folders that exist ONLY in the workspace root
-# (VERSION is unique — projects do not have it; db-tools/ and scripts/_compat.py
-# are part of the root). Used to validate the found root.
+# Memory root markers: files/folders present ONLY in the workspace root
+# (VERSION is unique — projects don't have it; db-tools/ and
+# scripts/_compat.py are part of the root). Used to validate the found root.
 ROOT_MARKERS = ("VERSION", "db-tools", "scripts/_compat.py")
 
 
 def chulan_root():
     """Memory root. Industry pattern (jayqi/python-find-project-root-
     cookbook, R here): chain — (1) explicit $MEMORY_ROOT override, (2)
-    VERSION marker file while walking up, (3) __file__-based fallback.
-    No hardcoded paths: the root may be anywhere (any OS, any mount point,
-    unpacked archive) — found automatically.
-    Raises if the found location does not look like the root (renamed,
-    script moved) — instead of silently working from the wrong directory.
+    VERSION marker file when climbing up, (3) __file__-based fallback.
+    No hardcoded paths: the root can live anywhere (any OS, any mount
+    point, an unpacked archive) — it is found automatically. Fails if the
+    found place does not look like a root (renamed, script moved) — instead
+    of silently working from the wrong directory.
     """
     env = os.environ.get("MEMORY_ROOT")
     if env:
@@ -89,18 +89,18 @@ def chulan_root():
 
 
 def _validate_root(root, source):
-    """Check the directory is really the memory root (markers present)."""
+    """Check that the directory is really the memory root (markers in place)."""
     missing = [m for m in ROOT_MARKERS if not (root / m).exists()]
     if missing:
         raise RuntimeError(
             f"memory root ({source}) does not look like a root: {root} — "
             f"missing markers: {', '.join(missing)}. Set MEMORY_ROOT or "
-            f"place a VERSION file in the workspace root.")
+            f"place a VERSION file at the workspace root.")
 
 
 def venv_dir():
-    """Shared workspace venv: ~/.venvs/memory (kept out of the folder so the
-    project is shared cleanly). Created by setup.py (ensure_env)."""
+    """Shared workspace venv: ~/.venvs/memory (kept outside the folder so
+    the project can be shared cleanly). Created by setup.py (ensure_env)."""
     return Path.home() / ".venvs" / "memory"
 
 
@@ -115,7 +115,7 @@ def venv_python():
 def yaml_scalar(value):
     """YAML scalar from a python value. A JSON string is valid YAML
     (double quotes): json.dumps is safe for paths and arguments.
-    Used by textual YAML surgeons (install_mcp apply_hermes,
+    Used by text-based YAML surgeons (install_mcp apply_hermes,
     install_proshivka hermes-hook) — without a YAML parser, so comments
     and foreign formatting are not destroyed."""
     import json
@@ -125,13 +125,13 @@ def yaml_scalar(value):
 
 
 def replace_top_level_yaml_block(path, block, marker):
-    """Surgical replacement of a top-level YAML config block: an unindented
-    marker line + all following indented lines are replaced with block;
-    everything else (foreign sections, comments) is preserved byte-for-byte.
-    If no block — appended at the end. If the file does not exist — created
-    (parent directory is created automatically). Returns True if the block
-    was found (replaced), False — if appended at the end (needed for the
-    "does the user have their own block" logic)."""
+    """Surgical replacement of a top-level YAML-config block: the marker
+    line without indentation + all following indented lines are replaced
+    with block; everything else (foreign sections, comments) is preserved
+    byte-for-byte. No block — appended at the end. No file — created (the
+    parent directory is created too). Returns True if the block was found
+    (replaced), False if it was appended (needed for the "does the user
+    have their own block" logic)."""
     if os.path.exists(path):
         with open(path, encoding="utf-8-sig") as f:
             text = f.read()

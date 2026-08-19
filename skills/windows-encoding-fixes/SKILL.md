@@ -36,7 +36,7 @@ In coding-kit — the single `memory/scripts/_compat.py: fix_encoding()` instead
 export PYTHONIOENCODING="${PYTHONIOENCODING:-utf-8}"
 ```
 
-**System-level fix (recommendation in SETUP.md):**
+**System-level fix (recommended for every Windows box):**
 ```powershell
 [Environment]::SetEnvironmentVariable("PYTHONUTF8", "1", "User")
 ```
