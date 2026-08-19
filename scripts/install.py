@@ -61,7 +61,10 @@ def link_engine(root: Path) -> None:
         if target.resolve() == ENGINE.resolve():
             print("  db-tools already linked to this kit")
             return
-        os.rmdir(target)  # removes the link, not its target
+        if os.name == "nt":
+            os.rmdir(target)  # junctions are directories on NT
+        else:
+            target.unlink()  # POSIX symlinks are not
     elif target.exists():
         print(f"  NOTE: {target} is a real directory; replace it manually "
               f"to use this kit's engine.")
