@@ -1,11 +1,11 @@
 ---
 name: superpowers
-description: 'Always-on. Главный метод разработки: Plan → TDD → Implement → Verify → Report. Использовать при ЛЮБОЙ нетривиальной задаче. Не писать код без плана и теста. Сложные задачи (>3 файлов) → разбить на атомарные tasks. Баг-фикс → Prove-It Pattern (воспроизвести тестом до фикса).'
+description: 'Always-on. The main development method: Plan → TDD → Implement → Verify → Report. Use for ANY non-trivial task. Do not write code without a plan and a test. Complex tasks (>3 files) → split into atomic tasks. Bug fix → Prove-It Pattern (reproduce with a test before the fix).'
 ---
 
-# Superpowers — главный метод разработки
+# Superpowers — main development method
 
-Always-on скилл. Каждая нетривиальная задача проходит 5 фаз.
+Always-on skill. Every non-trivial task goes through 5 phases.
 
 ## The Cycle
 
@@ -17,76 +17,76 @@ Spec    Red test  Green code   Evidence    Outcome
 first   first     minimal      observed    first
 ```
 
-## Фазовые скиллы (обрастание obra)
+## Phase skills (obra accretion)
 
-Кит v2: каждая фаза имеет гранулярный скилл-помощник. Фаза не заменяется, а углубляется:
+Kit v2: each phase has a granular skill helper. A phase is not replaced, but deepened:
 
-- PLAN → `brainstorming` (дизайн-вопросы, спека), `writing-plans` (план исполнения)
-- IMPLEMENT → `executing-plans` (по плану с чекпоинтами), `subagent-driven-development`, `dispatching-parallel-agents`
-- VERIFY → `verification-before-completion` (свежий вывод), `requesting-code-review`, `fable-judge` (adversarial)
+- PLAN → `brainstorming` (design questions, spec), `writing-plans` (execution plan)
+- IMPLEMENT → `executing-plans` (per the plan with checkpoints), `subagent-driven-development`, `dispatching-parallel-agents`
+- VERIFY → `verification-before-completion` (fresh output), `requesting-code-review`, `fable-judge` (adversarial)
 - Debug → `systematic-debugging`, `debugging-and-error-recovery`
 - Git → `using-git-worktrees`, `finishing-a-development-branch`
 
 ## Phase 1: PLAN
 
-**Сформулируй «что значит готово» — конкретно, наблюдаемо.**
+**Formulate what "done" means — concrete, observable.**
 
-- Что должно быть true, когда задача выполнена?
-- Какие файлы трогаешь? Какие НЕ трогаешь?
-- Какие assumptions делаешь?
-- Сложная задача (>3 файлов / >5 изменений) → разбей на атомарные tasks.
+- What should be true when the task is done?
+- Which files do you touch? Which do you NOT touch?
+- What assumptions do you make?
+- Complex task (>3 files / >5 changes) → split into atomic tasks.
 
-**Scope discipline:** трогай только то, что требует задача. Не «почищу заодно».
+**Scope discipline:** touch only what the task requires. Not "I'll clean up along the way".
 
 ## Phase 2: TDD
 
-**Красный тест → зелёный код → рефакторинг.**
+**Red test → green code → refactoring.**
 
-- Никакого кода без падающего теста.
-- Тест = спека. Имя теста = правило: `test_payment_idempotent`, `test_referral_no_self`.
-- Тест проверяет поведение, не реализацию.
+- No code without a failing test.
+- Test = spec. Test name = rule: `test_payment_idempotent`, `test_referral_no_self`.
+- A test verifies behavior, not implementation.
 
-### Prove-It Pattern (баг-фикс)
+### Prove-It Pattern (bug fix)
 
 ```
-Баг-репорт → тест, воспроизводящий баг → тест ПАДАЕТ → фикс → тест ЗЕЛЁНЫЙ
+Bug report → test reproducing the bug → test FAILS → fix → test GREEN
 ```
 
 ## Phase 3: IMPLEMENT
 
-**Минимальное изменение, делающее тест зелёным.**
+**Minimal change that makes the test green.**
 
-- YAGNI: не добавляй ничего сверх того, что требует тест.
-- Стиль — как в окружающем коде. Не рефактори чужое без спроса.
-- DRY: дублируется в 3+ местах? → общий источник.
+- YAGNI: don't add anything beyond what the test requires.
+- Style — as in the surrounding code. Don't refactor someone else's code without asking.
+- DRY: duplicated in 3+ places? → shared source.
 
 ## Phase 4: VERIFY
 
 **Evidence, not inference.**
 
-- [ ] Тест зелёный? → наблюдал.
-- [ ] Все существующие тесты зелёные? → прогнал.
-- [ ] Сборка не сломана? → проверил.
-- [ ] Линтер чистый? → прогнал.
-- [ ] Баг-фикс → TWINS: поискал такой же паттерн в кодовой базе.
-- [ ] Никаких «кажется, работает» — только «наблюдал, что работает».
+- [ ] Test green? → observed.
+- [ ] All existing tests green? → ran.
+- [ ] Build not broken? → checked.
+- [ ] Linter clean? → ran.
+- [ ] Bug fix → TWINS: searched for the same pattern in the codebase.
+- [ ] No "seems to work" — only "observed that it works".
 
 ## Phase 5: REPORT
 
-**Результат первой строкой.**
+**Result first line.**
 
-- Что сделано.
-- Какие файлы тронуты.
-- Что проверено.
-- Что дальше (если есть).
+- What was done.
+- Which files were touched.
+- What was verified.
+- What's next (if any).
 
 ## When NOT to use
 
-- Однострочный фикс, опечатка — достаточно verify.
-- Чисто документация — plan + verify.
+- One-line fix, typo — verify is enough.
+- Pure documentation — plan + verify.
 
 ## Gotchas
 
-- Самая частая ошибка: пропуск TDD. «Я просто напишу код, потом тест». Нет. Тест ПЕРВЫМ.
-- Вторая: scope creep. «Заодно почищу соседний файл». Нет. Отдельная задача.
-- Третья: «кажется, работает». Нет. Наблюдал, что работает.
+- Most common mistake: skipping TDD. "I'll just write the code, then the test". No. Test FIRST.
+- Second: scope creep. "I'll also clean up the neighboring file". No. Separate task.
+- Third: "seems to work". No. Observed that it works.

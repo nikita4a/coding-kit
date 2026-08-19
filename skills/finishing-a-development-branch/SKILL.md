@@ -226,4 +226,4 @@ place. If your platform provides a workspace-exit tool, use it.
 
 ---
 
-> Источник: obra/superpowers (MIT). Адаптация для coding-kit: кросс-ссылки локальные.
+> Source: obra/superpowers (MIT). Adapted for coding-kit: cross-references made local.

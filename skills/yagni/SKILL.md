@@ -1,44 +1,44 @@
 ---
 name: yagni
-description: 'Always-on. Закон минимализма: не строй того, чего не просили. Абстракция с одним потребителем → inline. Новая зависимость → только если боль измерима. Мёртвый код → удали. «На будущее» → не основание. Использовать при ЛЮБОМ изменении кода.'
+description: 'Always-on. Law of minimalism: don''t build what wasn''t asked for. Abstraction with one consumer → inline. New dependency → only if the pain is measurable. Dead code → delete. "For the future" → not a reason. Use for ANY code change.'
 ---
 
-# YAGNI — закон минимализма
+# YAGNI — law of minimalism
 
-Always-on скилл. Применять перед каждым изменением кода.
+Always-on skill. Apply before every code change.
 
-## Правила
+## Rules
 
-1. **Абстракция с одним потребителем → inline.** Extract только когда появится второй. Можно удалить слой — поведение то же, кода меньше? → удали.
+1. **Abstraction with one consumer → inline.** Extract only when a second one appears. Can you remove a layer — same behavior, less code? → remove it.
 
-2. **Новая зависимость → только если боль измерима.** 30 строк своего кода лучше 300KB чужого. Сначала stdlib/native. moment.js ради одного format = нет.
+2. **New dependency → only if the pain is measurable.** 30 lines of your own code beat 300KB of someone else's. Start with stdlib/native. moment.js for a single format = no.
 
-3. **Код, который можно удалить без изменения поведения → удали.** Мёртвый код не комментируется навсегда.
+3. **Code that can be removed without changing behavior → remove it.** Dead code is not commented out forever.
 
-4. **«На будущее» — недостаточное основание.** Строим под текущую задачу. Не под гипотетическую.
+4. **"For the future" is not a sufficient reason.** Build for the current task, not a hypothetical one.
 
-5. **Stop when the next abstraction doesn't pay rent this week.** Абстракция должна окупаться сейчас, не «когда-нибудь».
+5. **Stop when the next abstraction doesn't pay rent this week.** An abstraction must pay off now, not "someday".
 
-## Фильтр перед каждым изменением
+## Filter before every change
 
-- **DRY** — дублируется в 3+ местах? → общий источник. 2 места? → терпим.
-- **KISS** — проще вариант закрывает задачу? → бери простой. Сложность оправдана, только когда простая не справляется.
-- **YAGNI** — это нужно СЕЙЧАС? → нет → не делай.
+- **DRY** — duplicated in 3+ places? → shared source. 2 places? → tolerate.
+- **KISS** — does the simpler option close the task? → take the simple one. Complexity is justified only when the simple one doesn't cut it.
+- **YAGNI** — is this needed NOW? → no → don't do it.
 
-## Антипаттерны
+## Antipatterns
 
-- Generic EventBus с middleware pipeline ради одного notification → просто вызов функции.
-- Abstract factory для двух похожих компонентов → два прямых компонента.
-- Config-driven form builder для трёх форм → три компонента формы.
-- «Вдруг пригодится» → не пригодится.
+- Generic EventBus with a middleware pipeline for a single notification → just call the function.
+- Abstract factory for two similar components → two direct components.
+- Config-driven form builder for three forms → three form components.
+- "Might come in handy" → it won't.
 
-## Код-ревью глазами YAGNI
+## Code review through a YAGNI lens
 
-- Можно удалить эту абстракцию без изменения поведения? → удали.
-- Эта зависимость реально нужна? → проверь, не решается ли stdlib.
-- Этот код используется? → нет → удали.
-- Это «на будущее»? → удали.
+- Can this abstraction be removed without changing behavior? → remove it.
+- Is this dependency actually needed? → check whether stdlib solves it.
+- Is this code used? → no → remove it.
+- Is this "for the future"? → remove it.
 
-## Цитата
+## Quote
 
 "Three similar lines of code is better than a premature abstraction. Implement the naive, obviously-correct version first. Optimize only after correctness is proven with tests."

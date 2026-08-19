@@ -1,51 +1,51 @@
 ---
 name: debug-incident-protocol
-description: 'Использовать, когда пользователь говорит: «не работает», «всё ещё сломано», «висит/зависло», «пропало после обновления», «раньше работало», «метрика нулевая но UI ок» — или когда нужно разобрать инцидент, найти корень зависания, проверить что процесс реально перезапущен. Покрывает: факты до теорий (storage/logs/PID), симптом vs корень, silent failure, restart ritual, локализацию зависаний маркером прогресса, таймауты, кэш-маскировку. Не использовать для написания тестов (testing-discipline).'
-compatibility: любой стек: процессы, логи, БД, сети, тесты
+description: 'Use when the user says: «it doesn''t work», «still broken», «hung/stuck», «disappeared after the update», «it used to work», «the metric is zero but the UI is fine» — or when an incident needs to be analyzed, the root cause of a hang found, and whether a process was actually restarted verified. Covers: facts before theories (storage/logs/PID), symptom vs root cause, silent failure, restart ritual, localizing hangs with a progress marker, timeouts, cache masking. Do not use for writing tests (testing-discipline).'
+compatibility: any stack: processes, logs, DB, network, tests
 ---
 
-# Debug & incident protocol: факты до теорий
+# Debug & incident protocol: facts before theories
 
-## 1. Ядро: факты, не мнения
+## 1. Core: facts, not opinions
 
-1. **FACTS BEFORE THEORIES** — порядок: 1) config flags, 2) DB row, 3) log lines, 4) только потом код-гипотеза. Первое сообщение об инциденте содержит факт, не мнение.
-2. **SYMPTOM ≠ ROOT CAUSE** — «минуты не списываются» — симптом; silent except + wrong parser — корень. Трассируй call path до side-effect; чини корень ОДИН раз.
-3. **IF METRIC FLAT WHILE FEATURE «WORKS» — SILENT FAILURE** — UX успех + нулевая метрика = глотание ошибки. Ищи except/early return на пути метрики.
-4. **SINGLE CONSUMER FOR EXCLUSIVE STREAMS** — long-poll/queue/lock file — один владелец. Kill duplicates before start; health = exactly one PID.
-5. **RESTART RITUAL IS PART OF THE FIX** — код на диске ≠ код в памяти. После фикса: stop all → start one → verify log. Проверка: PID creation time > edit time.
-6. **ENCODING OF CONSOLE ≠ ENCODING OF PRODUCT** — кракозябры в консоли не значат битые данные. Проверяй UTF-8 в клиенте/файле.
+1. **FACTS BEFORE THEORIES** — order: 1) config flags, 2) DB row, 3) log lines, 4) only then a code hypothesis. The first incident report contains a fact, not an opinion.
+2. **SYMPTOM ≠ ROOT CAUSE** — «minutes are not deducted» is a symptom; silent except + wrong parser is the root cause. Trace the call path to the side effect; fix the root cause ONCE.
+3. **IF METRIC FLAT WHILE FEATURE «WORKS» — SILENT FAILURE** — UX success + zero metric = swallowed error. Look for except/early return on the metric path.
+4. **SINGLE CONSUMER FOR EXCLUSIVE STREAMS** — long-poll/queue/lock file — one owner. Kill duplicates before start; health = exactly one PID.
+5. **RESTART RITUAL IS PART OF THE FIX** — code on disk ≠ code in memory. After the fix: stop all → start one → verify log. Check: PID creation time > edit time.
+6. **ENCODING OF CONSOLE ≠ ENCODING OF PRODUCT** — mojibake in the console does not mean corrupted data. Check UTF-8 in the client/file.
 
-## 2. Локализация зависаний
+## 2. Localizing hangs
 
-1. **«Не может зависнуть» — не аргумент.** Зависнуть может что угодно: сеть без таймаута, интерактивный промпт, бесконечный цикл.
-2. **Локализуй маркером прогресса** — маркер («=== этап N ===») печатается в НАЧАЛЕ блока → зависло ВНУТРИ последнего блока с маркером.
-3. **Прогресс — в ФАЙЛ, не в пайп** — `cmd 2>&1 | Out-File prog.txt`; пайп может зависнуть или потерять хвост.
-4. **Изолируй подозреваемого ДО полного прогона** — один блок с малым таймаутом (30-60с), не весь набор с 900с.
-5. **Цепочка A && B && C маскирует место зависания** — разделяй этапы: каждая команда отдельно, свой таймаут.
-6. **Первый подозреваемый — инфраструктура, не логика** — BeforeAll/модули/сеть/интерактив виноваты чаще, чем «мгновенный» тест.
-7. **Сравни с последним успешным прогоном** — git diff: виновник обычно в изменениях.
+1. **«It can't hang» — not an argument.** Anything can hang: a network without a timeout, an interactive prompt, an infinite loop.
+2. **Localize with a progress marker** — the marker («=== stage N ===») is printed at the START of the block → hang is INSIDE the last block with a marker.
+3. **Progress — to a FILE, not a pipe** — `cmd 2>&1 | Out-File prog.txt`; a pipe can hang or lose the tail.
+4. **Isolate the suspect BEFORE the full run** — one block with a small timeout (30-60s), not the whole set with 900s.
+5. **Chain A && B && C masks the hang location** — split stages: each command separately, its own timeout.
+6. **First suspect — infrastructure, not logic** — BeforeAll/modules/network/interactivity is guilty more often than an «instant» test.
+7. **Compare with the last successful run** — git diff: the culprit is usually in the changes.
 
-## 3. Кэш и «всё ещё сломано»
+## 3. Cache and «still broken»
 
-- **Старый кэш выглядит как неисправленный баг** — сначала проверь, что сервер ОТДАЁТ исправленные байты (curl + grep строки-маркера правки), потом заставь кэш умереть.
-- **Чужие процессы на порту** — тестовый инстанс на порту блокирует реальный запуск → выглядит «сломано».
+- **Old cache looks like an unfixed bug** — first check that the server IS SERVING the fixed bytes (curl + grep of the fix marker line), then force the cache to die.
+- **Foreign processes on the port** — a test instance on the port blocks the real launch → looks «broken».
 
-## Workflow (порядок применения)
+## Workflow (order of application)
 
-1. **Собери факты, не теории.** config flags → DB row → log lines → код-гипотеза.
-2. **Исключи кэш и чужие процессы.** curl отданных байт + grep маркера правки. Чужой процесс на порту?
-3. **Отдели симптом от корня.** Трассируй call path до side-effect; чини корень ОДИН раз.
-4. **Проверь процессы.** Один consumer. PID trace chain: ParentProcessId + CreationDate + CommandLine. PID старше правки = процесс на старом коде → restart ritual.
-5. **Локализуй зависание маркером.** Маркер в начале блока. Прогресс в ФАЙЛ. Изолируй с малым таймаутом.
-6. **Фикс + верификация.** stop-all-then-start-one → проверка свежих строк лога → smoke сценария.
+1. **Gather facts, not theories.** config flags → DB row → log lines → code hypothesis.
+2. **Rule out cache and foreign processes.** curl the served bytes + grep the fix marker. Foreign process on the port?
+3. **Separate symptom from root cause.** Trace the call path to the side effect; fix the root cause ONCE.
+4. **Check processes.** One consumer. PID trace chain: ParentProcessId + CreationDate + CommandLine. PID older than the edit = process on old code → restart ritual.
+5. **Localize the hang with a marker.** Marker at the start of the block. Progress to a FILE. Isolate with a small timeout.
+6. **Fix + verification.** stop-all-then-start-one → check fresh log lines → smoke the scenario.
 
-## Чеклист инцидента
+## Incident checklist
 
-- [ ] факт: config flags → DB row → log lines (до гипотез)
-- [ ] симптом отделён от корня; корень чинится один раз
-- [ ] маркеры прогресса есть; этапы разделены
-- [ ] таймаут на каждом подозреваемом
-- [ ] один consumer на exclusive stream; PID новый (CreationDate > edit)
-- [ ] лог проверен по свежим строкам после рестарта
-- [ ] кэш исключён (отданные байты проверены)
-- [ ] вывод: факт + root cause + один фикс + smoke
+- [ ] fact: config flags → DB row → log lines (before hypotheses)
+- [ ] symptom separated from root cause; root cause fixed once
+- [ ] progress markers present; stages separated
+- [ ] timeout on every suspect
+- [ ] one consumer per exclusive stream; PID new (CreationDate > edit)
+- [ ] log checked by fresh lines after restart
+- [ ] cache ruled out (served bytes verified)
+- [ ] conclusion: fact + root cause + one fix + smoke

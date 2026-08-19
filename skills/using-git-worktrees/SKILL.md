@@ -168,4 +168,4 @@ Ready to implement <feature-name>
 
 ---
 
-> Источник: obra/superpowers (MIT). Адаптация для coding-kit: кросс-ссылки локальные.
+> Source: obra/superpowers (MIT). Adapted for coding-kit: cross-references made local.

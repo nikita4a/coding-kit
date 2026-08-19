@@ -1,8 +1,9 @@
 # Coding Agent OS — Skill Runtime
 
-> **v1.0** | For platforms with ≥16K context.
+> **v2** | For platforms with ≥16K context.
 > Superpowers: plan → TDD → implement → verify → report.
-> For <8K context → see SKILL_RUNTIME_COMPACT.md.
+> For <8K context → compact mode: load OPS.md §1-5 only.
+> Answer the user in THEIR language. Everything else — English.
 
 ## For every non-trivial task
 
@@ -13,47 +14,50 @@ PLAN → TDD → IMPLEMENT → VERIFY → REPORT
 ```
 
 ### 2. PLAN
-- Сформулируй «что значит готово» — конкретно, наблюдаемо.
-- Назови scope: какие файлы трогаешь, какие НЕ трогаешь.
-- Сложная задача (>3 файлов) → разбей на атомарные tasks.
+- Define "what done means" — concretely, observably.
+- Name the scope: files you touch, files you do NOT touch.
+- Complex task (>3 files) → split into atomic tasks.
 
 ### 3. TDD
-- Красный тест → зелёный код → рефакторинг.
-- Никакого кода без падающего теста.
-- Баг-фикс → Prove-It Pattern: тест, воспроизводящий баг, ПЕРВЫМ.
+- Red test → green code → refactor.
+- No code without a failing test.
+- Bug fix → Prove-It Pattern: a test reproducing the bug FIRST.
 
 ### 4. IMPLEMENT
-- Минимальное изменение, делающее тест зелёным.
-- YAGNI: не добавляй ничего сверх теста.
-- Стиль — как в окружающем коде.
+- The minimal change that makes the test green.
+- YAGNI: nothing beyond the test.
+- Match surrounding style.
 
 ### 5. VERIFY
-- Тест зелёный? → наблюдал.
-- Все существующие тесты зелёные? → прогнал.
-- Сборка не сломана? → проверил.
-- Баг-фикс → TWINS: поискал такой же паттерн в кодовой базе.
+- Test green? → observed.
+- All existing tests green? → ran them.
+- Build intact? → checked.
+- Bug fix → TWINS: searched for the same pattern in the codebase.
 
 ### 6. REPORT
-- Результат первой строкой.
-- Какие файлы тронуты.
-- Что проверено.
+- Result first line.
+- Files touched.
+- What was verified.
 
 ## Skill loading
 
 ```
-1. IDENTIFY: проверь skills/ — есть ли скилл под задачу?
+1. IDENTIFY: check skills/ — is there a skill for the task?
 2. LOAD: read skills/<name>/SKILL.md
-3. APPLY: следуй Protocol/Workflow секции
+3. APPLY: follow the Protocol/Workflow section
 4. MARK: 📚 skill-name
 ```
 
-## Cross-chat memory
+## Cross-chat memory (hierarchy)
 
 ```bash
-python scripts/memory-warmup.py          # прогрев
-python scripts/memory-warmup.py -q "X"   # поиск
-python db-tools/build.py                 # пересобрать индекс
+python ../memory/scripts/memory-warmup.py                    # warmup
+python ../memory/db-tools/search_all.py "X"                  # search all bases
+python ../memory/db-tools/build.py                           # rebuild index
+python ../memory/db-tools/findings.py add "topic" --text "conclusion" --source path
 ```
+
+Boundary rule: portable → `../memory/Wiki/`; project-specific → `WORK/<project>/docs/` + `build.py -r`.
 
 ## Context monitor
 
@@ -66,4 +70,4 @@ python scripts/context-monitor.py --check
 - Build abstractions with one consumer
 - Add dependencies without measuring the pain
 - Claim "done" without evidence
-- Answer from conversation memory — use database
+- Answer from conversation memory — use the database

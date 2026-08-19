@@ -1,59 +1,59 @@
 ---
 name: money-path-safety
-description: 'Использовать, когда пользователь хочет: оплатить/купить/подписаться, получить или потратить бонус/промокод/рефералку, проверить баланс или лимит, вернуть деньги, или когда меняется любая логика списания/начисления/квот — даже если запрос не называет деньги явно («дай ещё минут», «почему списалось дважды», «введи промокод»). Проверки: идемпотентность, атомарность, логирование мутаций, раздельные корзины, hard gate до дорогой работы, списание после успеха, soft delete, compound PK, structured failure. Не использовать для чистого CRUD без value-семантики и для дебага инцидентов (это debug-incident-protocol).'
-compatibility: любые языки/стеки, где есть балансы, квоты, промокоды, лимиты
+description: 'Use when the user wants to: pay/buy/subscribe, receive or spend a bonus/promo code/referral, check a balance or limit, get a refund, or when any logic for deducting/crediting/quotas changes — even if the request does not name money explicitly («give me more minutes», «why was I charged twice», «enter a promo code»). Checks: idempotency, atomicity, mutation logging, separate buckets, hard gate before expensive work, charge after success, soft delete, compound PK, structured failure. Do not use for pure CRUD without value semantics and for debugging incidents (that is debug-incident-protocol).'
+compatibility: any languages/stacks with balances, quotas, promo codes, limits
 ---
 
-# Money path safety: деньги и ценность — особый класс кода
+# Money path safety: money and value — a special class of code
 
-Дистилляция из боевых сессий биллинга. Применять к ЛЮБОМУ пути, где списывают/начисляют/оплачивают/ограничивают.
+Distilled from live billing sessions. Apply to ANY path where you deduct/credit/pay/limit.
 
-## 1. Деньги: железные правила
+## 1. Money: iron rules
 
-1. **MONEY PATH IS SACRED** — lock/транзакция + идемпотентность + лог на каждое событие + тест на double-submit. Проверка: дважды нажал «оплатить» → баланс +X, не +2X.
-2. **IDEMPOTENCY BY DEFAULT** — ключ операции (invoice_id, event_id) + флаг credited + early return. Проверка: прогнать handler 2 раза — второй no-op.
-3. **SEPARATE BUCKETS** — trial/promo/purchase/subscription = разные сущности, не одно поле `balance`. Явный порядок списания: free → bonus → paid.
-4. **HARD GATE BEFORE EXPENSIVE WORK** — проверка права/лимита/денег ДО внешнего вызова (CPU/API/LLM). При нулевом балансе API не вызывается.
-5. **CHARGE AFTER SUCCESS** — успех → debit; ошибка → no debit (+ log). Инъекция ошибки провайдера → баланс не меняется.
-6. **LOG EVERY MUTATION** — одна строка на credit/debit/grant/refund: `charge uid=%s seconds=%.3f from_free=%.3f from_bonus=%.3f from_paid=%.3f`. grep по user_id восстанавливает историю.
-7. **NO SILENT EXCEPT ON SIDE EFFECTS** — except: pass допустим на cleanup, НЕДОПУСТИМ на money/auth/data-loss. Money path: log + fallback или fail loud.
-8. **READ-MODIFY-WRITE UNDER LOCK** — «прочитал→посчитал→записал» без блокировки = lost update. Mutex/транзакция на весь RMW.
-9. **ONE SOURCE OF TRUTH** — UI/кэш/лог — производные. Истина — хранилище. Инцидент начинается с чтения storage, не с теории.
+1. **MONEY PATH IS SACRED** — lock/transaction + idempotency + a log for every event + a test for double-submit. Check: pressed «pay» twice → balance +X, not +2X.
+2. **IDEMPOTENCY BY DEFAULT** — operation key (invoice_id, event_id) + credited flag + early return. Check: run the handler 2 times — second is a no-op.
+3. **SEPARATE BUCKETS** — trial/promo/purchase/subscription = different entities, not one `balance` field. Explicit deduction order: free → bonus → paid.
+4. **HARD GATE BEFORE EXPENSIVE WORK** — check entitlement/limit/money BEFORE the external call (CPU/API/LLM). With a zero balance the API is not called.
+5. **CHARGE AFTER SUCCESS** — success → debit; error → no debit (+ log). Inject a provider error → balance unchanged.
+6. **LOG EVERY MUTATION** — one line per credit/debit/grant/refund: `charge uid=%s seconds=%.3f from_free=%.3f from_bonus=%.3f from_paid=%.3f`. grep by user_id reconstructs the history.
+7. **NO SILENT EXCEPT ON SIDE EFFECTS** — except: pass is acceptable on cleanup, NOT acceptable on money/auth/data-loss. Money path: log + fallback or fail loud.
+8. **READ-MODIFY-WRITE UNDER LOCK** — «read→compute→write» without locking = lost update. Mutex/transaction over the whole RMW.
+9. **ONE SOURCE OF TRUTH** — UI/cache/log are derivatives. Truth is the storage. An incident starts with reading storage, not with a theory.
 
-## 2. Атомарность в SQL (без гонок)
+## 2. Atomicity in SQL (without races)
 
-- **Atomic check-and-increment**: `UPDATE ... SET used = used + 1 WHERE used < max` — один запрос, rowcount 0 = лимит исчерпан. НЕ SELECT → IF → UPDATE.
-- **Compound PK как идемпотентность**: `PRIMARY KEY (code, user_id)` — повтор блокируется на уровне БД, без SELECT перед INSERT.
-- **SQLite**: `connect(timeout=30.0)` + `PRAGMA busy_timeout=30000` + `journal_mode=WAL` — три настройки вместе.
-- **Metric upsert**: `INSERT ... ON CONFLICT DO UPDATE SET value=value+excluded.value` — без SELECT+UPDATE race.
+- **Atomic check-and-increment**: `UPDATE ... SET used = used + 1 WHERE used < max` — one query, rowcount 0 = limit exhausted. NOT SELECT → IF → UPDATE.
+- **Compound PK as idempotency**: `PRIMARY KEY (code, user_id)` — a repeat is blocked at the DB level, without SELECT before INSERT.
+- **SQLite**: `connect(timeout=30.0)` + `PRAGMA busy_timeout=30000` + `journal_mode=WAL` — three settings together.
+- **Metric upsert**: `INSERT ... ON CONFLICT DO UPDATE SET value=value+excluded.value` — without SELECT+UPDATE race.
 
-## 3. Промокоды и value-операции
+## 3. Promo codes and value operations
 
-- **SOFT DELETE**: никогда DELETE бизнес-строки — `UPDATE status='finished'`. Аудит и FK выживают.
-- **INPUT NORMALIZATION AT BOUNDARY**: каноническая форма один раз на входе (upper/strip/charset); downstream доверяет.
-- **STRUCTURED FAILURE**: возвращать `(ok, reason_code, value)` — "not_found", "already_used", "exhausted"; UI мапит код в человеческое сообщение. НЕ просто False.
-- **CREATOR-SCOPED ADMIN QUERIES**: `WHERE created_by=?` во всех admin-запросах; мутации проверяют владельца.
-- **SINGLE CONSTANT DRIVES ALL SURFACES**: REFERRAL_BONUS=30 — в БД, UI-тексте, share-сообщении, тестах. Grep числа находит только определение.
-- **PRE-CAP SIDE-EFFECT GUARD**: проверка cap ДО `_ensure()`/INSERT — иначе rejected-пользователи оставляют мусор в БД. Отказ → return без мутаций.
+- **SOFT DELETE**: never DELETE business rows — `UPDATE status='finished'`. Audit and FK survive.
+- **INPUT NORMALIZATION AT BOUNDARY**: canonical form once at the input (upper/strip/charset); downstream trusts it.
+- **STRUCTURED FAILURE**: return `(ok, reason_code, value)` — "not_found", "already_used", "exhausted"; UI maps the code to a human message. NOT just False.
+- **CREATOR-SCOPED ADMIN QUERIES**: `WHERE created_by=?` in all admin queries; mutations check ownership.
+- **SINGLE CONSTANT DRIVES ALL SURFACES**: REFERRAL_BONUS=30 — in the DB, UI text, share message, tests. Grep for the number finds only the definition.
+- **PRE-CAP SIDE-EFFECT GUARD**: check cap BEFORE `_ensure()`/INSERT — otherwise rejected users leave garbage in the DB. Refusal → return without mutations.
 
-## Workflow (порядок применения)
+## Workflow (order of application)
 
-1. **Найди денежные пути.** Grep по handler'ам/функциям: charge, debit, credit, grant, refund, invoice, balance, promo, referral, quota, limit. Отметь каждый путь списания/начисления.
-2. **Проверь идемпотентность.** У каждого мутатора есть ключ операции + флаг credited + early return? Нет → добавь. Тест: прогнать дважды → второй no-op.
-3. **Проверь атомарность.** RMW под lock/транзакцией? Инкременты лимитов — одним SQL с WHERE-ограничением? SQLite — timeout + busy_timeout + WAL?
-4. **Проверь порядок и гейты.** Списание в одной функции (free→bonus→paid)? Hard gate ДО дорогого вызова? Charge после успеха, не на ошибке?
-5. **Проверь логирование.** Каждая мутация логируется одной строкой с id субъекта и amount? grep по user_id восстанавливает историю? Нет silent except на money path?
-6. **Проверь границы и отказы.** Rejected-операция не создаёт записей? Структурированные причины (ok, reason_code, value)? Cap=0 = unlimited явно?
-7. **Проверь промо/рефералки.** Soft delete? Compound PK на повтор? no-self-deal? бонус только new accounts?
-8. **Напиши/обнови тесты.** double-submit, error-no-debit, reject-no-side-effects, cap edge, abuse case. Имена = спека.
+1. **Find the money paths.** Grep the handlers/functions: charge, debit, credit, grant, refund, invoice, balance, promo, referral, quota, limit. Mark each deduction/credit path.
+2. **Check idempotency.** Does each mutator have an operation key + credited flag + early return? No → add it. Test: run twice → second is a no-op.
+3. **Check atomicity.** RMW under lock/transaction? Limit increments with a single SQL with a WHERE constraint? SQLite — timeout + busy_timeout + WAL?
+4. **Check order and gates.** Deduction in one function (free→bonus→paid)? Hard gate BEFORE the expensive call? Charge after success, not on error?
+5. **Check logging.** Is each mutation logged in one line with the subject id and amount? Does grep by user_id reconstruct the history? No silent except on the money path?
+6. **Check boundaries and refusals.** Does a rejected operation create no records? Structured reasons (ok, reason_code, value)? Cap=0 = unlimited explicitly?
+7. **Check promo/referrals.** Soft delete? Compound PK on repeats? no-self-deal? bonus only for new accounts?
+8. **Write/update tests.** double-submit, error-no-debit, reject-no-side-effects, cap edge, abuse case. Names = spec.
 
-## Чеклист ревью money-кода
+## Money-code review checklist
 
-- [ ] double-submit → баланс не изменился дважды (тест)
-- [ ] ошибка провайдера → списания нет (тест)
-- [ ] каждая мутация логируется с id субъекта и amount
-- [ ] нет except: pass на money path
-- [ ] RMW под lock/транзакцией
-- [ ] порядок списания — один алгоритм в одном месте (free→bonus→paid)
-- [ ] rejected-операция не создала строк в БД (тест)
-- [ ] у каждого лимита warning-лог при достижении
+- [ ] double-submit → balance not changed twice (test)
+- [ ] provider error → no debit (test)
+- [ ] every mutation logged with subject id and amount
+- [ ] no except: pass on the money path
+- [ ] RMW under lock/transaction
+- [ ] deduction order — one algorithm in one place (free→bonus→paid)
+- [ ] rejected operation created no rows in the DB (test)
+- [ ] every limit has a warning log when reached

@@ -1,24 +1,24 @@
-# Design: coding-kit v2 — «тонкий умный кит»
+# Design: coding-kit v2 — "thin smart kit"
 
-> Брейншторм 2026-08-19. Статус: утверждён, в реализации.
-> Решения пользователя: (1) личное → публичное позже, (2) «умность» = все 5 осей, (3) тонкий кит доверяет харнесу, (4) память → профиль юзера.
+> Brainstorm 2026-08-19. Status: approved, in implementation.
+> User decisions: (1) personal → public later, (2) "smartness" = all 5 axes, (3) thin kit trusts the harness, (4) memory → user profile.
 
-## 1. Галантность
+## 1. Deference
 
-Тонкий кит доверяет харнесу. Максимально распределёнными скилами полагается харнесу — но так как кит работает в 4 среды (OMP, Antigravity, Hermes, Gemini CLI), часть этих скилов всё же включаем в кит для не-OMP сред.
+The thin kit trusts the harness. For maximally distributed skills it relies on the harness — but since the kit runs in 4 environments (OMP, Antigravity, Hermes, Gemini CLI), part of those skills we still bundle into the kit for non-OMP environments.
 
-## 2. Память — отдельно от китов (профиль юзера)
+## 2. Memory — separate from kits (user profile)
 
 ```
-C:/Users/<user>/.memory/          ← физическая память (Wiki + db + движок)
-C:/Users/<user>/Desktop/memory    → junction → ~/.memory (совместимость с ../memory у китов)
+C:/Users/<user>/.memory/          ← physical memory (Wiki + db + engine)
+C:/Users/<user>/Desktop/memory    → junction → ~/.memory (compatibility with kits' ../memory)
 ```
 
-Бэкап на git: `~/.memory` — отдельный репозиторий. Базы — генерируемые (db/*.db gitignored).
+Git backup: `~/.memory` is a separate repository. Databases are generated (db/*.db gitignored).
 
-## 3. Методология: свой card + obra depth
+## 3. Methodology: own card + obra depth
 
-**Оркестратор: наш `superpowers`** (5-фазовый цикл). Как слои — точечные obra-скилы для каждой фазы:
+**Orchestrator: our `superpowers`** (5-phase cycle). As layers — pointed obra skills for each phase:
 
 - **Plan** → `brainstorming`, `writing-plans`
 - **Execute** → `executing-plans`, `dispatching-parallel-agents`, `subagent-driven-development`
@@ -26,30 +26,30 @@ C:/Users/<user>/Desktop/memory    → junction → ~/.memory (совместим
 - **Debug** → `systematic-debugging`
 - **Git** → `using-git-worktrees`, `finishing-a-development-branch`
 
-**Не берём:** их `using-superpowers` bootstrap, их субагентные скилы переносимы — берём с адаптацией памяти (`~/...` → `../../.memory`).
+**We don't take:** their `using-superpowers` bootstrap; their subagent skills are portable — we take them with memory adaptation (`~/...` → `../../.memory`).
 
-## 4. Душа — AGENTS.md
+## 4. Soul — AGENTS.md
 
-Реструктурировать в 5 секций (см. ниже). Агент читает душу, всё длинное — в скиллы.
+Restructure into 5 sections (see below). The agent reads the soul; anything long goes into skills.
 
-## 5. Чего НЕ делаем (YAGNI)
+## 5. What we DON'T do (YAGNI)
 
-- Свой runtime/MCP/демоны — харнес
-- Семантика/векторы поверх FTS — личные объёмы покрыты триграммами
-- multimodel-judge-панели — дорого, OMP субагентов покроет
-- Перевод тел на английский сейчас, лицензии — при публикации
+- Our own runtime/MCP/daemons — the harness
+- Semantics/vectors on top of FTS — personal volumes are covered by trigrams
+- multimodel-judge panels — expensive, OMP subagents will cover it
+- Translating bodies to English now, licenses — at publication
 
 ## 6. Roadmap
 
-1. Импорт 11 obra-скилов (адаптация путей памяти)
-2. AGENTS.md → душа
-3. OPS/BOOT консистентность с душой
-4. Чистка: my-skill, дубли TDD-скилов
-5. Trap-suite evals: сценарии + прогон на модели
-6. Финальная верификация
+1. Import 11 obra skills (memory-path adaptation)
+2. AGENTS.md → soul
+3. OPS/BOOT consistency with the soul
+4. Cleanup: my-skill, TDD skill duplicates
+5. Trap-suite evals: scenarios + model run
+6. Final verification
 
-## 7. Критерии готовности
+## 7. Readiness criteria
 
-- Все 4 среды находят память (~/.memory) — smoke прошёл
-- Obra-скилы загружаются, пути памяти работают
-- AGENTS.md читается как «душа» — agent-vanilla отвечает так же осмысленно
+- All 4 environments find the memory (~/.memory) — smoke passed
+- Obra skills load, memory paths work
+- AGENTS.md reads as a "soul" — agent-vanilla answers just as meaningfully

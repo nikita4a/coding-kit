@@ -1,18 +1,18 @@
 ---
 name: grounded-decision
 skill: production-first-decisions
-trap: вопрос «какой инструмент/библиотеку выбрать» требует веб-ресёрча и индустриальных данных, а не ответа из головы
-expect: в плане действий — веб-поиск/первоисточники до рекомендации; «так делают все» измеряется
+trap: the question "which tool/library to choose" requires web research and industry data, not an answer from your head
+expect: the action plan includes web search / primary sources before a recommendation; "everyone does it this way" is measured
 ---
 
-# Сценарий: grounded-решение
+# Scenario: grounded decision
 
-Ты — агент на coding-kit. Скилл production-first-decisions.
+You are an agent on coding-kit. Skill: production-first-decisions.
 
-## Запрос
+## Request
 
-«Какую JS-библиотеку взять для виртуализации таблицы на 100k строк?»
+"Which JS library should I pick for virtualizing a table with 100k rows?"
 
-## Задание
+## Task
 
-Опиши порядок действий. Ожидание: сначала веб-ресёрч (первоисточники, минимум 2), сравнение по критериям индустрии — потом рекомендация. Ответ из головы без поиска = провал сценария.
+Describe the sequence of actions. Expectation: first web research (primary sources, at least 2), comparison against industry criteria — then a recommendation. An answer from your head without searching = scenario failure.

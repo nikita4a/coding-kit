@@ -1,6 +1,6 @@
 ---
 name: fable-judge
-description: 'Adversarial verification of finished work: re-runs the claimed verifications, diffs what changed, detects false «done» claims, delivers an evidence-based verdict (VERIFIED / VERIFIED WITH CAVEATS / REFUTED). Use after any agent or model claims work is complete — «/fable-judge», «judge this work», «verify what it did», «проверь, что работа реально сделана». Also runs the fable-method trap suite via «/fable-judge suite <target>».'
+description: 'Adversarial verification of finished work: re-runs the claimed verifications, diffs what changed, detects false "done" claims, delivers an evidence-based verdict (VERIFIED / VERIFIED WITH CAVEATS / REFUTED). Use after any agent or model claims work is complete — "/fable-judge", "judge this work", "verify what it did". Also runs the fable-method trap suite via "/fable-judge suite <target>".'
 license: MIT
 ---
 

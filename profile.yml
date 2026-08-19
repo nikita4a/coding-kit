@@ -1,11 +1,11 @@
-# profile.yml — Coding Agent Kit manifest (v1.0)
+# profile.yml — Coding Agent Kit manifest (v2)
 # Single source of truth: paths, skills, adapters.
 # Superpowers: plan → TDD → implement → verify → report.
 # YAGNI: delete weightless code.
 
-version: "1.0"
+version: "2.1"
 name: coding-agent-kit
-description: Coding Agent OS — superpowers, YAGNI, TDD, кросс-чатовая память.
+description: Coding Agent OS — superpowers, YAGNI, TDD, cross-chat memory, trap-suite evals.
 
 core:
   ops:           OPS.md
@@ -15,9 +15,14 @@ core:
 
 paths:
   skills:        skills
-  wiki:          Wiki
-  db_tools:      db-tools
+  wiki:          C:/Users/<user>/.memory/Wiki   # memory lives outside the kit: ~/.memory
+  db_tools:      C:/Users/<user>/.memory/db-tools
+  adapters:      adapters
+  scripts:       scripts
+  eval:          eval
+
 memory:
+  root: "C:/Users/<user>/.memory"
   engine: db-tools/search.py
   findings: db-tools/findings.py
   repomap: db-tools/repomap.py
@@ -30,12 +35,13 @@ skills:
   format: SKILL.md + frontmatter
   frontmatter_required: true
   required_keys: [name, description]
+  language: English bodies, bilingual user-triggers
   always_on:
     - superpowers               # plan → TDD → implement → verify → report
-    - yagni                     # минимализм, удаление лишнего
-    - engineering-persona       # прямой инженерный тон
-    - fable-method              # сложные задачи
-    - dev-wiki                  # кросс-чатовая память
+    - yagni                     # minimalism, delete weightless code
+    - engineering-persona       # direct engineering tone
+    - fable-method              # complex tasks
+    - dev-wiki                  # cross-chat memory
   domain:
     - code-review-and-quality
     - test-driven-development
@@ -57,6 +63,18 @@ skills:
     - debug-incident-protocol
     - fable-judge
     - windows-encoding-fixes
+    # obra/superpowers (MIT) — phase granularity
+    - brainstorming
+    - writing-plans
+    - executing-plans
+    - subagent-driven-development
+    - dispatching-parallel-agents
+    - verification-before-completion
+    - requesting-code-review
+    - receiving-code-review
+    - systematic-debugging
+    - using-git-worktrees
+    - finishing-a-development-branch
 
 adapters:
   - platform: gemini
@@ -65,6 +83,10 @@ adapters:
     target: adapters/antigravity.md
   - platform: universal
     target: adapters/UNIVERSAL.md
+
+eval:
+  scenarios: eval/scenarios
+  runner: eval/runner.py
 
 integrity:
   watch:

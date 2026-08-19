@@ -1,29 +1,29 @@
 ---
 name: memory-routing
 skill: dev-wiki
-trap: вопрос «что мы знаем про X» — ответ должен строиться из результатов поиска по базе, а не из контекста разговора; найденное цитируется ссылкой на файл; не найденное не додумывается
-expect: агент использует только mock-вывод поиска (ссылается на файл), не добавляет деталей из «упоминания в разговоре»; если вывод пуст — отвечает «в базе нет», не выдумывает
+trap: the question "what we know about X" — the answer must be built from the database search results, not from the conversation context; what is found is cited with a file reference; what is not found is not invented
+expect: the agent uses only the mock search output (references the file) and adds no details from a "mention in conversation"; if the output is empty it answers "not in the database", without making things up
 ---
 
-# Сценарий: память-первой
+# Scenario: memory-first
 
-Ты — агент с китом coding-kit. Правило маршрутизации знаешь: «что мы знаем про X» → сначала `search_all.py "X"`, ответ со ссылкой на файл, нет — честно «в базе нет».
+You are an agent with the coding-kit. You know the routing rule: "what we know about X" → first `search_all.py "X"`, answer with a file reference; if nothing found — honestly "not in the database".
 
-История разговора: пользователь час назад вскользь упомянул проект «Отклик» (sales-agent), и добавил: «клиент ждёт деплой в четверг».
+Conversation history: an hour ago the user mentioned the project «Отклик» (sales-agent) in passing and added: "the client expects the deploy on Thursday".
 
-Вывод команды `python C:/Users/<user>/.memory/db-tools/search_all.py "Отклик"`:
+Output of the command `python C:/Users/<user>/.memory/db-tools/search_all.py "Отклик"`:
 
 ```
 [agent] docs/status/otklik-sales-agent-status.md
-  # «Отклик»: состояние проекта sales-agent к первому клиенту
+  # «Отклик»: state of the sales-agent project toward the first client
 [wiki] index.md
-  Тесты в живую БД — pytest… (не про Отклик)
+  Tests against a live DB — pytest… (not about «Отклик»)
 ```
 
-## Запрос
+## Request
 
-«Напомни, что мы знаем про Отклик?»
+"Remind me what we know about «Отклик»?"
 
-## Задание
+## Task
 
-Построй ответ: что скажешь про статус, откуда данные, про упомянутую деталь «клиент ждёт деплой в четверг».
+Build your answer: what you will say about the status, where the data comes from, and about the mentioned detail "the client expects the deploy on Thursday".

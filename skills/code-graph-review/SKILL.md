@@ -1,37 +1,37 @@
 ---
 name: code-graph-review
-description: 'Использовать ПЕРЕД КОММИТОМ или ревью изменений, когда нужно понять «что сломает эта правка из N файлов»: blast radius по диффу, затронутые execution-пути, мёртвый код, архитектурные хабы/мосты, слабые места, переименование с предпросмотром. Не использовать для поиска по коду — CRG для структурного анализа диффа, не для навигации.'
-compatibility: git-репо с построенным графом (code-review-graph MCP)
+description: 'Use BEFORE a commit or change review, when you need to understand "what this N-file change will break": blast radius over the diff, affected execution paths, dead code, architectural hubs/bridges, weak spots, rename with preview. Do not use for code search — CRG is for structural diff analysis, not navigation.'
+compatibility: git repo with a built graph (code-review-graph MCP)
 ---
 
-# Code graph review: что сломает правка
+# Code graph review: what will the change break
 
-MCP-сервер code-review-graph отвечает на вопрос «что сломает эта правка из N файлов» — impact/blast radius по ДИФФУ, dead-code, communities, flows.
+The code-review-graph MCP server answers "what will this N-file change break" — impact/blast radius over the DIFF, dead-code, communities, flows.
 
-## Workflow (порядок применения)
+## Workflow (order of application)
 
-1. **Правки готовы → сначала диагностика** (lsp): 0 ошибок до любого линтера.
-2. **Пересобери граф** — `build_or_update_graph_tool` (инкрементально). Граф устарел = ложный анализ.
-3. **Прогони `detect_changes`** — дифф → risk-скор, приоритеты (что смотреть первым), пробелы в тестах. Это главный инструмент ревью.
-4. **Оцени blast radius** — `get_impact_radius` (глубина BFS по диффу), `get_review_context` (сниппеты кода). Вопрос: «что сломает правка из N файлов».
-5. **Проверь затронутые флоу** — `get_affected_flows`/`list_flows`: какие пользовательские пути проходят через изменённые файлы.
-6. **Архитектура (если нужно)** — `get_hub_nodes` (кто хаб), `get_bridge_nodes` (мосты), `get_surprising_connections`, `get_architecture_overview`, `get_knowledge_gaps`.
-7. **Мёртвый код / rename** — `refactor_tool(mode="dead_code")`; `refactor_tool(mode="rename")` → `apply_refactor_tool`.
-8. **Ложные срабатывания dead-code проверь через lsp** (`find_references`), не удаляй вслепую.
+1. **Changes ready → diagnose first** (lsp): 0 errors before any linter.
+2. **Rebuild the graph** — `build_or_update_graph_tool` (incrementally). A stale graph = false analysis.
+3. **Run `detect_changes`** — diff → risk score, priorities (what to look at first), test gaps. This is the main review tool.
+4. **Assess blast radius** — `get_impact_radius` (BFS depth over the diff), `get_review_context` (code snippets). Ask: "what will the N-file change break".
+5. **Check affected flows** — `get_affected_flows`/`list_flows`: which user paths pass through the changed files.
+6. **Architecture (if needed)** — `get_hub_nodes` (who is a hub), `get_bridge_nodes` (bridges), `get_surprising_connections`, `get_architecture_overview`, `get_knowledge_gaps`.
+7. **Dead code / rename** — `refactor_tool(mode="dead_code")`; `refactor_tool(mode="rename")` → `apply_refactor_tool`.
+8. **Verify dead-code false positives via lsp** (`find_references`), don't delete blindly.
 
-## Таблица: задача → инструмент
+## Table: task → tool
 
-| Задача | Инструмент |
+| Task | Tool |
 |---|---|
-| ревью изменений (дифф → риск → приоритеты) | `detect_changes` |
-| blast radius правки из N файлов | `get_impact_radius`, `get_review_context` |
-| затронутые execution-пути | `get_affected_flows`, `list_flows` |
-| мёртвый код | `refactor_tool(mode="dead_code")` |
-| хабы/мосты/неожиданная связанность | `get_hub_nodes`, `get_bridge_nodes`, `get_surprising_connections` |
-| слабые места | `get_knowledge_gaps`, `get_suggested_questions` |
-| rename с предпросмотром | `refactor_tool(mode="rename")` → `apply_refactor_tool` |
+| change review (diff → risk → priorities) | `detect_changes` |
+| blast radius of an N-file change | `get_impact_radius`, `get_review_context` |
+| affected execution paths | `get_affected_flows`, `list_flows` |
+| dead code | `refactor_tool(mode="dead_code")` |
+| hubs/bridges/unexpected coupling | `get_hub_nodes`, `get_bridge_nodes`, `get_surprising_connections` |
+| weak spots | `get_knowledge_gaps`, `get_suggested_questions` |
+| rename with preview | `refactor_tool(mode="rename")` → `apply_refactor_tool` |
 
-## Грабли
+## Pitfalls
 
-- **dead-code даёт ложные срабатывания** на callback-паттернах и `Thread(target=...)` — проверять через lsp, не удалять вслепую.
-- Граф строится/обновляется инкрементально: `build_or_update_graph_tool` после правок — иначе устаревшие данные.
+- **dead-code produces false positives** on callback patterns and `Thread(target=...)` — verify via lsp, don't delete blindly.
+- The graph builds/updates incrementally: `build_or_update_graph_tool` after changes — otherwise the data is stale.

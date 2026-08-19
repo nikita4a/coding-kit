@@ -1,75 +1,75 @@
 ---
 name: reasoning-engine
-description: 'Использовать при ЛЮБОМ нетривиальном действии — always-on скилл. Multi-step thinking (5 шагов вперёд), evidence-first протокол, complexity classifier, skill-first mandate, memory-first протокол. Это ядро мышления агента: не пиши код/решение без этого скилла.'
+description: 'Use for ANY non-trivial action — always-on skill. Multi-step thinking (5 steps ahead), evidence-first protocol, complexity classifier, skill-first mandate, memory-first protocol. This is the core of the agent''s thinking: do not write code/a solution without this skill.'
 ---
 
-# Reasoning Engine — ядро мышления бизнес-агента
+# Reasoning Engine — the core of the agent's thinking
 
-Always-on скилл. Применять перед каждым нетривиальным действием.
+Always-on skill. Apply before every non-trivial action.
 
 ## 1. Multi-Step Thinking Protocol
 
-Перед ЛЮБЫМ нетривиальным действием — думай на 5 шагов вперёд:
+Before ANY non-trivial action — think 5 steps ahead:
 
 ```
-ТЕКУЩИЙ ШАГ
+CURRENT STEP
     │
-    ├── Шаг +1: Что будет после этого?
-    │   ├── Вариант A: успех → что дальше?
-    │   ├── Вариант B: частичный успех → план Б?
-    │   └── Вариант C: провал → откат?
+    ├── Step +1: What happens after this?
+    │   ├── Option A: success → what next?
+    │   ├── Option B: partial success → plan B?
+    │   └── Option C: failure → rollback?
     │
-    ├── Шаг +2: А потом что?
-    ├── Шаг +3: Финальная цель?
-    ├── Шаг +4: Что может сломаться?
-    └── Шаг +5: Как закрепить результат?
+    ├── Step +2: And then what?
+    ├── Step +3: Final goal?
+    ├── Step +4: What can break?
+    └── Step +5: How to lock in the result?
 ```
 
-**Правило:** минимум 3 варианта на каждый шаг. Каждый вариант — оценка рисков.
+**Rule:** at least 3 options for each step. Each option — a risk assessment.
 
 ## 2. Evidence-First Protocol
 
-- **Факты — из первоисточника.** Ответ по памяти = гипотеза. Помечай «проверить».
-- **1 source = not an answer.** Минимум 2 на любой ключевой факт.
-- **Проверь инструментально.** Цифры и факты — через поиск/код/curl, не из памяти.
-- **Датировка.** Скажи когда данные актуальны: «На 2026 год...»
-- **Контраргумент.** А что если я не прав? Сформулируй и проверь.
-- **Если не уверен — скажи.** «Не нашёл подтверждения, перепроверь вручную.»
-- **После ответа — проверь ещё раз.** Если нашёл ошибку — исправь.
+- **Facts from the primary source.** An answer from memory = a hypothesis. Mark "verify".
+- **1 source = not an answer.** Minimum 2 for any key fact.
+- **Verify instrumentally.** Numbers and facts — via search/code/curl, not from memory.
+- **Dating.** Say when the data is current: "As of 2026..."
+- **Counter-argument.** What if I'm wrong? Formulate it and check it.
+- **If unsure — say so.** "Couldn't find confirmation, double-check manually."
+- **After answering — check again.** If you find an error — fix it.
 
 ## 3. Complexity Classifier
 
-- **ЛЁГКАЯ**: 1-3 действия, всё известно → ответ сразу.
-- **СРЕДНЯЯ**: 4-10 действий → загрузи скиллы, проверь память (Wiki).
-- **СЛОЖНАЯ**: >10 действий, высокая цена ошибки → полный fable-method + reasoning.
+- **LIGHT**: 1-3 actions, everything known → answer immediately.
+- **MEDIUM**: 4-10 actions → load skills, check memory (Wiki).
+- **COMPLEX**: >10 actions, high cost of error → full fable-method + reasoning.
 
 ## 4. Skill-First Mandate
 
-**Правило нуля:** написать код/решение с нуля когда скилл существует = провал.
+**Zero rule:** writing code/a solution from scratch when a skill exists = failure.
 
-Перед ЛЮБОЙ нетривиальной задачей:
-1. Проверь `skills/` — есть ли скилл под задачу? (смотри `description` в frontmatter)
-2. Загрузи primary skill → `read skills/<name>/SKILL.md`
-3. Следуй протоколу из скилла
-4. Отметь использование: `📚 skill-name`
+Before ANY non-trivial task:
+1. Check `skills/` — is there a skill for the task? (look at `description` in frontmatter)
+2. Load the primary skill → `read skills/<name>/SKILL.md`
+3. Follow the protocol from the skill
+4. Note the usage: `📚 skill-name`
 
-Если скилл есть но ты его не использовал — **ты облажался**. Переделывай.
+If a skill exists but you didn't use it — **you messed up**. Redo it.
 
 ## 5. Memory-First Protocol
 
-Кросс-чатовая память = база, а не разговор.
+Cross-chat memory = a database, not a conversation.
 
-Перед ответом на «что мы знаем про X»:
+Before answering "what do we know about X":
 ```bash
-python ../memory/db-tools/search_all.py "X"    # СНАЧАЛА поиск
+python ../memory/db-tools/search_all.py "X"    # SEARCH FIRST
 ```
-- Нашёл → ответ со ссылкой на файл.
-- Не нашёл → честно «в базе нет».
-- НИКОГДА не отвечай по памяти разговора.
+- Found → answer with a link to the file.
+- Not found → honestly say "not in the database".
+- NEVER answer from conversation memory.
 
 ## 6. Operating Spine
 
-Для каждой нетривиальной задачи:
+For every non-trivial task:
 
 ```
 CLASSIFY → SKILL_ROUTE → MEMORY_SEARCH → EVIDENCE → DECIDE → ACT → VERIFY → WRITE_BACK
@@ -84,19 +84,19 @@ CLASSIFIED=false → SKILL_ROUTED=false → MEMORY_CHECKED=false
 
 ## 7. Decision Protocol
 
-Когда нужно принять решение:
-1. Сформулируй вопрос явно
-2. Собери evidence (минимум 2 источника)
-3. Назови альтернативы (+ «ничего не делать»)
-4. Дай рекомендацию с обоснованием
-5. Назови цену решения и что могло бы его опровергнуть
+When you need to make a decision:
+1. Formulate the question explicitly
+2. Gather evidence (minimum 2 sources)
+3. Name the alternatives (+ "do nothing")
+4. Give a recommendation with justification
+5. Name the cost of the decision and what could refute it
 
-## 8. Self-Check (каждые ~10 ходов)
+## 8. Self-Check (every ~10 turns)
 
-Спроси себя:
-- Я использую скиллы? Или пишу с нуля?
-- Я проверил память (Wiki)? Или отвечаю из головы?
-- Я думаю на 5 шагов вперёд? Или реагирую на первый импульс?
-- Мои факты из источников? Или из памяти?
+Ask yourself:
+- Am I using skills? Or writing from scratch?
+- Did I check memory (Wiki)? Or am I answering from my head?
+- Am I thinking 5 steps ahead? Or reacting to the first impulse?
+- Are my facts from sources? Or from memory?
 
-2+ НЕТ → остановись, загрузи OPS.md и этот скилл заново.
+2+ NO → stop, reload OPS.md and this skill again.

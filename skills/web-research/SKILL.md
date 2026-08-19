@@ -1,45 +1,45 @@
 ---
 name: web-research
-description: 'Использовать, когда нужен факт из внешнего мира: «разберись», «узнай», «что говорят про», «как работает», «сравни», «найди информацию». Протокол: веб-поиск → первоисточники → кросс-проверка → ответ с источниками. Не использовать для поиска в базе знаний (business-wiki) и для фактов, которые уже есть в Wiki.'
+description: 'Use when you need a fact from the outside world: "find out", "look up", "what do they say about", "how it works", "compare", "find information". Protocol: web search → primary sources → cross-check → answer with sources. Do not use for searching the knowledge base (business-wiki) or for facts already in the Wiki.'
 ---
 
-# Web Research — факты из внешнего мира
+# Web Research — facts from the outside world
 
 ## Workflow
 
-1. **Сформулируй поисковый запрос.** Что именно нужно узнать? 2-3 варианта формулировки.
-2. **Веб-поиск.** Используй доступные инструменты (web_search, curl, browser).
-3. **Первоисточники, не пересказы.** Официальные доки > статьи > форумы. Не верь пересказам без ссылки на оригинал.
-4. **Кросс-проверка.** Минимум 2 независимых источника на каждый ключевой факт. 1 source = not an answer.
-5. **Датировка.** Когда данные актуальны? «На август 2026...»
-6. **Ответ с источниками.** Каждый факт — со ссылкой. Непроверенное помечать «проверить».
+1. **Formulate your search query.** What exactly do you need to find out? 2-3 wordings.
+2. **Web search.** Use the available tools (web_search, curl, browser).
+3. **Primary sources, not retellings.** Official docs > articles > forums. Don't trust retellings without a link to the original.
+4. **Cross-check.** Minimum 2 independent sources for each key fact. 1 source = not an answer.
+5. **Dating.** When is the data current? "As of August 2026..."
+6. **Answer with sources.** Every fact with a link. Mark unverified claims "verify".
 
-## Глубина ресёрча
+## Research depth
 
-- **Быстрый факт** (дата, цифра, определение) — 2-3 источника, один заход.
-- **Средний ресёрч** (сравнение, «как работает») — 5-7 источников, первоисточники + экспертные статьи.
-- **Глубокий ресёрч** (стратегия, выбор технологии, «что говорят про») — 10+ источников, ширина → глубина: эталонные репо, PR, issues, ADR, официальные гайды.
+- **Quick fact** (date, number, definition) — 2-3 sources, one pass.
+- **Medium research** (comparison, "how it works") — 5-7 sources, primary sources + expert articles.
+- **Deep research** (strategy, technology choice, "what do they say about") — 10+ sources, breadth → depth: canonical repos, PRs, issues, ADRs, official guides.
 
-## Что искать
+## What to look for
 
-| Тип информации | Где искать |
+| Type of information | Where to look |
 |---------------|-----------|
-| API / библиотека | Официальная документация, GitHub README, исходники |
-| Практика индустрии | GitHub issues, ADR, engineering blogs, Thoughtworks Tech Radar |
-| Баг / ошибка | GitHub issues, Stack Overflow, официальный bug tracker |
-| Сравнение инструментов | Бенчмарки, статьи практиков, Hacker News обсуждения |
-| Регуляции / законы | Официальные источники (.gov, правовые базы) |
+| API / library | Official documentation, GitHub README, source code |
+| Industry practice | GitHub issues, ADRs, engineering blogs, Thoughtworks Tech Radar |
+| Bug / error | GitHub issues, Stack Overflow, official bug tracker |
+| Tool comparison | Benchmarks, practitioner articles, Hacker News discussions |
+| Regulations / laws | Official sources (.gov, legal databases) |
 
-## Ответ
+## Answer
 
-- **Результат первой строкой.** Что найдено, коротко.
-- **Детали с источниками.** Каждый факт — со ссылкой.
-- **Оговорки.** Что не проверено, что под вопросом.
-- **Предложить сохранить.** «Сохранить это в Wiki?»
+- **Result first line.** What was found, briefly.
+- **Details with sources.** Every fact with a link.
+- **Caveats.** What wasn't verified, what's in question.
+- **Offer to save.** "Save this in the Wiki?"
 
 ## Gotchas
 
-- Первая ссылка в поиске — не всегда первоисточник. Проверь кто автор и откуда данные.
-- SEO-статьи (Medium, Dev.to) часто пересказывают документацию с ошибками. Иди в оригинал.
-- Дата публикации: статья 2023 года про технологию может быть устаревшей.
-- Не используй веб-поиск для фактов, которые уже есть в Wiki — сначала `db-tools/search.py`.
+- The first link in search results isn't always the primary source. Check who the author is and where the data comes from.
+- SEO articles (Medium, Dev.to) often retell documentation with errors. Go to the original.
+- Publication date: a 2023 article about a technology may be outdated.
+- Don't use web search for facts already in the Wiki — first `db-tools/search.py`.

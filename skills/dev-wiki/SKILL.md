@@ -1,69 +1,69 @@
 ---
 name: dev-wiki
-description: 'Always-on. Кросс-чатовая память для разработки: запись решений, ошибок, паттернов в глобальную Wiki (../memory). Использовать при «запиши», «сохрани», «запомни», «что мы знаем про X». Иерархия: переносимое → ../memory/Wiki/; проектное → WORK/<проект>/docs/. Цикл: файл → index.md → log.md → python ../memory/db-tools/build.py → lint.'
+description: 'Always-on. Cross-chat development memory: record decisions, errors, and patterns in the global Wiki (../memory). Use on "record"/"save"/"remember"/"запиши"/"сохрани"/"запомни" or "what do we know about X"/"напомни". Hierarchy: portable → ../memory/Wiki/; project-specific → WORK/<project>/docs/. Cycle: file → index.md → log.md → python ../memory/db-tools/build.py → lint.'
 ---
 
-# Dev Wiki — кросс-чатовая память разработчика
+# Dev Wiki — cross-chat developer memory
 
-Always-on скилл. База знаний: решения, баги, паттерны, архитектурные решения.
-Память вынесена в `../memory/` (иерархия global + per-project).
+Always-on skill. Knowledge base: decisions, bugs, patterns, architectural decisions.
+Memory lives in `../memory/` (global + per-project hierarchy).
 
-## Правило границы
+## Boundary rule
 
-| Знание | Куда | Индекс |
-|--------|------|--------|
-| **Переносимое** (паттерны, уроки, решения) | `../memory/Wiki/<тип>/` | `python ../memory/db-tools/build.py` |
-| **Проектное** (статус, конфиги, контекст) | `WORK/<проект>/docs/` | `python ../memory/db-tools/build.py -r <корень> -o ../memory/db/<имя>.db` |
+| Knowledge | Where | Index |
+|-----------|-------|-------|
+| **Portable** (patterns, lessons, decisions) | `../memory/Wiki/<type>/` | `python ../memory/db-tools/build.py` |
+| **Project-specific** (status, configs, context) | `WORK/<project>/docs/` | `python ../memory/db-tools/build.py -r <root> -o ../memory/db/<name>.db` |
 
-Знание живёт/умирает с проектом → проект; переносимо между проектами → глобальная Wiki.
+Knowledge lives/dies with the project → project; portable across projects → global Wiki.
 
-## Типы записей (глобальная Wiki)
+## Record types (global Wiki)
 
-| Тип | Папка | Когда |
-|-----|-------|-------|
-| `reference` | `../memory/Wiki/reference/` | Факт, документация, знание |
-| `howto` | `../memory/Wiki/howto/` | Инструкция, guide |
-| `error` | `../memory/Wiki/errors/` | Баг, инцидент, lesson learned |
-| `decision` | `../memory/Wiki/decisions/` | ADR, архитектурное решение |
-| `idea` | `../memory/Wiki/ideas/` | Идея |
+| Type | Folder | When |
+|------|--------|------|
+| `reference` | `../memory/Wiki/reference/` | Fact, documentation, knowledge |
+| `howto` | `../memory/Wiki/howto/` | Instruction, guide |
+| `error` | `../memory/Wiki/errors/` | Bug, incident, lesson learned |
+| `decision` | `../memory/Wiki/decisions/` | ADR, architectural decision |
+| `idea` | `../memory/Wiki/ideas/` | Idea |
 
-## Workflow — сохранить (глобальное)
+## Workflow — save (global)
 
-1. Определить тип → папка в `../memory/Wiki/`.
-2. Создать файл `../memory/Wiki/<тип>/<slug>.md` с frontmatter:
+1. Determine the type → folder in `../memory/Wiki/`.
+2. Create file `../memory/Wiki/<type>/<slug>.md` with frontmatter:
    ```yaml
    ---
    type: reference
-   title: "Заголовок"
-   description: "О чём"
+   title: "Title"
+   description: "About what"
    date: 2026-08-15
-   tags: [категория, тема]
+   tags: [category, topic]
    ---
    ```
-3. Обновить `../memory/Wiki/index.md`.
-4. Дописать `../memory/Wiki/log.md`.
+3. Update `../memory/Wiki/index.md`.
+4. Append to `../memory/Wiki/log.md`.
 5. `python ../memory/db-tools/build.py`
 6. `python ../memory/db-tools/lint_wiki.py`
-7. Важный вывод → `python ../memory/db-tools/findings.py add "тема" --text "вывод" --source путь`
+7. Important conclusion → `python ../memory/db-tools/findings.py add "topic" --text "conclusion" --source path`
 
-## Workflow — поиск
+## Workflow — search
 
 ```bash
-python ../memory/db-tools/search_all.py "запрос"          # все базы разом
-python ../memory/db-tools/search_all.py "запрос" --substring   # склонения/подстроки
+python ../memory/db-tools/search_all.py "query"          # all databases at once
+python ../memory/db-tools/search_all.py "query" --substring   # declensions/substrings
 ```
 
-- Искать по базе, НЕ по памяти разговора.
-- Нашёл → ответ со ссылкой на файл.
-- Не нашёл → «в базе нет».
+- Search the database, NOT conversation memory.
+- Found → answer with a link to the file.
+- Not found → "not in the database".
 
-## Триггеры авто-записи
+## Auto-write triggers
 
-- «Запиши», «сохрани», «запомни» → полный цикл.
-- Баг/инцидент → `../memory/Wiki/errors/`.
-- Архитектурное решение → `../memory/Wiki/decisions/`.
-- Новый паттерн → `../memory/Wiki/reference/`.
+- "record", "save", "remember" → full cycle.
+- Bug/incident → `../memory/Wiki/errors/`.
+- Architectural decision → `../memory/Wiki/decisions/`.
+- New pattern → `../memory/Wiki/reference/`.
 
-## Категории тегов
+## Tag categories
 
 `architecture`, `engineering`, `security`, `performance`, `devops`, `testing`, `frontend`, `backend`, `database`, `api`

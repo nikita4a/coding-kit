@@ -1,46 +1,46 @@
 ---
 name: production-first-decisions
-description: 'Использовать при ЛЮБОМ решении «как делать»: выбор подхода/инструмента/библиотеки/стандарта, проектирование, «а что если», внедрение нового механизма — когда ответ не должен быть из головы. Покрывает: порядок продакшен-первым (сформулируй вопрос → web search как в индустрии → сверь гипотезу → делай по индустрии), критерий «так делают все» (измеряется, не чувствуется), тест-перед-интеграцией spike→ADR, глубину ресёрча по задаче, три принципа решений DRY/KISS/YAGNI.'
-compatibility: любой проект
+description: 'Use for ANY "how to do it" decision: choosing an approach/tool/library/standard, designing, "what if", adopting a new mechanism — when the answer must not come out of your head. Covers: the production-first order (formulate the question → web search as the industry does → verify your hypothesis → do it the industry way), the "everyone does it" criterion (measured, not felt), test-before-integration spike→ADR, research depth per task, and the three decision principles DRY/KISS/YAGNI.'
+compatibility: any project
 ---
 
-# Production-first: решения по индустрии, не из головы
+# Production-first: decisions by industry practice, not from your head
 
-Источник истины — индустрия; знания — гипотезы, пока не проверены.
+The source of truth is the industry; knowledge is a hypothesis until verified.
 
-## Workflow (порядок применения)
+## Workflow (order of application)
 
-1. **Сформулируй вопрос «как это делают в проде?»** — явно, до любых действий.
-2. **Web search**: 5-10 запросов с разных сторон — мануалы, официальные гайды, GitHub, статьи практиков, ADR. Первоисточники, не пересказы.
-3. **Сверь СВОЮ гипотезу с найденным.** Свои знания — только предположение; веб-поиск — источник истины №1. «Подумал» без поиска = догадка, не решение.
-4. **Делай по индустрии.** Критерий готовности решения: «так делают все, а не только я один». Не подтверждён источниками → это гипотеза: проверь поиском до кода.
+1. **Formulate the question "how is this done in production?"** — explicitly, before any action.
+2. **Web search**: 5-10 queries from different angles — manuals, official guides, GitHub, practitioner articles, ADRs. Primary sources, not retellings.
+3. **Cross-check YOUR hypothesis against what you found.** Your own knowledge is only an assumption; web search is source of truth #1. "Thought it through" without searching = a guess, not a decision.
+4. **Do it the industry way.** Readiness criterion for a decision: "everyone does it this way, not just me alone." Not confirmed by sources → it's a hypothesis: verify by search before writing code.
 
-## Тест-перед-интеграцией (spike → ADR)
+## Test-before-integration (spike → ADR)
 
-Новый инструмент/библиотека/подход — СНАЧАЛА замер, ПОТОМ интеграция:
+A new tool/library/approach — FIRST benchmark, THEN integration:
 
-1. **Вопрос:** что проверяем — функциональность, подходящесть под стек?
-2. **Замер в песочнице:** поставить, прогнать реальный кейс, сравнить с альтернативами И с «ничего не делать» (doing nothing — всегда вариант).
-3. **Вывод — записать в Wiki/decisions/:** что выбрали, что отвергли, замеры.
-4. **Интегрировать только после доказательства.** Без замера интеграция = догадка.
+1. **Question:** what are we checking — functionality, fit to the stack?
+2. **Benchmark in a sandbox:** install it, run a real case, compare with alternatives AND with "doing nothing" (doing nothing is always an option).
+3. **Record the conclusion in Wiki/decisions/:** what was chosen, what was rejected, the benchmarks.
+4. **Integrate only after proof.** Without a benchmark, integration is a guess.
 
-## Глубина ресёрча — по задаче
+## Research depth — by task
 
-- **Справка** (синтаксис, команда) — 2-3 источника, один заход.
-- **Решение/выбор** — ГЛУБОКИЙ ресёрч: ширина (5-10 запросов параллельно), потом глубина; эталонные репо, PR, issues, ADR; «так делают все» — измерять (сколько прод-проектов реально), а не чувствовать.
+- **Reference** (syntax, command) — 2-3 sources, one pass.
+- **Decision/choice** — DEEP research: breadth (5-10 queries in parallel), then depth; canonical repos, PRs, issues, ADRs; "everyone does it" — measure (how many production projects actually do), not feel.
 
-## Три принципа решений (фильтр перед кодом)
+## Three decision principles (filter before code)
 
-- **DRY** — одну логику и одно знание в одном месте. Дублирование = два места, которые обязаны меняться вместе.
-- **KISS** — проще вариант, если закрывает задачу. Сложность оправдана, когда простая не справляется, не «на будущее».
-- **YAGNI** — не строить того, чего не просили. «А вдруг пригодится» — недостаточное основание.
+- **DRY** — one piece of logic and one piece of knowledge in one place. Duplication = two places that must change together.
+- **KISS** — the simpler option, if it closes the task. Complexity is justified when the simple one can't cope, not "for the future".
+- **YAGNI** — don't build what wasn't asked for. "Might come in handy" is an insufficient reason.
 
-Решение нарушает хотя бы один принцип и нет явной причины → пересмотреть.
+A decision that violates at least one principle without a clear reason → reconsider.
 
-## Чеклист перед решением
+## Checklist before a decision
 
-- [ ] вопрос «как в проде?» сформулирован
-- [ ] 5-10 запросов с разных сторон, первоисточники
-- [ ] гипотеза сверена с найденным (не «я так думаю»)
-- [ ] новый инструмент — замер в песочнице + doing nothing
-- [ ] вывод записан (что выбрали, что отвергли, почему)
+- [ ] the "how in production?" question is formulated
+- [ ] 5-10 queries from different angles, primary sources
+- [ ] hypothesis cross-checked against what was found (not "I think so")
+- [ ] new tool — benchmarked in sandbox + doing nothing
+- [ ] conclusion recorded (what was chosen, what was rejected, why)

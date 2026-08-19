@@ -1,84 +1,84 @@
 ---
 name: skill-authoring
-description: 'Используй при создании/правке любого скилла: правила frontmatter (name/description), структура папки, бандлинг скриптов, чеклист качества. По спецификации Agent Skills (Hermes-совместимо).'
-compatibility: применимо к skills/ в этом наборе, ~/.hermes/skills, .claude/skills
+description: 'Use when creating/editing any skill: frontmatter rules (name/description), folder structure, script bundling, quality checklist. Per the Agent Skills specification (Hermes-compatible).'
+compatibility: applies to skills/ in this set, ~/.hermes/skills, .claude/skills
 ---
 
-# Как правильно создавать скиллы
+# How to author skills correctly
 
-Свод правил по спецификации Agent Skills + практике. Проверено на живых скиллах.
+A set of rules based on the Agent Skills specification + practice. Verified against real skills.
 
-## 1. Frontmatter (обязательные поля)
+## 1. Frontmatter (required fields)
 
 ```markdown
 ---
 name: my-skill
-description: Use when [триггеры/симптомы/контексты]. [что делает + когда применять]
+description: Use when [triggers/symptoms/contexts]. [what it does + when to apply]
 ---
 ```
 
-| Поле | Правило |
+| Field | Rule |
 |---|---|
-| `name` | ОБЯЗАТЕЛЬНО. 1–64 символа, `a-z0-9` + дефисы. **Должен совпадать с именем папки скилла** |
-| `description` | ОБЯЗАТЕЛЬНО. 1–1024 символа. «Что делает + когда использовать»; включать ключевые слова, по которым агент ищет. НЕ сводка рабочего процесса |
-| `license` | опционально |
-| `compatibility` | 1–500 символов, только если есть требования окружения |
+| `name` | REQUIRED. 1–64 characters, `a-z0-9` + hyphens. **Must match the skill's folder name** |
+| `description` | REQUIRED. 1–1024 characters. «What it does + when to use»; include the keywords the agent searches by. NOT a workflow summary |
+| `license` | optional |
+| `compatibility` | 1–500 characters, only if there are environment requirements |
 
-## 2. Структура каталога
+## 2. Directory structure
 
 ```
 skill-name/
-├── SKILL.md            # обязателен
-├── scripts/            # опционально: исполняемые скрипты
-├── references/         # опционально: детали, «читай при X»
-├── assets/             # опционально
-└── любые другие файлы/папки — разрешены
+├── SKILL.md            # required
+├── scripts/            # optional: executable scripts
+├── references/         # optional: details, «read when X»
+├── assets/             # optional
+└── any other files/folders — allowed
 ```
 
-- Из SKILL.md ссылаться на файлы **относительными путями от корня скилла**.
-- Progressive disclosure: SKILL.md < ~500 строк; детали — в `references/` с указателем «читай это, когда случится X».
+- From SKILL.md reference files with **relative paths from the skill root**.
+- Progressive disclosure: SKILL.md < ~500 lines; details go into `references/` with a pointer «read this when X happens».
 
-## 3. Бандлинг скриптов (scripts/)
+## 3. Script bundling (scripts/)
 
-1. **Сначала проверь готовый инструмент**: `npx`, `uvx`, `pipx`, `bunx` — бери готовое, своё пиши только когда готового нет.
-2. Если бандлишь скрипт — он должен быть **self-contained**: зависимости документируй в SKILL.md или `compatibility`.
-3. **Агентно-безопасный дизайн:**
-   - НИКАКИХ интерактивных промптов — агент зависнет на TTY. Ввод — только аргументами.
-   - `--help` с usage; понятные сообщения об ошибках.
-   - Структурированный вывод: результат в stdout, диагностика в stderr.
-   - Идемпотентность; `--dry-run` для разрушительных операций.
-   - Предсказуемый размер вывода (агенты обрезают ~10–30К символов).
+1. **First check for an existing tool**: `npx`, `uvx`, `pipx`, `bunx` — take an existing one, write your own only when none exists.
+2. If you bundle a script, it must be **self-contained**: document dependencies in SKILL.md or `compatibility`.
+3. **Agent-safe design:**
+   - NO interactive prompts — the agent will hang on a TTY. Input only via arguments.
+   - `--help` with usage; clear error messages.
+   - Structured output: result to stdout, diagnostics to stderr.
+   - Idempotency; `--dry-run` for destructive operations.
+   - Predictable output size (agents truncate ~10–30K characters).
 
-## 4. Лучшие практики и антипаттерны
+## 4. Best practices and antipatterns
 
-**Делать:**
-- Маленький, композируемый, как функция: одна связная задача.
-- Description — императивный: «Используй при …», перечисляй триггеры. Агенты недотриггериваются.
-- Добавляй то, чего агент не знает; выкидывай то, что он и так умеет.
-- Разделы `Gotchas` — самый ценный контент; чеклисты для многошаговых процессов; шаблоны вывода.
-- Дефолты, а не меню; процедуры, а не декларации; объясняй «почему».
-- Калибруй детализацию под хрупкость: для хрупких операций — предписывающе.
+**Do:**
+- Small, composable, like a function: one coherent task.
+- Description in the imperative: «Use when …», list the triggers. Agents under-trigger.
+- Add what the agent does not know; drop what it already can do.
+- `Gotchas` sections — the most valuable content; checklists for multi-step processes; output templates.
+- Defaults, not menus; procedures, not declarations; explain «why».
+- Calibrate detail to fragility: for fragile operations — prescriptively.
 
-**Не делать:**
-- Не пихать код в SKILL.md — выноси в `scripts/`.
-- Не описывать workflow в `description`.
-- Не давать много равнозначных вариантов без дефолта.
-- Не генерить generic-контент без предметных знаний.
+**Do not:**
+- Do not stuff code into SKILL.md — move it to `scripts/`.
+- Do not describe the workflow in `description`.
+- Do not give many equal options without a default.
+- Do not generate generic content without subject knowledge.
 
-## 5. Шаблон нового скилла
+## 5. New skill template
 
 ```markdown
 ---
 name: my-skill
-description: Use when [симптомы/контексты]. [что делает + когда применять, 1–1024 симв.]
-license: MIT               # опционально
-compatibility: Requires X  # опционально
+description: Use when [symptoms/contexts]. [what it does + when to apply, 1–1024 chars.]
+license: MIT               # optional
+compatibility: Requires X  # optional
 ---
-# Что делает (1–2 предложения)
+# What it does (1–2 sentences)
 
 ## When to use / when NOT to use
-## Workflow (нумерованный, императивный)
+## Workflow (numbered, imperative)
 ## Gotchas
-## Available scripts (относительные пути от корня скилла)
-## References (указатели «читай при X»)
+## Available scripts (relative paths from the skill root)
+## References (pointers «read when X»)
 ```
