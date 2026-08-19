@@ -51,13 +51,13 @@ PLAN → TDD → IMPLEMENT → VERIFY → REPORT
 ## Cross-chat memory (hierarchy)
 
 ```bash
-python ../memory/scripts/memory-warmup.py                    # warmup
-python ../memory/db-tools/search_all.py "X"                  # search all bases
-python ../memory/db-tools/build.py                           # rebuild index
-python ../memory/db-tools/findings.py add "topic" --text "conclusion" --source path
+python ~/.memory/scripts/memory-warmup.py                    # warmup
+python ~/.memory/db-tools/search_all.py "X"                  # search all bases
+python ~/.memory/db-tools/build.py                           # rebuild index
+python ~/.memory/db-tools/findings.py add "topic" --text "conclusion" --source path
 ```
 
-Boundary rule: portable → `../memory/Wiki/`; project-specific → `WORK/<project>/docs/` + `build.py -r`.
+Boundary rule: portable → `~/.memory/Wiki/`; project-specific → `WORK/<project>/docs/` + `build.py -r`.
 
 ## Context monitor
 

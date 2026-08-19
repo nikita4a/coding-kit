@@ -9,7 +9,6 @@ description: Coding Agent OS — superpowers, YAGNI, TDD, cross-chat memory, tra
 
 core:
   ops:           OPS.md
-  boot:          BOOT.md
   agents:        AGENTS.md
   runtime:       SKILL_RUNTIME.md
 
@@ -92,6 +91,5 @@ eval:
 integrity:
   watch:
     - OPS.md
-    - BOOT.md
     - AGENTS.md
     - profile.yml

@@ -75,10 +75,13 @@ def main() -> int:
     (root / "VERSION").write_text(
         ENGINE_VERSION + "\n", encoding="utf-8", newline="\n")
 
-    for name in ("memory-warmup.py", "_compat.py"):
-        src = KIT / "memory" / "scripts" / name
-        if src.exists():
-            shutil.copy2(src, root / "scripts" / name)
+    legacy = KIT.parent / "memory"
+    if legacy.exists() and legacy.resolve() != root.resolve():
+        # old layout: data next to the kit ("../memory") before the
+        # ~/.memory convention — do not move user data silently
+        print(f"  NOTE: legacy data found at {legacy}. Move its Wiki posts "
+              f"into {root / 'Wiki'}/<type>/ or set MEMORY_ROOT={legacy}.")
+
     link_engine(root)
     build_indexes(root)
 
