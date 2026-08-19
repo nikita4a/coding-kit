@@ -19,8 +19,10 @@ Environment variables (set by agent):
 
 import json
 import os
+import subprocess
 import sys
 from datetime import datetime
+from pathlib import Path
 
 # Thresholds — tuned for 1M token context windows (2026)
 TURN_WARN = 100     # Suggest new chat after N turns
@@ -91,8 +93,31 @@ def check(turns: int = None, tokens: int = None, max_tokens: int = None) -> dict
     return result
 
 
+def dump_checkpoint() -> str:
+    """Markdown block for a fresh-chat handoff: date, git state, task template."""
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    try:
+        git = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=Path(__file__).resolve().parents[1],
+            capture_output=True, text=True, timeout=10,
+        )
+        changed = git.stdout.strip() or "(clean)"
+    except Exception:
+        changed = "(git unavailable)"
+    return (
+        f"## Session checkpoint — {now}\n\n"
+        f"- Files touched:\n```\n{changed}\n```\n"
+        "- Open tasks:\n  - [ ] \n\n"
+        "- Verdict: continue / rollover to a new chat\n\n"
+        "Save: `~/.memory/Wiki/log.md` → `python ~/.memory/db-tools/build.py` "
+        "(portable) or project docs (project layer).\n"
+    )
+
+
 def main():
     import argparse
+
 
     p = argparse.ArgumentParser(description="Context overflow monitor")
     p.add_argument("--turns", type=int, help="Current turn count")
@@ -100,7 +125,13 @@ def main():
     p.add_argument("--max-tokens", type=int, default=1_000_000, help="Context window size")
     p.add_argument("--check", action="store_true", help="Quick check, exit 0=ok 1=warn")
     p.add_argument("--json", action="store_true", help="JSON output")
+    p.add_argument("--dump-checkpoint", action="store_true",
+                   help="Print a markdown checkpoint block for a fresh chat")
     args = p.parse_args()
+
+    if args.dump_checkpoint:
+        print(dump_checkpoint())
+        return
 
     # Read from env if not specified
     turns = args.turns or int(os.environ.get("CONTEXT_TURNS", 0)) or None

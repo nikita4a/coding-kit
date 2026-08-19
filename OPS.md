@@ -96,20 +96,22 @@ first   first     minimal      observed    first
 
 ## 5. 🧠 CROSS-CHAT MEMORY — hierarchy
 
-Memory = database (../memory), not conversation. Before "what do we know about X":
+Memory = database (~/.memory), not conversation. Before "what do we know about X":
 ```bash
-python ../memory/db-tools/search_all.py "X"
+python ~/.memory/db-tools/search_all.py "X"
 ```
 
-**Boundary rule:** portable knowledge (patterns, lessons, decisions) → `../memory/Wiki/<type>/<slug>.md` → `python ../memory/db-tools/build.py`. Project status/specifics → file in the project → `python ../memory/db-tools/build.py -r <project root> -o ../memory/db/<name>.db`. Findings: `python ../memory/db-tools/findings.py add "topic" --text "conclusion" --source path`.
+**Boundary rule:** portable knowledge (patterns, lessons, decisions) → `~/.memory/Wiki/<type>/<slug>.md` → `python ~/.memory/db-tools/build.py`. Project status/specifics → file in the project → `python ~/.memory/db-tools/build.py -r <project root> -o ~/.memory/db/<name>.db`. Findings: `python ~/.memory/db-tools/findings.py add "topic" --text "conclusion" --source path`.
+
+**Path convention:** `~/.memory` everywhere; env `MEMORY_ROOT` overrides (shell expands `~`; on Windows use Git Bash / PowerShell `$env:MEMORY_ROOT`).
 
 **Engine v2.7:**
-- `python ../memory/db-tools/findings.py add "topic" --text "conclusion" --source path` — findings in research.db (knowledge is lost otherwise)
-- `python ../memory/db-tools/findings.py search "topic"` — search findings
-- `python ../memory/db-tools/repomap.py project --tokens 1500` — project map (PageRank over import graph)
-- `python ../memory/db-tools/repomap.py file <path>` — file map: symbols + callers + callees
-- `python ../memory/db-tools/search.py --calls <fn>` / `--imports` / `--inherits` — dependency graphs
-- `python ../memory/db-tools/search_all.py "topic"` — search all databases at once
+- `python ~/.memory/db-tools/findings.py add "topic" --text "conclusion" --source path` — findings in research.db (knowledge is lost otherwise)
+- `python ~/.memory/db-tools/findings.py search "topic"` — search findings
+- `python ~/.memory/db-tools/repomap.py project --tokens 1500` — project map (PageRank over import graph)
+- `python ~/.memory/db-tools/repomap.py file <path>` — file map: symbols + callers + callees
+- `python ~/.memory/db-tools/search.py --calls <fn>` / `--imports` / `--inherits` — dependency graphs
+- `python ~/.memory/db-tools/search_all.py "topic"` — search all databases at once
 
 ## 6. 📚 SKILLS
 
@@ -164,6 +166,7 @@ python ../memory/db-tools/search_all.py "X"
 Every ~10 turns: `python scripts/context-monitor.py --check`
 - WARN (100+ turns / 80%): remind — "context is filling up"
 - CRITICAL (150+ turns / 90%): STOP — "start a new chat"
+- `python scripts/context-monitor.py --dump-checkpoint` — markdown handoff block for the new chat
 
 ---
 
@@ -181,3 +184,9 @@ per-concern modules + thin barrel. Check:
 python scripts/tools/check_file_sizes.py            # report
 python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 ```
+
+## 10. CHANGELOG
+
+- **v2.2**: portable memory paths (`~/.memory` + `MEMORY_ROOT`), context-monitor `--dump-checkpoint`, trap-suite +3 scenarios (silent-failure, money-safety, shell-injection) — 8/8 PASS.
+- **v2.1**: English core (AGENTS/OPS/BOOT/SKILL_RUNTIME/profile, all skills).
+- **v2.0**: obra/superpowers phase skills imported (MIT), AGENTS.md soul, trap-suite evals.

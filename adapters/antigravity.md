@@ -15,7 +15,7 @@ Copy the kit router to `~/AGENTS.md`:
 ```bash
 cp <kit>/AGENTS.md ~/AGENTS.md
 ```
-Adjust memory paths inside if your memory root is not `C:/Users/<user>/.memory/`.
+Adjust memory paths inside if your memory root is not `~/.memory` (env `MEMORY_ROOT` overrides).
 
 ### Step 2: Skills
 ```bash
@@ -27,8 +27,8 @@ Or keep a single source with a junction per skill.
 ### Step 3: Memory
 Memory lives outside the kit: `~/.memory/` (Wiki + db-tools + research.db). Rebuild indexes:
 ```bash
-python C:/Users/<user>/.memory/db-tools/build.py
-python C:/Users/<user>/.memory/db-tools/build.py -r <project-root> -o C:/Users/<user>/.memory/db/<name>.db
+python ~/.memory/db-tools/build.py
+python ~/.memory/db-tools/build.py -r <project-root> -o ~/.memory/db/<name>.db
 ```
 
 ### Step 4: Verify

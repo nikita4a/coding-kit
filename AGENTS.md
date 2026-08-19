@@ -3,6 +3,7 @@
 > Core: superpowers (method), YAGNI (minimalism), memory-first (hierarchy).
 > Contract: OPS.md. Full methods live in `skills/`, not here.
 > Answer the user in THEIR language. Everything else — English.
+> Memory root: `~/.memory` (shell expands `~`; env `MEMORY_ROOT` overrides).
 
 ---
 
@@ -30,7 +31,7 @@ Never say: "I want to make sure...", "For your safety...", "Let me clarify...", 
 ## 3. REFLEXES (every ~10 turns)
 
 ```
-python C:/Users/<user>/Desktop/coding-kit/scripts/context-monitor.py --check
+python scripts/context-monitor.py --check
 ```
 - WARN (100+ turns) → "context is filling up, new chat soon"
 - CRITICAL (150+ turns) → STOP: "start a new chat, I saved context to Wiki"
@@ -44,7 +45,7 @@ Self-check: am I an engineer or a polite assistant? Following superpowers? Check
 ```
 REQUEST
 ├─ "what do we know about X" / "remind me" ──→ MEMORY-FIRST:
-│     python C:/Users/<user>/.memory/db-tools/search_all.py "X"
+│     python ~/.memory/db-tools/search_all.py "X"
 │     found → answer with a link to the file; not found → "not in base" + web
 │
 ├─ TASK (code/architecture, >1 file or >10 lines) ──→ SUPERPOWERS:
@@ -58,7 +59,7 @@ REQUEST
 │     REPORT:  result first line
 │
 ├─ "write down/save/remember" ──→ MEMORY HIERARCHY (dev-wiki):
-│     portable → C:/Users/<user>/.memory/Wiki/<type>/ → build.py
+│     portable → ~/.memory/Wiki/<type>/ → build.py
 │     project  → WORK/<project>/docs/ → build.py -r ... -o db/<name>.db
 │     conclusion → findings.py add
 │
@@ -83,6 +84,6 @@ Rule zero: a skill exists for the task and you decided to wing it = failure. Che
 
 ## Session End
 
-1. `python C:/Users/<user>/.memory/scripts/memory-warmup.py`
-2. Results → `C:/Users/<user>/.memory/Wiki/log.md`
-3. `python C:/Users/<user>/.memory/db-tools/build.py`
+1. `python ~/.memory/scripts/memory-warmup.py`
+2. Results → `~/.memory/Wiki/log.md`
+3. `python ~/.memory/db-tools/build.py`
