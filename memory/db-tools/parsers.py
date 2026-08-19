@@ -283,7 +283,10 @@ def _ts_bash_errors(rel_path, content):
     tree = _ts_parser(content, ".sh")
     if tree is None:
         return []
-    return [(rel_path, "tree-sitter")] if tree.root_node.has_error else []
+    if tree.root_node.has_error:
+        return [(tree.root_node.start_point[0] + 1,
+                 "syntax error (tree-sitter)")]
+    return []
 
 
 def extract_symbols(rel_path, content):

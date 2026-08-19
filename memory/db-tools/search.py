@@ -212,10 +212,11 @@ def cmd_inherits(con, args):
 
 def _search_rows(con, idx, query, path, limit, no_snippet):
     """FTS lookup by index idx (files_fts or files_fts_trigram)."""
-    path_cond = "AND f.rel_path LIKE ?" if path else ""
+    # rel_path is stored with OS separators; users type slashes
+    path_cond = "AND REPLACE(f.rel_path, '\\', '/') LIKE ?" if path else ""
     params = [query]
     if path:
-        params.append(f"%{path}%")
+        params.append(f"%{path.replace(chr(92), '/')}%")
     cols = "f.rel_path, f.size_bytes"
     if not no_snippet:
         cols += f", snippet({idx}, 1, '<<', '>>', '…', 12) AS snip"

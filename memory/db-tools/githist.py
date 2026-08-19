@@ -82,7 +82,7 @@ def _git_log(repo):
     commits = []
     cur = None
     for line in out.stdout.splitlines():
-        if line.startswith("commit") or not line.strip():
+        if not line.strip():  # files named commit* are content, not headers
             if cur and cur[4]:
                 commits.append(cur)
             cur = None

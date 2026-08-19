@@ -31,6 +31,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 import _compat
+from findings import SCHEMA  # noqa: E402
 
 ROOT = _compat.chulan_root()
 
@@ -105,20 +106,27 @@ def parse_history(path):
     return lines
 
 
+def _has_marker(low: str, markers) -> bool:
+    """Word-boundary match: bare substrings made English markers fire
+    inside unrelated words ('do' in 'bedroom', 'add' in 'mustard')."""
+    return any(re.search(r"(?<![a-z])" + re.escape(m) + r"(?![a-z])", low)
+               for m in markers)
+
+
 def is_candidate(text, min_len):
     if len(text) < min_len:
         return False
     low = text.lower()
     if any(n in low for n in NOISE) and len(text) < 60:
         return False
-    if not any(m in low for m in MARKERS):
+    if not _has_marker(low, MARKERS):
         return False
     # A question ("how to do X") without a strong marker is a request, not knowledge.
     if any(q in low for q in QUESTION_WORDS) and \
-            not any(m in low for m in STRONG):
+            not _has_marker(low, STRONG):
         return False
     if len(text) > 300:  # long musings — candidate only with a strong marker
-        return any(m in low for m in STRONG)
+        return _has_marker(low, STRONG)
     return True
 
 
@@ -199,6 +207,7 @@ def cmd_main():
         sys.exit(1)
 
     con = sqlite3.connect(DB)
+    con.executescript(SCHEMA)  # fresh machine: research.db may not exist
     con.row_factory = sqlite3.Row
     now = datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M")
     added = skipped = 0

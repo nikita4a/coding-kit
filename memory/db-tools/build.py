@@ -36,7 +36,7 @@ except Exception:  # noqa: S110,BLE001 — reconfigure is optional, fine without
 
 # Never indexed, on any machine: build output, VCS, virtualenvs.
 DEFAULT_SKIP_DIRS = {"db", ".venv", "venv", ".git", "__pycache__"}
-DEFAULT_SKIP_FILES = {".env", "wiki.db"}
+DEFAULT_SKIP_FILES = {".env", "wiki.db", "skip.local"}
 
 
 def load_local_skip(root):
@@ -44,7 +44,9 @@ def load_local_skip(root):
     comment). Personal project layout stays OUT of the shipped kit."""
     dirs, files = set(), set()
     try:
-        text = open(os.path.join(root, "skip.local"), encoding="utf-8").read()
+        # utf-8-sig: Notepad saves BOM by default; a BOM would silently
+        # disable the first entry
+        text = open(os.path.join(root, "skip.local"), encoding="utf-8-sig").read()
     except OSError:
         return dirs, files
     for line in text.splitlines():
@@ -263,9 +265,12 @@ def upsert_file(cur, rel, full, mtime, size, stats, action, content_hash=None,
     comparison) to avoid reading the file twice."""
     if content is None:
         content_hash, content = read_hashed(full)
-    if "\x00" in content[:4096]:
-        # unknown binary format (no extension match): never index —
-        # a 50MB .exe of U+FFFD made snippet()/bm25() crawl for minutes
+    if "\x00" in content:
+        # binary (no extension match): drop any stale row left by a
+        # text->binary flip, never index — a 50MB .exe of U+FFFD made
+        # snippet()/bm25() crawl for minutes
+        cur.execute("DELETE FROM files WHERE rel_path = ?", (rel,))
+        stats["del"] += 1
         return
     lines = content.count("\n") + 1
     syms = extract_symbols(rel, content)
@@ -437,8 +442,14 @@ def main():
     if not os.path.isdir(root):
         print(f"no such folder: {root}", file=sys.stderr)
         sys.exit(1)
-    db_path = (os.path.abspath(args.out) if args.out
-               else os.path.join(ROOT, "db", "wiki.db"))
+    if args.out:
+        db_path = os.path.abspath(args.out)
+    elif os.path.abspath(root) == os.path.abspath(str(ROOT)):
+        db_path = os.path.join(ROOT, "db", "wiki.db")
+    else:
+        # project build: its own db, never the wiki (a documented
+        # invocation used to destroy wiki.db: '-r X' without '-o')
+        db_path = os.path.join(ROOT, "db", os.path.basename(root) + ".db")
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
     local_dirs, local_files = load_local_skip(root)

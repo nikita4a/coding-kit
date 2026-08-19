@@ -42,6 +42,22 @@ def list_dbs() -> list:
     return out
 
 
+def _sanitize(query: str) -> str:
+    """Quote tokens with FTS5 specials (hyphen = column filter:
+    'agent-lsp' dies as 'no such column: lsp' without this)."""
+    out = []
+    for tok in query.split():
+        up = tok.upper()
+        if up in ("AND", "OR", "NOT") or up.startswith("NEAR(") or \
+                (tok.startswith('"') and tok.endswith('"')):
+            out.append(tok)
+        elif any(c in tok for c in '"-()*:^') and not tok.endswith("*"):
+            out.append('"' + tok.replace('"', '""') + '"')
+        else:
+            out.append(tok)
+    return " ".join(out)
+
+
 def search_all_dbs(query: str, limit: int = 5) -> list:
     """FTS search across all databases: [{db, path, snippet}]."""
     results = []
@@ -51,7 +67,7 @@ def search_all_dbs(query: str, limit: int = 5) -> list:
             rows = con.execute(
                 "SELECT rel_path, snippet(files_fts, 1, '<mark>', '</mark>', '...', 40) "
                 "FROM files_fts WHERE files_fts MATCH ? LIMIT ?",
-                (query, limit),
+                (_sanitize(query), limit),
             ).fetchall()
             con.close()
         except sqlite3.OperationalError:
@@ -127,7 +143,7 @@ def recent_findings(limit: int = 3) -> list:
     try:
         con = sqlite3.connect(f"file:{RESEARCH_DB}?mode=ro", uri=True)
         rows = con.execute(
-            "SELECT id, date, topic FROM findings ORDER BY id DESC LIMIT ?",
+            "SELECT id, created, topic FROM findings ORDER BY id DESC LIMIT ?",
             (limit,),
         ).fetchall()
         con.close()

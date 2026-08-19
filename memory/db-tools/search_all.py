@@ -71,6 +71,10 @@ def main() -> int:
     ap.add_argument("--substring", action="store_true",
                     help="trigram substring instead of words (declensions)")
     args = ap.parse_args()
+    if args.substring and len(args.query) < 3:
+        print("--substring requires a query of at least 3 characters",
+              file=sys.stderr)
+        return 1
     results = search_all(args.query, limit=args.limit,
                          substring=args.substring)
     if not results:

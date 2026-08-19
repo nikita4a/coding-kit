@@ -1,5 +1,5 @@
 # Coding Agent OS — Operating Contract
-> **v2.5** | db-tools v2.7 (findings, repomap, call-graph), fable-judge, FILE-SIZE gate, trap-suite 10, 36 skills, unit tests.
+> **v2.6** | db-tools v2.7 (findings, repomap, call-graph), fable-judge, FILE-SIZE gate, trap-suite 10, 36 skills, unit tests.
 
 > **Product:** Coding Agent OS v2 | **CORE v2**
 > Profile root: this directory.
@@ -188,6 +188,13 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 
 ## 10. CHANGELOG
 
+- **v2.6 (review round 2)**: 12 engine defects closed with live
+  repros — `build.py -r X` without `-o` no longer destroys wiki.db;
+  text->binary flip drops the stale FTS row; BOM-tolerant skip.local;
+  skip.local never indexed; warmup `created` column + sanitized MATCH;
+  `search.py -p` slash-normalized; githist 40-hex commit boundary;
+  extract_findings bootstraps schema + word-boundary markers; engine
+  regression tests (tests/test_build.py).
 - **v2.5 (review-driven hardening)**: all v2.4-review findings closed —
   Camoufox dead-refs cut (R1), install link follows the last installer (R2),
   unit tests for install/root resolver (R3), CI windows+ubuntu matrix (R4),
