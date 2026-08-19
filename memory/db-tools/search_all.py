@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 
 from _compat import chulan_root, fix_encoding  # noqa: E402
+from search import sanitize_query  # noqa: E402
 
 fix_encoding()
 
@@ -53,7 +54,7 @@ def search_all(query: str, limit: int = 5, substring: bool = False,
             rows = con.execute(
                 f"SELECT rel_path, snippet({idx}, 1, '<b>', '</b>', "
                 f"'…', 12) FROM {idx} WHERE {idx} MATCH ? LIMIT ?",
-                (query, limit)).fetchall()
+                (sanitize_query(query), limit)).fetchall()
             con.close()
         except sqlite3.OperationalError:
             continue

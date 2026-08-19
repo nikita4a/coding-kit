@@ -40,7 +40,7 @@ except Exception:  # noqa: S110,BLE001 — reconfigure is optional, fine without
 # Vendor fable-method is excluded ONLY at the root level (ROOT_SKIP_DIRS):
 # the canon skills/fable-method/ (SKILL.md + references + eval/ + LICENSE)
 # is indexed — it is searched in the database (12.08.2026, id=357).
-DEFAULT_SKIP_DIRS = {"db", "venv", "models", ".git", "__pycache__",
+DEFAULT_SKIP_DIRS = {"db", ".venv", "models", ".git", "__pycache__",
                      ".reasonix", "agent"}
 ROOT_SKIP_DIRS = {"fable-method"}
 DEFAULT_SKIP_FILES = {".env", "wiki.db", "sherpa-voice.db"}
