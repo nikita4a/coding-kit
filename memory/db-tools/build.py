@@ -265,6 +265,11 @@ def upsert_file(cur, rel, full, mtime, size, stats, action, content_hash=None,
     comparison) to avoid reading the file twice."""
     if content is None:
         content_hash, content = read_hashed(full)
+    cur.execute("DELETE FROM symbols WHERE rel_path = ?", (rel,))
+    cur.execute("DELETE FROM imports WHERE rel_path = ?", (rel,))
+    cur.execute("DELETE FROM calls WHERE rel_path = ?", (rel,))
+    cur.execute("DELETE FROM inherits WHERE rel_path = ?", (rel,))
+    cur.execute("DELETE FROM errors WHERE rel_path = ?", (rel,))
     if "\x00" in content:
         # binary (no extension match): drop any stale row left by a
         # text->binary flip, never index — a 50MB .exe of U+FFFD made
@@ -279,11 +284,6 @@ def upsert_file(cur, rel, full, mtime, size, stats, action, content_hash=None,
     inherits = extract_inherits(rel, content)
     errors = extract_errors(rel, content)
     ext = os.path.splitext(rel)[1].lower() or "none"
-    cur.execute("DELETE FROM symbols WHERE rel_path = ?", (rel,))
-    cur.execute("DELETE FROM imports WHERE rel_path = ?", (rel,))
-    cur.execute("DELETE FROM calls WHERE rel_path = ?", (rel,))
-    cur.execute("DELETE FROM inherits WHERE rel_path = ?", (rel,))
-    cur.execute("DELETE FROM errors WHERE rel_path = ?", (rel,))
     if action == "new":
         cur.execute(
             "INSERT INTO files (rel_path, ext, size_bytes, mtime, lines, "
