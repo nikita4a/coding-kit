@@ -31,7 +31,7 @@ except Exception:  # noqa: S110,BLE001 — reconfigure is optional
 ```
 In coding-kit — the single `memory/scripts/_compat.py: fix_encoding()` instead of copying.
 
-**Fix for bash wrappers (run_tests.sh):**
+**Fix for bash wrappers:**
 ```bash
 export PYTHONIOENCODING="${PYTHONIOENCODING:-utf-8}"
 ```
@@ -60,7 +60,7 @@ first=$(tr -d '\r' < "${MIRRORS[0]}" | md5sum | cut -d' ' -f1)
 
 ## 3. PowerShell 5.1: UTF-8 without BOM is read as cp1251
 
-**Symptom:** `bootstrap.ps1` ignores `--check`, outputs mojibake,
+**Symptom:** a bootstrap .ps1 ignores `--check`, outputs mojibake,
 fails on the dash «—» in comments.
 
 **Cause:** Windows PowerShell 5.1 decodes a .ps1 without BOM as cp1251;

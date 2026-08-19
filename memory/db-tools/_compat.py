@@ -44,7 +44,7 @@ def run(cmd, *, timeout=None, cwd=None, env=None, check=False):
     (1) python children get PYTHONUTF8=1 — they write UTF-8;
     (2) output is decoded as utf-8 + errors="replace" — we never crash on
     a foreign encoding (PowerShell children switch themselves via
-    [Console]::OutputEncoding, see run_tests.ps1).
+    [Console]::OutputEncoding).
     """
     child_env = os.environ.copy() if env is None else {**os.environ, **env}
     if IS_NT:
