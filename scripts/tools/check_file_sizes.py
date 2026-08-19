@@ -30,16 +30,16 @@ import os
 import subprocess
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__))))  # scripts/ — кирпичи канона
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import _compat  # noqa: E402
+# stdlib-only: no scripts/_compat.py dependency (memory/ moved out of the kit)
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:  # noqa: S110 — optional, lives without it
+    pass
 
-_compat.fix_encoding()
-
-ROOT = _compat.chulan_root()
+ROOT = Path(__file__).resolve().parents[2]
 
 # Лимиты: (soft, hard). soft = nudge/предупреждение, hard = блок/гейт.
 LIMITS = {

@@ -1,54 +1,45 @@
-# Universal Adapter
+# Universal Adapter — coding-kit
 
-> Для любого агента, который читает `AGENTS.md` и скиллы.
+> Developer kit: superpowers, YAGNI, TDD, cross-chat memory. For any agent that reads AGENTS.md and skills.
 
-## Установка (общий принцип)
+## Install (general principle)
 
-У агента есть место для «глобальных скиллов» и место для «правил агента».
-Найди их в настройках и:
+Terminology: agents have a "skills dir" (progressive disclosure) and a "rules dir" (always loaded, e.g. ~/.claude/CLAUDE.md, AGENTS.md).
 
-1. Скопируй содержимое `skills/` в папку скиллов агента.
-2. Скопируй `AGENTS.md` туда, откуда агент читает правила (или положи в корень проекта).
-3. Запусти `python3 db-tools/build.py` из корня набора.
+1. Rules: point the agent's rules file at `AGENTS.md` (or copy its content). Absolute memory paths inside assume `C:/Users/<user>/.memory/` — adjust to your memory root.
+2. Skills: copy/link `skills/` into the agent's skills dir. Hermes-format SKILL.md, 36 skills.
+3. Memory (external): `~/.memory/` — Wiki + db-tools engine + research.db. Kit and memory are separate: the kit is pure methodology, knowledge lives in the memory root.
+4. Context monitor: `python scripts/context-monitor.py --check` every ~10 turns.
 
-## Конкретные агенты
+## Specific agents
 
-### Claude Code
+### Claude Code / OMP
 ```bash
-cp AGENTS.md ~/.claude/CLAUDE.md
-cp -r skills/* ~/.claude/skills/
+# rules: ~/.claude/CLAUDE.md — append the router
+# skills: ~/.claude/skills/ — copy or junction
+cp skills/*/SKILL.md ~/.claude/skills/   # per-skill dirs
 ```
 
-### opencode
+### Gemini CLI
 ```bash
-cp AGENTS.md ~/.config/opencode/AGENTS.md
-cp -r skills/* ~/.config/opencode/skills/
+# rules: ~/.gemini/GEMINI.md
+# skills: ~/.gemini/skills/ (Global tier) — junction recommended:
+#   mklink /J ~/.gemini/skills <kit>/skills
 ```
 
 ### Hermes
-```bash
-cp AGENTS.md ~/.hermes/SOUL.md
-cp -r skills/* ~/.hermes/skills/
+```yaml
+# rules: SOUL.md gets the kit soul (AGENTS.md content)
+# skills: config.yaml → skills.external_dirs:
+#   - C:/Users/<user>/Desktop/coding-kit/skills
 ```
 
-### Codex
+### Antigravity
 ```bash
-cp AGENTS.md ~/.codex/AGENTS.md
+# rules: ~/AGENTS.md (user-level)
+# skills: ~/.agents/skills/
 ```
 
-### Cursor
-```bash
-# Положи AGENTS.md в корень проекта как .cursorrules
-cp AGENTS.md .cursorrules
-```
+## Verify
 
-### Любой другой
-```bash
-# AGENTS.md → туда, откуда агент читает правила
-# skills/* → туда, где агент ищет скиллы
-# python3 db-tools/build.py → первая сборка базы
-```
-
-## Проверка
-
-Спроси агента «кто ты и что умеешь». Он должен описать роль бизнес-агента с кросс-чатовой памятью и скиллами.
+Ask the agent: "who are you and what do you know?" — it must answer: engineer agent, superpowers method, memory from the base. And "what do we know about X" must trigger a search, not memory.

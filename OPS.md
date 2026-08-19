@@ -143,6 +143,9 @@ python ../memory/db-tools/search_all.py "X"
 | `money-path-safety` | Money, payments, balance |
 | `web-research` | Web search, fact-checking |
 | `skill-authoring` | Creating skills |
+| `reasoning-engine` | Multi-step thinking before non-trivial actions |
+| `debug-incident-protocol` | "Doesn't work", "broke", incident analysis |
+| `testing-discipline` | What to test, coverage, "is it done" |
 | `brainstorming` | Design tasks: questions before code, spec |
 | `writing-plans` | Execution plan from spec |
 | `executing-plans` | Plan execution with checkpoints |
