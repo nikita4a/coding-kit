@@ -17,7 +17,7 @@ Terminology: agents have a "skills dir" (progressive disclosure) and a "rules di
 ```bash
 # rules: ~/.claude/CLAUDE.md — append the router
 # skills: ~/.claude/skills/ — copy or junction
-cp -r skills ~/.claude/skills/   # keeps per-skill dirs
+cp -r skills/. ~/.claude/skills/   # contents; safe when the dir exists
 ```
 
 ### Gemini CLI

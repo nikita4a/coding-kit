@@ -54,12 +54,12 @@ def _sanitize(query: str) -> str:
         if up in ("AND", "OR", "NOT") or up.startswith("NEAR(") or \
                 (tok.startswith('"') and tok.endswith('"')):
             out.append(tok)
+        elif tok.endswith("*") and any(c in tok[:-1] for c in '"-():^'):
+            # prefix on a special-char body: quote the body, keep the
+            # star outside (quoted '*' is a literal in FTS5)
+            out.append('"' + tok[:-1].replace('"', '""') + '"*')
         elif any(c in tok for c in '"-()*:^'):
-            if tok.endswith("*") and not any(c in tok[:-1]
-                                              for c in '"-():^'):
-                out.append(tok)
-            else:
-                out.append('"' + tok.replace('"', '""') + '"')
+            out.append('"' + tok.replace('"', '""') + '"')
         else:
             out.append(tok)
     return " ".join(out)

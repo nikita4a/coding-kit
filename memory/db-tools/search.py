@@ -49,13 +49,14 @@ def sanitize_query(query):
         if upper in OPS or upper.startswith("NEAR(") or \
                 (tok.startswith('"') and tok.endswith('"')):
             out.append(tok)
+        elif tok.endswith("*") and any(c in tok[:-1] for c in '"-():^'):
+            # prefix on a special-char body ('agent-lsp*'): quote the
+            # body, keep the star outside (quoted '*' is a literal)
+            out.append('"' + tok[:-1].replace('"', '""') + '"*')
         elif any(c in tok for c in '"-()*:^'):
-            # Prefix search ('firmware*') is not wrapped: in quotes
-            # the asterisk becomes a literal and the prefix stops working.
-            if tok.endswith("*") and not any(c in tok[:-1] for c in '"-():^'):
-                out.append(tok)
-            else:
-                out.append('"' + tok.replace('"', '""') + '"')
+            # plain prefix ('firmware*') stays unquoted; other specials
+            # get wrapped (hyphen = column filter otherwise)
+            out.append('"' + tok.replace('"', '""') + '"')
         else:
             out.append(tok)
     return " ".join(out)
