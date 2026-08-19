@@ -5,3 +5,7 @@ __pycache__/
 *.pyc
 .DS_Store
 .env
+# personal per-machine mode (doctor validates it; never ship it)
+.override.md
+# per-machine index exclusions
+skip.local

@@ -102,9 +102,10 @@ def _git_log(repo):
 def cmd_refresh(args):
     con = connect()
     repos = [str(ROOT)]
-    sherpa = os.path.join(ROOT, "projects", "sherpa-voice")
-    if os.path.isdir(sherpa):
-        repos.append(sherpa)
+    projects = os.path.join(ROOT, "projects")
+    if os.path.isdir(projects):
+        repos += [os.path.join(projects, d) for d in sorted(os.listdir(projects))
+                  if os.path.isdir(os.path.join(projects, d))]
     for repo in repos:
         commits, err = _git_log(repo)
         if err:

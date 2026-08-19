@@ -140,39 +140,7 @@ list distributions» and fails.
 **Fix:** in docs require Git for Windows (`C:\Program Files\Git\bin\
 bash.exe`) or PowerShell wrappers. Do not rely on `bash` from PATH.
 
-## 9. Camoufox on Windows: three bug classes (research 08.2026)
-
-Verified against daijro/camoufox issues (#282, #614, #624, #650). Symptoms are
-from bug reports and PRs, fixes are proven:
-
-**9a. Microsoft Store Python sandboxes AppData\Local (#282).**
-`camoufox fetch` prints «successfully installed», but `camoufox.exe` is
-not found: the Store Python redirects `AppData\Local` to
-`Packages\PythonSoftwareFoundation...\LocalCache`. Fix: Python from
-python.org (not MS Store). Check: `sys.executable` contains
-`WindowsApps` → warn.
-
-**9b. headless crashes with STATUS_BREAKPOINT 0x80000003 (#614).**
-On some Windows builds the headless launch crashes instantly (headed
-works). Fix: fallback `headless=False, windows_hide=True` — the window is
-hidden from the user. In our worker (`mcp/camoufox_worker.py`) — done
-automatically in `_launch()`: try headless → except (on NT only) →
-headed+hidden.
-
-**9c. SxS mozglue / no MSVC CRT (#624/#650).**
-«The application has failed to start because its side-by-side
-configuration is incorrect» / Playwright `spawn UNKNOWN` on clean
-systems. Causes: the embedded manifest declares mozglue as an SxS
-dependency; the AppContainer SID from Edge/Chrome in AppData\Local enables
-strict mode; the package may not contain VCRUNTIME140.dll. Fixes:
-VC++ Redistributable (x64), install outside AppData\Local
-(`CAMOUFOX_INSTALL_DIR=C:\Users\...\.camoufox`), update to v152+.
-
-**Diagnostics:** `python3 scripts/tools/update_camoufox.py --check` — checks
-all of the above + updates the package/browser. See also `mcp/README.md` section «Camoufox
-on Windows».
-
-## 10. subprocess: child output encoding (BUG-1/4, bug report v2.4)
+## 9. subprocess: child output encoding (BUG-1/4, bug report v2.4)
 
 **Symptom:** `UnicodeDecodeError: 'charmap' codec can't decode byte 0x98`
 in subprocess reader threads (part of the output is lost; for the LuaLS download

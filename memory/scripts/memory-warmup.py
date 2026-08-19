@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""memory-warmup.py — прогрев кросс-чатовой памяти (иерархия global + per-project).
+"""memory-warmup.py — cross-chat memory warmup (global + per-project hierarchy).
 
-Схема v2.7 (files + files_fts), поиск по ВСЕМ базам каталога db/
-(глобальная wiki.db + проектные *.db), findings из research.db.
+Schema v2.7 (files + files_fts), search across ALL databases in the db/
+directory (global wiki.db + project *.db), findings from research.db.
 
 Usage:
-    python scripts/memory-warmup.py              # полный прогрев
-    python scripts/memory-warmup.py --query "X"  # поиск по всем базам
-    python scripts/memory-warmup.py --stats      # только статистика
-    python scripts/memory-warmup.py --json       # JSON для агента
+    python scripts/memory-warmup.py              # full warmup
+    python scripts/memory-warmup.py --query "X"  # search all databases
+    python scripts/memory-warmup.py --stats      # stats only
+    python scripts/memory-warmup.py --json       # JSON for the agent
 """
 import json
 import sqlite3
@@ -24,7 +24,7 @@ RESEARCH_DB = DB_DIR / "research.db"
 
 
 def list_dbs() -> list:
-    """Базы db/ с таблицей files_fts (wiki.db + проектные)."""
+    """Databases in db/ with the files_fts table (wiki.db + project ones)."""
     out = []
     if not DB_DIR.exists():
         return out
@@ -43,7 +43,7 @@ def list_dbs() -> list:
 
 
 def search_all_dbs(query: str, limit: int = 5) -> list:
-    """FTS-поиск по всем базам: [{db, path, snippet}]."""
+    """FTS search across all databases: [{db, path, snippet}]."""
     results = []
     for p in list_dbs():
         try:
@@ -62,12 +62,12 @@ def search_all_dbs(query: str, limit: int = 5) -> list:
 
 
 def _wiki_where() -> str:
-    """WHERE для файлов глобальной Wiki (сепаратор-независимо: GLOB)."""
+    """WHERE for global Wiki files (separator-independent: GLOB)."""
     return "(rel_path GLOB 'Wiki*') AND ext IN ('md','.md') AND rel_path NOT GLOB '*_templates*'"
 
 
 def stats() -> dict:
-    """Статистика: глобальная Wiki + проектные базы + findings."""
+    """Stats: global Wiki + project databases + findings."""
     out = {"wiki_entries": 0, "recent_7d": 0, "project_dbs": [], "findings": 0}
     if WIKI_DB.exists():
         con = sqlite3.connect(f"file:{WIKI_DB}?mode=ro", uri=True)
@@ -104,7 +104,7 @@ def stats() -> dict:
 
 
 def recent_entries(limit: int = 5) -> list:
-    """Последние записи глобальной Wiki (по mtime)."""
+    """Most recent global Wiki entries (by mtime)."""
     if not WIKI_DB.exists():
         return []
     try:
@@ -121,7 +121,7 @@ def recent_entries(limit: int = 5) -> list:
 
 
 def recent_findings(limit: int = 3) -> list:
-    """Последние находки research.db."""
+    """Most recent research.db findings."""
     if not RESEARCH_DB.exists():
         return []
     try:
@@ -137,7 +137,7 @@ def recent_findings(limit: int = 3) -> list:
 
 
 def integrity_check() -> dict:
-    """Быстрая проверка целостности глобальной Wiki."""
+    """Quick integrity check of the global Wiki."""
     errors = []
     if not WIKI_ROOT.exists():
         return {"ok": False, "errors": ["Wiki/ directory missing"]}

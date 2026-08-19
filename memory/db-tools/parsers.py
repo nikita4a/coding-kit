@@ -1,10 +1,10 @@
 
 
-"""parsers — парсеры языков (tree-sitter JS/TS/bash) + extract-API
-(символы/импорты/вызовы/наследование/ошибки).
+"""parsers — language parsers (tree-sitter JS/TS/bash) + extract-API
+(symbols/imports/calls/inheritance/errors).
 
-Вынесено из build.py механически (verbatim) — гейт god-файлов
-(FILE-SIZE.md). build.py реэкспортирует extract_* (контракт тестов)."""
+Mechanically extracted from build.py (verbatim) — the god-file gate
+(FILE-SIZE.md). build.py re-exports extract_* (the contract of the tests)."""
 import ast
 import glob
 import os
@@ -18,11 +18,11 @@ _TS_LANGS = {".js": "javascript", ".mjs": "javascript",
 _SH_EXTS = {".sh"}
 
 def _ts_parser(content, ext):
-    """Парсер tree-sitter для JS/TS. Ленивый import: если библиотеки нет —
-    None (старое поведение: файл без символов). tree_sitter_language_pack
-    живёт в venv проекта (~/.venvs/memory, приходит с code-review-graph), а
-    build.py запускается и системным python3 — подмешиваем site-packages
-    venv при первом импорте."""
+    """tree-sitter parser for JS/TS. Lazy import: if the library is missing —
+    None (old behavior: the file has no symbols). tree_sitter_language_pack
+    lives in the project venv (~/.venvs/memory, ships with code-review-graph);
+    build.py also runs under a system python3 — so we inject the venv
+    site-packages on the first import."""
     try:
         from tree_sitter_language_pack import get_parser
     except ImportError:
@@ -40,7 +40,7 @@ def _ts_parser(content, ext):
 
 
 def _venv_site_packages():
-    """site-packages venv проекта (~/.venvs/memory) или None."""
+    """The project venv site-packages (~/.venvs/memory), or None."""
     if os.name == "nt":
         p = os.path.join(os.path.expanduser("~"), ".venvs", "memory",
                          "Lib", "site-packages")
@@ -56,7 +56,7 @@ def _ts_text(node):
 
 
 def _ts_symbols(rel_path, content):
-    """Символы JS/TS: function_declaration, class_declaration (с базой),
+    """JS/TS symbols: function_declaration, class_declaration (with base),
     method_definition, const f = () => {} / function () {}."""
     ext = os.path.splitext(rel_path)[1].lower()
     tree = _ts_parser(content, ext)
@@ -72,8 +72,8 @@ def _ts_symbols(rel_path, content):
         return "()"
 
     def ids(node):
-        """Все идентификаторы под узлом (рекурсивно): имя класса в TS —
-        type_identifier, база может быть обёрнута extends_clause."""
+        """All identifiers under the node (recursively): a class name in TS is
+        type_identifier, the base may be wrapped in an extends_clause."""
         out = []
         for c in node.children:
             if c.type in name_types:
@@ -137,8 +137,8 @@ def _ts_symbols(rel_path, content):
 
 
 def _ts_imports(rel_path, content):
-    """Рёбра импортов для JS/TS: (модуль, строка). Модуль — имя файла
-    из строки импорта (./mod.js -> mod.js), как .py берёт корневой пакет."""
+    """JS/TS import edges: (module, line). The module is the file name
+    from the import string (./mod.js -> mod.js), like .py takes the root package."""
     ext = os.path.splitext(rel_path)[1].lower()
     tree = _ts_parser(content, ext)
     if tree is None:
@@ -161,8 +161,8 @@ def _ts_imports(rel_path, content):
 
 
 def _ts_calls(rel_path, content):
-    """Рёбра вызовов для JS/TS: (имя_вызываемого, строка). Имя — последний
-    атрибут цепочки (chrome.tabs.query -> query), как в .py."""
+    """JS/TS call edges: (callee_name, line). The name is the last attribute
+    of the chain (chrome.tabs.query -> query), like in .py."""
     ext = os.path.splitext(rel_path)[1].lower()
     tree = _ts_parser(content, ext)
     if tree is None:
@@ -187,7 +187,7 @@ def _ts_calls(rel_path, content):
 
 
 def _ts_inherits(rel_path, content):
-    """Наследование для JS/TS: (класс, базовый, строка) из class_heritage."""
+    """Inheritance for JS/TS: (class, base, line) from class_heritage."""
     ext = os.path.splitext(rel_path)[1].lower()
     tree = _ts_parser(content, ext)
     if tree is None:
@@ -220,8 +220,8 @@ def _ts_inherits(rel_path, content):
 
 
 def _ts_errors(rel_path, content):
-    """Синтаксические ошибки JS/TS: (строка, сообщение) — первый ERROR-узел
-    или missing-узел (не закрытая скобка и т.п.)."""
+    """Syntax errors for JS/TS: (line, message) — the first ERROR node or
+    a missing node (an unclosed bracket, etc.)."""
     ext = os.path.splitext(rel_path)[1].lower()
     tree = _ts_parser(content, ext)
     if tree is None:
@@ -238,17 +238,17 @@ def _ts_errors(rel_path, content):
 
 
 def _walk_ts(node):
-    """Обход дерева tree-sitter целиком (все узлы, включая вложенные)."""
+    """Walk the tree-sitter tree fully (all nodes, including nested)."""
     yield node
     for c in node.children:
         yield from _walk_ts(c)
 
 
 def _ts_bash_symbols(content):
-    """Символы bash: function_definition через tree-sitter-bash (имя, строка).
-    Ловит все формы: `name() {}`, `function name {}`, `function name() {}`,
-    многострочные тела — то, что регекс 'name() {' пропускал (function-ключевое
-    слово, пробел перед скобками, '{' на следующей строке)."""
+    """bash symbols: function_definition via tree-sitter-bash (name, line).
+    Catches all forms: `name() {}`, `function name {}`, `function name() {}`,
+    multi-line bodies — what the regex 'name() {' missed (the function
+    keyword, a space before the parens, '{' on the next line)."""
     tree = _ts_parser(content, ".sh")
     if tree is None:
         return []
@@ -263,7 +263,7 @@ def _ts_bash_symbols(content):
 
 
 def _ts_bash_calls(content):
-    """Вызовы bash: узлы command — имя команды и строка (для графа --calls)."""
+    """bash calls: command nodes — command name and line (for the --calls graph)."""
     tree = _ts_parser(content, ".sh")
     if tree is None:
         return []
@@ -279,7 +279,7 @@ def _ts_bash_calls(content):
 
 
 def _ts_bash_errors(rel_path, content):
-    """Синтаксические ошибки bash: tree-sitter has_error (как _ts_errors для JS)."""
+    """bash syntax errors: tree-sitter has_error (like _ts_errors for JS)."""
     tree = _ts_parser(content, ".sh")
     if tree is None:
         return []
@@ -287,11 +287,11 @@ def _ts_bash_errors(rel_path, content):
 
 
 def extract_symbols(rel_path, content):
-    """Символы файла: (имя, тип, строка, сигнатура). Для .py —
-    функции/классы/методы через ast (у функций — сигнатура); для .md —
-    заголовки (# / ## / ###) как разделы; для .sh — функции через
-    tree-sitter-bash (fallback: регекс 'имя() {'); для .js/.ts —
-    tree-sitter (функции, классы, методы, стрелочные в переменных)."""
+    """File symbols: (name, type, line, signature). For .py —
+    functions/classes/methods via ast (functions get a signature); for .md —
+    headings (# / ## / ###) as sections; for .sh — functions via
+    tree-sitter-bash (fallback: regex 'name() {'); for .js/.ts —
+    tree-sitter (functions, classes, methods, arrow functions in variables)."""
     ext = os.path.splitext(rel_path)[1].lower()
     syms = []
     if ext in _JS_EXTS:
@@ -347,7 +347,7 @@ def extract_symbols(rel_path, content):
         syms = _ts_bash_symbols(content)
         if syms:
             return syms
-        # фолбэк без tree-sitter (системный python3 без venv-пакета)
+        # fallback without tree-sitter (system python3 without the venv package)
         import re
         for i, line in enumerate(content.split("\n"), 1):
             m = re.match(r"^\s*([a-zA-Z_][a-zA-Z0-9_]*)\(\)\s*(\{)?\s*(#.*)?$",
@@ -359,7 +359,7 @@ def extract_symbols(rel_path, content):
 
 
 def extract_imports(rel_path, content):
-    """Рёбра импортов: .py — ast; .js/.ts — tree-sitter."""
+    """Import edges: .py — ast; .js/.ts — tree-sitter."""
     ext = os.path.splitext(rel_path)[1].lower()
     if ext in _JS_EXTS:
         return _ts_imports(rel_path, content)
@@ -381,8 +381,8 @@ def extract_imports(rel_path, content):
 
 
 def extract_calls(rel_path, content):
-    """Рёбра вызовов: .py — ast; .js/.ts — tree-sitter; .sh — tree-sitter-bash.
-    Имя — последний атрибут цепочки (os.path.join -> join, tg_send_text)."""
+    """Call edges: .py — ast; .js/.ts — tree-sitter; .sh — tree-sitter-bash.
+    The name is the last attribute of the chain (os.path.join -> join, tg_send_text)."""
     ext = os.path.splitext(rel_path)[1].lower()
     if ext in _JS_EXTS:
         return _ts_calls(rel_path, content)
@@ -406,10 +406,10 @@ def extract_calls(rel_path, content):
 
 
 def extract_inherits(rel_path, content):
-    """Наследование: .py — ast; .js/.ts — tree-sitter (class X extends Y).
-    Простые имена (class X(Base)) и последний атрибут цепочки
-    (unittest.TestCase -> TestCase, как в extract_calls): полное имя
-    неоднозначно, но граф «кто наследует от TestCase» работает."""
+    """Inheritance: .py — ast; .js/.ts — tree-sitter (class X extends Y).
+    Simple names (class X(Base)) and the last attribute of the chain
+    (unittest.TestCase -> TestCase, like in extract_calls): the full name is
+    ambiguous, but the "who inherits from TestCase" graph works."""
     ext = os.path.splitext(rel_path)[1].lower()
     if ext in _JS_EXTS:
         return _ts_inherits(rel_path, content)
@@ -431,9 +431,10 @@ def extract_inherits(rel_path, content):
 
 
 def extract_errors(rel_path, content):
-    """Синтаксические ошибки: .py — ast; .js/.ts — tree-sitter; .sh —
-    tree-sitter-bash. Файл, который не парсится, — диагностика для поиска,
-    а не молчаливый пропуск (раньше SyntaxError просто давал пустой список)."""
+    """Syntax errors: .py — ast; .js/.ts — tree-sitter; .sh —
+    tree-sitter-bash. A file that fails to parse is diagnostics for the search
+    rather than a silent skip (previously SyntaxError just yielded an empty
+    list)."""
     ext = os.path.splitext(rel_path)[1].lower()
     if ext in _JS_EXTS:
         return _ts_errors(rel_path, content)

@@ -10,7 +10,7 @@ by triggers itself. Full rebuild — only on a schema change or with the
 
 Run:
     python3 build.py                                    # memory -> wiki.db
-    python3 build.py -r ../projects/sherpa-voice -o ../db/sherpa-voice.db
+    python3 build.py -r ../projects/myproject -o ../db/myproject.db
     python3 build.py --full                             # full rebuild
 """
 import argparse
@@ -34,19 +34,28 @@ try:
 except Exception:  # noqa: S110,BLE001 — reconfigure is optional, fine without it
     pass
 
-# Vendor/third-party — not indexed (the .cursorignore/EXCLUDED pattern):
-# agent/ — internal agents (reverser): own db/agent.db, excluded from the
-# shared one (agent knowledge isolation, owner decision 12.08.2026, id=351).
-# Vendor fable-method is excluded ONLY at the root level (ROOT_SKIP_DIRS):
-# the canon skills/fable-method/ (SKILL.md + references + eval/ + LICENSE)
-# is indexed — it is searched in the database (12.08.2026, id=357).
-DEFAULT_SKIP_DIRS = {"db", ".venv", "models", ".git", "__pycache__",
-                     ".reasonix", "agent"}
-ROOT_SKIP_DIRS = {"fable-method"}
-DEFAULT_SKIP_FILES = {".env", "wiki.db", "sherpa-voice.db"}
+# Never indexed, on any machine: build output, VCS, virtualenvs.
+DEFAULT_SKIP_DIRS = {"db", ".venv", "venv", ".git", "__pycache__"}
+DEFAULT_SKIP_FILES = {".env", "wiki.db"}
 
-# --- JS/TS via tree-sitter (tree_sitter_language_pack is already in the
-# venv — comes with code-review-graph; same engine as GitHub/NeoVim). ---
+
+def load_local_skip(root):
+    """Per-machine extras: <root>/skip.local — one name per line (# =
+    comment). Personal project layout stays OUT of the shipped kit."""
+    dirs, files = set(), set()
+    try:
+        text = open(os.path.join(root, "skip.local"), encoding="utf-8").read()
+    except OSError:
+        return dirs, files
+    for line in text.splitlines():
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        (files if line.endswith((".py", ".md", ".db", ".txt"))
+         else dirs).add(line)
+    return dirs, files
+
+# --- JS/TS via tree-sitter (parsers.py; optional dependency). ---
 import os
 import sys
 
@@ -67,8 +76,9 @@ def read_hashed(full):
     return hashlib.sha256(data).hexdigest(), data.decode("utf-8",
                                                          errors="replace")
 
-
-_BINARY_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".bmp"}
+_BINARY_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".bmp",
+                ".exe", ".dll", ".so", ".bin", ".pdf", ".zip", ".tar", ".gz",
+                ".7z", ".rar", ".jar", ".docx", ".xlsx", ".pptx"}
 
 
 def is_artifact(fn):
@@ -104,21 +114,13 @@ def load_gitignore(root):
     return ignore_dirs, ignore_files
 
 
-def scan_files(root, skip_dirs, skip_files, use_gitignore=False,
-               root_skip_dirs=ROOT_SKIP_DIRS):
+def scan_files(root, skip_dirs, skip_files, use_gitignore=False):
     """Fast pass without reading content: rel -> (mtime, size)."""
     out = {}
     gi_dirs, gi_files = load_gitignore(root) if use_gitignore else (set(), [])
     skip = set(skip_dirs) | gi_dirs
-    root_abs = os.path.abspath(root)
     for dirpath, dirnames, filenames in os.walk(root):
-        # root_skip_dirs are excluded ONLY at the root level (vendor at
-        # the root), not by name everywhere: the canon skills/fable-method/
-        # must be indexed.
-        dirnames[:] = [d for d in dirnames
-                       if d not in skip
-                       and not (os.path.abspath(dirpath) == root_abs
-                                and d in root_skip_dirs)]
+        dirnames[:] = [d for d in dirnames if d not in skip]
         for fn in sorted(filenames):
             if fn in skip_files or is_artifact(fn):
                 continue
@@ -261,6 +263,10 @@ def upsert_file(cur, rel, full, mtime, size, stats, action, content_hash=None,
     comparison) to avoid reading the file twice."""
     if content is None:
         content_hash, content = read_hashed(full)
+    if "\x00" in content[:4096]:
+        # unknown binary format (no extension match): never index —
+        # a 50MB .exe of U+FFFD made snippet()/bm25() crawl for minutes
+        return
     lines = content.count("\n") + 1
     syms = extract_symbols(rel, content)
     imports = extract_imports(rel, content)
@@ -388,6 +394,12 @@ def incremental_build(con, root, skip_dirs, skip_files, extra=None,
         cur.execute("DELETE FROM inherits WHERE rel_path = ?", (rel,))
         cur.execute("DELETE FROM errors WHERE rel_path = ?", (rel,))
         stats["del"] += 1
+    if stats["del"]:
+        # DELETE triggers leave FTS tombstones; merge them so the index
+        # does not bloat (372MB agent.db incident, 2026-08-19)
+        cur.execute("INSERT INTO files_fts(files_fts) VALUES('optimize')")
+        cur.execute(
+            "INSERT INTO files_fts_trigram(files_fts_trigram) VALUES('optimize')")
     return stats
 
 
@@ -418,7 +430,7 @@ def main():
                     help="respect the root .gitignore (default off: the database indexes everything, "
                          "including nested projects)")
     ap.add_argument("--extra-files", nargs="*", default=[],
-                    help="external files outside root (e.g. ~/.cache/sherpa-voice/history.md)")
+                    help="external files outside root (e.g. ~/.cache/session/history.md)")
     args = ap.parse_args()
 
     root = os.path.abspath(args.root)
@@ -429,8 +441,9 @@ def main():
                else os.path.join(ROOT, "db", "wiki.db"))
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
-    skip_dirs = DEFAULT_SKIP_DIRS | set(args.skip_dirs)
-    skip_files = DEFAULT_SKIP_FILES | set(args.skip_files)
+    local_dirs, local_files = load_local_skip(root)
+    skip_dirs = DEFAULT_SKIP_DIRS | set(args.skip_dirs) | local_dirs
+    skip_files = DEFAULT_SKIP_FILES | set(args.skip_files) | local_files
     extra = collect_extra(args.extra_files)
 
     existed = os.path.exists(db_path)

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
-"""Полнотекстовый поиск по содержимому проекта (база из build.py).
+"""Full-text search over the project content (database from build.py).
 
-Примеры:
-    python3 search.py виндовс
-    python3 search.py -b ../db/sherpa-voice.db модель
-    python3 search.py "паттерн AND агент"
-    python3 search.py --substring "гнцо"            # подстрока (trigram, >= 3)
-    python3 search.py -p skills "агент"             # только в skills/
-    python3 search.py --json "агент"                # машинный вывод (JSON)
-    python3 search.py --limit 5 фс
+Examples:
+    python3 search.py windows
+    python3 search.py -b ../db/myproject.db model
+    python3 search.py "pattern AND agent"
+    python3 search.py --substring "str"             # substring (trigram, >= 3)
+    python3 search.py -p skills "agent"             # only in skills/
+    python3 search.py --json "agent"                # machine-readable output (JSON)
+    python3 search.py --limit 5 fts
 """
 import argparse
 import json
@@ -17,12 +17,12 @@ import os
 import sqlite3
 import sys
 
-# Windows-консоль по умолчанию cp1251 — русский вывод падает с
-# UnicodeEncodeError. Переключаем на UTF-8 (Python 3.7+).
+# Windows console defaults to cp1251 — Cyrillic output fails with
+# UnicodeEncodeError. Switch to UTF-8 (Python 3.7+).
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:  # noqa: S110,BLE001 — reconfigure опционален, без него живём
+except Exception:  # noqa: S110,BLE001 — reconfigure is optional; fine without it
     pass
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -39,10 +39,10 @@ OPS = {"AND", "OR", "NOT", "NEAR"}
 
 
 def sanitize_query(query):
-    """Экранирует FTS5-запрос: токены со спецсимволами (кавычки, скобки,
-    дефис — известная грабля «agent-lsp», звёздочки) оборачиваются в двойные
-    кавычки. Операторы AND/OR/NOT/NEAR и готовые фразы в кавычках не
-    трогаем, чтобы булева логика работала."""
+    """Escapes an FTS5 query: tokens with special characters (quotes, parens,
+    hyphen — the known «agent-lsp» gotcha, asterisks) are wrapped in double
+    quotes. AND/OR/NOT/NEAR operators and ready-made quoted phrases are left
+    untouched so boolean logic keeps working."""
     out = []
     for tok in query.split():
         upper = tok.upper()
@@ -50,8 +50,8 @@ def sanitize_query(query):
                 (tok.startswith('"') and tok.endswith('"')):
             out.append(tok)
         elif any(c in tok for c in '"-()*:^'):
-            # Префиксный поиск (подмешк*) не оборачиваем: в кавычках
-            # звёздочка становится литералом и префикс не работает.
+            # Prefix search ('firmware*') is not wrapped: in quotes
+            # the asterisk becomes a literal and the prefix stops working.
             if tok.endswith("*") and not any(c in tok[:-1] for c in '"-():^'):
                 out.append(tok)
             else:
@@ -62,52 +62,52 @@ def sanitize_query(query):
 
 
 def _connect(db_path):
-    """Открывает базу проекта (row_factory — Row для доступа по имени)."""
+    """Opens the project database (row_factory — Row for name access)."""
     con = sqlite3.connect(db_path)
     con.row_factory = sqlite3.Row
     return con
 
 
 def _out(args, data):
-    """JSON-вывод по флагу --json (иначе молчит: текстовые ветки печатают сами)."""
+    """JSON output under the --json flag (otherwise silent: the text branches print themselves)."""
     if args.json:
         print(json.dumps(data, ensure_ascii=False, indent=2))
 
 
 def cmd_stats(args):
-    """--stats: метрики использования поиска (research.db search_log)."""
+    """--stats: search usage metrics (research.db search_log)."""
     s = search_stats()
-    print(f"поисков всего: {s['total']}  (пустых: {s['empty']}, "
+    print(f"searches total: {s['total']}  (empty: {s['empty']}, "
           f"{round(100 * s['empty'] / s['total'], 1) if s['total'] else 0}%)")
     if s["by_db"]:
-        print("по базам: " + ", ".join(
+        print("by database: " + ", ".join(
             f"{r['db_name']} — {r['n']}" for r in s["by_db"]))
-    print("\nтоп запросов (запрос | раз | найдено | пусто):")
+    print("\ntop queries (query | count | found | empty):")
     for r in s["top"]:
         print(f"  {r['query'][:60]:60} | {r['n']:3} | {r['found']:4} | {r['miss']}")
-    print("\nпоследние:")
+    print("\nrecent:")
     for r in s["last"][:10]:
         print(f"  {r['ts']} [{r['tool']}] {r['db_name']}: "
               f"{r['query'][:60]} -> {r['hits']}")
 
 
 def cmd_empty(args):
-    """--empty: майнинг пустых запросов — темы, которые ищут и не находят.
-    Кандидаты в доки/wiki (знание, которого нет в базах; аудит 14.08.2026,
-    research.db id=489)."""
+    """--empty: mine empty queries — topics people search for and do not find.
+    Candidates for docs/wiki (knowledge missing from the databases; audit
+    14.08.2026, research.db id=489)."""
     rows = empty_queries(limit=args.limit)
     if not rows:
-        print("стабильно пустых запросов нет — темы покрыты")
+        print("no stably empty queries — topics are covered")
         return
-    print(f"тем, которые ищут и не находят (>=2 пустых прогона): {len(rows)}\n")
+    print(f"topics searched but not found (>=2 empty runs): {len(rows)}\n")
     for r in rows:
         print(f"  {r['n']:2}× {r['query'][:70]:70} [{r['db_name']}]")
-    print("\nчто делать: тема реально нужна → оформить в docs/ или Wiki/"
-          "(скилл wiki-karpathy); обрубок/миссматч языка → ничего не делать.")
+    print("\nwhat to do: topic genuinely needed → write it up in docs/ or Wiki/"
+          "(wiki-karpathy skill); fragment/language mismatch → do nothing.")
 
 
 def cmd_symbol(con, args):
-    """--symbol ИМЯ: где определён символ (функция/класс/раздел)."""
+    """--symbol NAME: where a symbol is defined (function/class/section)."""
     rows = con.execute(
         "SELECT rel_path, name, kind, line, signature FROM symbols "
         "WHERE name LIKE ? ORDER BY rel_path, line",
@@ -116,9 +116,9 @@ def cmd_symbol(con, args):
     if args.json:
         _out(args, data)
     elif not rows:
-        print(f"символ '{args.symbol}' не найден в карте проекта")
+        print(f"symbol '{args.symbol}' not found in the project map")
     else:
-        print(f"найдено: {len(rows)}\n")
+        print(f"found: {len(rows)}\n")
         for r in rows:
             sig = f"  {r['signature']}" if r["signature"] else ""
             print(f"{r['rel_path']}:{r['line']}  [{r['kind']}] "
@@ -126,7 +126,7 @@ def cmd_symbol(con, args):
 
 
 def cmd_imports(con, args):
-    """--imports МОДУЛЬ: кто импортирует модуль (файл + строка)."""
+    """--imports MODULE: who imports the module (file + line)."""
     rows = con.execute(
         "SELECT rel_path, line FROM imports WHERE module = ? "
         "ORDER BY rel_path, line", (args.imports,)).fetchall()
@@ -134,15 +134,15 @@ def cmd_imports(con, args):
     if args.json:
         _out(args, data)
     elif not rows:
-        print(f"модуль '{args.imports}' никто не импортирует")
+        print(f"module '{args.imports}' is imported by nobody")
     else:
-        print(f"импортируют '{args.imports}': {len(rows)}\n")
+        print(f"who imports '{args.imports}': {len(rows)}\n")
         for r in rows:
             print(f"{r['rel_path']}:{r['line']}")
 
 
 def cmd_calls(con, args):
-    """--calls ФУНКЦИЯ: кто вызывает функцию (файл + строка)."""
+    """--calls FUNCTION: who calls the function (file + line)."""
     rows = con.execute(
         "SELECT rel_path, line FROM calls WHERE callee = ? "
         "ORDER BY rel_path, line", (args.calls,)).fetchall()
@@ -150,15 +150,15 @@ def cmd_calls(con, args):
     if args.json:
         _out(args, data)
     elif not rows:
-        print(f"функцию '{args.calls}' никто не вызывает")
+        print(f"nobody calls '{args.calls}'")
     else:
-        print(f"вызывают '{args.calls}': {len(rows)}\n")
+        print(f"who calls '{args.calls}': {len(rows)}\n")
         for r in rows:
             print(f"{r['rel_path']}:{r['line']}")
 
 
 def cmd_deps(con, args):
-    """--deps ФАЙЛ: какие модули импортирует файл."""
+    """--deps FILE: which modules the file imports."""
     rows = con.execute(
         "SELECT module, line FROM imports WHERE rel_path = ? "
         "ORDER BY line", (args.deps,)).fetchall()
@@ -166,15 +166,15 @@ def cmd_deps(con, args):
     if args.json:
         _out(args, data)
     elif not rows:
-        print(f"файл '{args.deps}' ничего не импортирует (или нет в базе)")
+        print(f"file '{args.deps}' imports nothing (or is not in the database)")
     else:
-        print(f"зависимости '{args.deps}': {len(rows)}\n")
+        print(f"dependencies of '{args.deps}': {len(rows)}\n")
         for r in rows:
-            print(f"  {r['module']}  (строка {r['line']})")
+            print(f"  {r['module']}  (line {r['line']})")
 
 
 def cmd_inherits(con, args):
-    """--inherits КЛАСС: кто наследует от класса; с =Х — от кого наследует Х."""
+    """--inherits CLASS: who inherits from the class; with =X — what X inherits from."""
     if args.inherits.startswith("="):
         child = args.inherits[1:]
         rows = con.execute(
@@ -186,9 +186,9 @@ def cmd_inherits(con, args):
         if args.json:
             _out(args, data)
         elif not rows:
-            print(f"класс '{child}' ничего не наследует (или нет в базе)")
+            print(f"class '{child}' inherits nothing (or is not in the database)")
         else:
-            print(f"наследует '{child}': {len(rows)}\n")
+            print(f"inherited by '{child}': {len(rows)}\n")
             for r in rows:
                 print(f"{r['rel_path']}:{r['line']}  {child} -> {r['base']}")
         return
@@ -201,17 +201,17 @@ def cmd_inherits(con, args):
     if args.json:
         _out(args, data)
     elif not rows:
-        print(f"от класса '{args.inherits}' никто не наследует "
-              f"(или нет в базе)")
+        print(f"nothing inherits from class '{args.inherits}' "
+              f"(or it is not in the database)")
     else:
-        print(f"наследуют от '{args.inherits}': {len(rows)}\n")
+        print(f"inheritors of '{args.inherits}': {len(rows)}\n")
         for r in rows:
             print(f"{r['rel_path']}:{r['line']}  {r['child']} -> "
                   f"{args.inherits}")
 
 
 def _search_rows(con, idx, query, path, limit, no_snippet):
-    """FTS-выборка по индексу idx (files_fts или files_fts_trigram)."""
+    """FTS lookup by index idx (files_fts or files_fts_trigram)."""
     path_cond = "AND f.rel_path LIKE ?" if path else ""
     params = [query]
     if path:
@@ -228,12 +228,12 @@ def _search_rows(con, idx, query, path, limit, no_snippet):
     LIMIT ?
     """
     params.append(limit)
-    # idx/cols — внутренние константы, значения — только prepared-параметры.
+    # idx/cols are internal constants; values are prepared parameters only.
     return con.execute(sql, params).fetchall()  # nosemgrep: sqlalchemy-execute-raw-query
 
 
 def cmd_errors(con, args):
-    """--errors: файлы с синтаксическими ошибками (не парсятся)."""
+    """--errors: files with syntax errors (do not parse)."""
     rows = con.execute(
         "SELECT rel_path, line, message FROM errors "
         "ORDER BY rel_path, line").fetchall()
@@ -241,18 +241,18 @@ def cmd_errors(con, args):
     if args.json:
         _out(args, data)
     elif not rows:
-        print("синтаксических ошибок нет — все .py парсятся")
+        print("no syntax errors — all .py files parse")
     else:
-        print(f"синтаксических ошибок: {len(rows)}\n")
+        print(f"syntax errors: {len(rows)}\n")
         for r in rows:
             loc = f":{r['line']}" if r["line"] else ""
             print(f"{r['rel_path']}{loc}  {r['message']}")
 
 
 def cmd_search(con, args):
-    """FTS-поиск по содержимому (или trigram-подстрока с --substring)."""
+    """FTS search over content (or trigram substring with --substring)."""
     if args.substring and len(args.query) < 3:
-        print("--substring требует запрос не короче 3 символов",
+        print("--substring requires a query of at least 3 characters",
               file=sys.stderr)
         sys.exit(1)
 
@@ -263,16 +263,16 @@ def cmd_search(con, args):
         rows = _search_rows(con, idx, query, args.path, args.limit,
                             args.no_snippet)
     except sqlite3.OperationalError as e:
-        print(f"неверный запрос: {e}", file=sys.stderr)
+        print(f"invalid query: {e}", file=sys.stderr)
         sys.exit(1)
 
     fallback = False
     if not rows and not args.substring and len(args.query) >= 3:
-        # Авто-фолбэк при пустом результате: триграм-индекс (подстрока).
-        # Спайк 12.08.2026 (research.db id=348): 33% запросов пустые;
-        # «удал»/«настройк»/«delete file» в обычном FTS дают 0, в trigram —
-        # десятки результатов. В trigram нет булевых операторов — берём
-        # сырой запрос как литеральную подстроку.
+        # Auto-fallback on empty results: the trigram index (substring).
+        # Spike 12.08.2026 (research.db id=348): 33% of queries come up empty;
+        # «delet»/«settin»/«delete file» return 0 in plain FTS but dozens
+        # in trigram. Trigram has no boolean operators — use the raw query
+        # as a literal substring.
         try:
             rows = _search_rows(con, "files_fts_trigram", args.query,
                                 args.path, args.limit, args.no_snippet)
@@ -295,11 +295,11 @@ def cmd_search(con, args):
                   and len(rows) <= 2) else "")
 
     if not rows:
-        print("ничего не найдено")
-        print("подсказка: короче (2-3 слова, без AND-цепочек) и без склонений;"
-              " содержимое базы — на РУССКОМ, имена файлов — латиницей"
-              " (вместо «delete file» → «удалить файл»); другая база:"
-              " -b db/wiki.db или research.db — findings.py search")
+        print("nothing found")
+        print("hint: shorter query (2-3 words, no AND chains) and no inflected"
+              " forms — content is indexed as-is without stemming («file»"
+              " won't match «files»); another database:"
+              " -b db/wiki.db or research.db — findings.py search")
         if wiki_hint:
             print(wiki_hint)
         dym = _did_you_mean(args.query,
@@ -308,10 +308,10 @@ def cmd_search(con, args):
             print(dym)
         return
 
-    label = "найдено по подстроке (авто-фолбэк)" if fallback else "найдено"
+    label = "found by substring (auto-fallback)" if fallback else "found"
     print(f"{label}: {len(rows)}\n")
     for r in rows:
-        print(f"{r['rel_path']}  ({r['size_bytes']} б)")
+        print(f"{r['rel_path']}  ({r['size_bytes']} bytes)")
         if not args.no_snippet:
             print(f"  …{r['snip']}")
         print()
@@ -320,10 +320,10 @@ def cmd_search(con, args):
 
 
 def _did_you_mean(query, db_name):
-    """Пустой результат → похожие НЕпустые запросы из search_log (research.db):
-    совпадение по общему токену >=3 символов, топ-2 по числу результатов.
-    Паттерн «did you mean» из индустрии (search UX); данные — свои (30.7%
-    пустых запросов, аудит 15.08, research.db id=540)."""
+    """Empty result → similar NON-empty queries from search_log (research.db):
+    match by a shared token of >=3 chars, top-2 by hit count. The industry
+    "did you mean" pattern (search UX); the data is our own (30.7% empty
+    queries, audit 15.08, research.db id=540)."""
     if len(query) < 3:
         return ""
     rd = os.path.join(ROOT, "db", "research.db")
@@ -351,22 +351,22 @@ def _did_you_mean(query, db_name):
         if score:
             best.append((score, h, q))
     best.sort(key=lambda x: (-x[0], -x[1]))
-    out = [f"«{q}» ({h} рез.)" for _, h, q in best[:2]]
+    out = [f"«{q}» ({h} hits)" for _, h, q in best[:2]]
     if out:
-        return "искали похожее: " + ", ".join(out)
+        return "did you mean: " + ", ".join(out)
     return ""
 
 
 def _wiki_hint(query, current_db):
-    """Перекрёстная подсказка: пусто/мало в этой базе → сколько в Wiki.
-    Wiki-библиотека почти не ищется (302 поста → 22 поиска из 563, аудит
-    15.08, research.db id=540) — знание лежит мёртвым. Подсказка при:
-    пустом результате в ЛЮБОЙ базе (кроме самой wiki) или малом (<=2) в
-    не-workspace базах. wiki.db при непустом не подсказываем: Wiki/ уже внутри
-    её индекса (дубль результатов)."""
+    """Cross-database hint: empty/few results in this database → how many in Wiki.
+    The Wiki library is barely searched (302 posts → 22 searches of 563, audit
+    15.08, research.db id=540) — the knowledge sits unused. Hint when: empty
+    result in ANY database (except wiki itself) or few (<=2) in non-workspace
+    databases. No hint for a non-empty wiki.db: Wiki/ is already inside its
+    index (duplicate results)."""
     wiki = os.path.join(ROOT, "db", "wiki.db")
     if os.path.abspath(current_db) == os.path.abspath(wiki):
-        return ""  # это сама wiki — не подсказываем
+        return ""  # this is wiki itself — no hint
     if not os.path.isfile(wiki):
         return ""
     try:
@@ -384,43 +384,43 @@ def _wiki_hint(query, current_db):
     except (sqlite3.Error, OSError):
         return ""
     if n:
-        return (f"💡 в Wiki: {n} постов по теме — посмотри: "
+        return (f"💡 in Wiki: {n} posts on the topic — take a look: "
                 f"search.py -b db/wiki.db \"{query}\"")
     return ""
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Поиск по содержимому базы проекта")
-    ap.add_argument("query", nargs="?", help="FTS5-запрос, например: виндовс или 'токен AND шкала'")
-    ap.add_argument("-b", "--db", default=DEFAULT_DB, help="путь к базе (по умолчанию wiki.db)")
-    ap.add_argument("--limit", type=int, default=10, help="сколько результатов (по умолчанию 10)")
-    ap.add_argument("--no-snippet", action="store_true", help="не показывать сниппеты")
-    ap.add_argument("--symbol", metavar="ИМЯ", help="где определён символ (функция/класс/раздел): файл + строка + сигнатура")
-    ap.add_argument("--imports", metavar="МОДУЛЬ", help="граф: кто импортирует модуль (файл + строка)")
-    ap.add_argument("--calls", metavar="ФУНКЦИЯ", help="граф: кто вызывает функцию (файл + строка)")
-    ap.add_argument("--deps", metavar="ФАЙЛ", help="граф: какие модули импортирует файл")
-    ap.add_argument("--inherits", metavar="КЛАСС", help="граф: кто наследует от класса (файл + строка); с =Х — от кого наследует класс")
-    ap.add_argument("--errors", action="store_true", help="файлы с синтаксическими ошибками (не парсятся)")
+    ap = argparse.ArgumentParser(description="Full-text search over the project database")
+    ap.add_argument("query", nargs="?", help="FTS5 query, e.g. 'windows' or 'token AND scale'")
+    ap.add_argument("-b", "--db", default=DEFAULT_DB, help="path to the database (default: wiki.db)")
+    ap.add_argument("--limit", type=int, default=10, help="how many results (default: 10)")
+    ap.add_argument("--no-snippet", action="store_true", help="do not show snippets")
+    ap.add_argument("--symbol", metavar="NAME", help="where a symbol is defined (function/class/section): file + line + signature")
+    ap.add_argument("--imports", metavar="MODULE", help="graph: who imports the module (file + line)")
+    ap.add_argument("--calls", metavar="FUNCTION", help="graph: who calls the function (file + line)")
+    ap.add_argument("--deps", metavar="FILE", help="graph: which modules the file imports")
+    ap.add_argument("--inherits", metavar="CLASS", help="graph: who inherits from the class (file + line); with =X — what the class inherits from")
+    ap.add_argument("--errors", action="store_true", help="files with syntax errors (do not parse)")
     ap.add_argument("--substring", action="store_true",
-                    help="поиск подстроки через trigram-индекс (запрос >= 3 символа)")
-    ap.add_argument("-p", "--path", metavar="ПОДСТРОКА",
-                    help="искать только в файлах, чей путь содержит подстроку")
-    ap.add_argument("--json", action="store_true", help="вывод в JSON (машиночитаемо)")
+                    help="substring search via the trigram index (query >= 3 characters)")
+    ap.add_argument("-p", "--path", metavar="SUBSTRING",
+                    help="search only files whose path contains the substring")
+    ap.add_argument("--json", action="store_true", help="output as JSON (machine-readable)")
     ap.add_argument("--stats", action="store_true",
-                    help="метрики использования поиска (research.db search_log): "
-                         "топ запросов, пустые, последние")
+                    help="search usage metrics (research.db search_log): "
+                         "top queries, empty, recent")
     ap.add_argument("--empty", action="store_true",
-                    help="майнинг пустых запросов: темы, которые ищут и не "
-                         "находят — кандидаты в доки/wiki")
+                    help="empty-query mining: topics searched but not found — "
+                         "candidates for docs/wiki")
     ap.add_argument("--no-log", action="store_true",
-                    help="не писать этот поиск в search_log (по умолчанию пишется)")
+                    help="do not log this search to search_log (default: it is logged)")
     ap.add_argument("--refresh", action="store_true",
-                    help="пересобрать базу (инкрементально) перед поиском; "
-                         "-r/--root и --extra-files берутся из аргументов")
+                    help="rebuild the database (incrementally) before searching; "
+                         "-r/--root and --extra-files are taken from the arguments")
     ap.add_argument("-r", "--root", default=str(ROOT),
-                    help="корень проекта для --refresh (по умолчанию memory)")
+                    help="project root for --refresh (default: memory)")
     ap.add_argument("--extra-files", nargs="*", default=[],
-                    help="внешние файлы вне root для --refresh (например ~/.cache/sherpa-voice/history.md)")
+                    help="external files outside root for --refresh (e.g. ~/.cache/session/history.md)")
     args = ap.parse_args()
 
     db_path = os.path.abspath(args.db)
@@ -439,7 +439,7 @@ def main():
             cmd += ["--extra-files"] + args.extra_files
         subprocess.run(cmd, check=True)
     if not os.path.exists(db_path):
-        print(f"базы нет: {db_path}\nСначала запусти: python3 build.py -o {db_path}", file=sys.stderr)
+        print(f"database not found: {db_path}\nRun first: python3 build.py -o {db_path}", file=sys.stderr)
         sys.exit(1)
 
     con = _connect(db_path)
@@ -464,7 +464,7 @@ def main():
         return
 
     if not args.query:
-        print("задайте запрос или одну из команд: --symbol, --imports, "
+        print("provide a query or one of the commands: --symbol, --imports, "
               "--calls, --deps, --inherits, --errors, --substring",
               file=sys.stderr)
         sys.exit(1)

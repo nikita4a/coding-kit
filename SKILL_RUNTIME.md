@@ -1,8 +1,9 @@
 # Coding Agent OS — Skill Runtime
 
-> **v2** | For platforms with ≥16K context.
+> **v2.5** | For platforms with ≥16K context.
 > Superpowers: plan → TDD → implement → verify → report.
-> For <8K context → compact mode: load OPS.md §1-5 only.
+> 8–16K context → core mode: OPS.md §1-5 + skill routing table only.
+> <8K context → compact mode: OPS.md §1-5 only.
 > Answer the user in THEIR language. Everything else — English.
 
 ## For every non-trivial task

@@ -40,17 +40,42 @@ def memory_root() -> Path:
     return Path(env).expanduser() if env else Path.home() / ".memory"
 
 
+def _is_link(p: Path) -> bool:
+    """True for symlinks and Windows junctions (is_symlink() misses the
+    latter; Path.is_junction() needs py3.12, the kit supports 3.8+)."""
+    if p.is_symlink():
+        return True
+    try:
+        os.readlink(p)
+        return True
+    except OSError:
+        return False
+
+
 def link_engine(root: Path) -> None:
+    """Point <root>/db-tools at this kit's engine (the link follows the
+    last installer). A pre-existing link is re-pointed; a real directory
+    is left alone (never destroy what may be data)."""
     target = root / "db-tools"
-    if target.exists() or target.is_symlink():
-        print(f"  db-tools link/source already at {target}")
+    if _is_link(target):
+        if target.resolve() == ENGINE.resolve():
+            print("  db-tools already linked to this kit")
+            return
+        os.rmdir(target)  # removes the link, not its target
+    elif target.exists():
+        print(f"  NOTE: {target} is a real directory; replace it manually "
+              f"to use this kit's engine.")
         return
     if os.name == "nt":
+        # paths travel via env, not -Command text: no injection, and
+        # $args is unavailable in -Command mode (script-only)
+        env = dict(os.environ, KIT_LINK_PATH=str(target),
+                   KIT_LINK_TARGET=str(ENGINE))
         subprocess.run(
             ["powershell", "-NoProfile", "-Command",
-             f"New-Item -ItemType Junction -Path '{target}' "
-             f"-Target '{ENGINE}' | Out-Null"],
-            check=True,
+             "New-Item -ItemType Junction -Path $env:KIT_LINK_PATH "
+             "-Target $env:KIT_LINK_TARGET | Out-Null"],
+            check=True, env=env,
         )
     else:
         target.symlink_to(ENGINE, target_is_directory=True)
@@ -93,8 +118,7 @@ def main() -> int:
         [sys.executable, str(ENGINE / "search_all.py"), "memory is a database"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
-    combined = (smoke.stdout or "") + (smoke.stderr or "")
-    ok = "Traceback" not in combined and "Error" not in combined
+    ok = smoke.returncode == 0 and bool(smoke.stdout.strip())
     print("\n---")
     print("Install done. Layout:")
     print(f"  Wiki/: {root / 'Wiki'} (your knowledge — personal, never committed)")

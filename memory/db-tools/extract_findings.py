@@ -2,15 +2,15 @@
 
 """Auto-parse session history -> candidates for research.db (wrapping item #1).
 
-Problem: knowledge from conversations (sherpa-voice transcripts, chat
+Problem: knowledge from conversations (session transcripts, chat
 histories) dies in logs — findings are only added manually. The script runs
 through the history, finds lines with idea/decision/problem markers and
 shows them as candidates. Semi-auto: by default it only shows (--dry-run),
 adding to the database is by number (--add 1,3,5).
 
 Supported formats:
-  - sherpa-voice history.md:  "## 2026-08-08" + "- `2026-08-08 13:05:15` text"
-  - sherpa-voice history.txt: "[2026-08-08 13:05:15] text"
+  - markdown history:  "## 2026-08-08" + "- `2026-08-08 13:05:15` text"
+  - plain-text history: "[2026-08-08 13:05:15] text"
   - arbitrary text: lines as-is (--file)
 
 Examples:
@@ -41,38 +41,39 @@ except Exception:  # noqa: S110,BLE001 — reconfigure is optional
     pass
 
 
-DEFAULT_HISTORY = os.path.expanduser("~/.cache/sherpa-voice/history.md")
+DEFAULT_HISTORY = os.environ.get(
+    "FINDINGS_HISTORY", os.path.expanduser("~/.cache/session-history/history.md"))
 DB = os.path.join(ROOT, "db", "research.db")
 
 # Markers for "knowledge here": suggestion, decision, problem, lesson.
 # Words matched separately so a marker doesn't fire noisily inside longer
 # words; without Russian stemming we match by substring with context.
 MARKERS = (
-    "предлагаю", "нужно добавить", "надо добавить", "добавить", "давай добавим",
-    "проблема", "не работает", "ошибка", "баг", "грабля", "урок", "вывод",
-    "решение", "прикол в том", "понял, в чём", "важно", "правило", "надо",
-    "стоит", "сделать", "сделаем", "реализовать", "стоило бы", "хорошо бы",
-    "нужно", "заметил", "обнаружил", "выяснил", "получилось", "сломалось",
-    "а что если", "давай попробуем", "проверить",
+    "i suggest", "need to add", "must add", "add", "let's add",
+    "problem", "doesn't work", "error", "bug", "gotcha", "lesson", "takeaway",
+    "solution", "the trick is", "understood what", "important", "rule", "must",
+    "worth", "do", "let's do", "implement", "would be worth", "would be nice",
+    "need", "noticed", "discovered", "found out", "worked out", "broke",
+    "what if", "let's try", "check",
 )
 
 # Strong markers: knowledge even if the line is a question or a complaint.
-STRONG = ("предлагаю", "нужно добавить", "надо добавить", "давай добавим",
-          "проблема", "не работает", "ошибка", "баг", "грабля", "урок",
-          "вывод", "решение", "прикол в том", "сломалось", "обнаружил",
-          "выяснил", "получилось")
+STRONG = ("i suggest", "need to add", "must add", "let's add",
+          "problem", "doesn't work", "error", "bug", "gotcha", "lesson",
+          "takeaway", "solution", "the trick is", "broke", "discovered",
+          "found out", "worked out")
 
 # Short/service lines that are not knowledge: greetings, ping checks.
 NOISE = (
-    "привет", "тест", "алло", "ха-ха", "проверка", "ау", "ок", "окей",
-    "спасибо", "понятно", "ага", "угу", "да", "нет", "ну", "как дела",
-    "как твои дела", "кто ты", "что делаешь", "занят", "пока", "до связи",
+    "hello", "test", "hi", "haha", "checking", "hey", "ok", "okay",
+    "thanks", "got it", "yeah", "uh-huh", "yes", "no", "well", "how are you",
+    "how's it going", "who are you", "what are you doing", "busy", "bye", "talk later",
 )
 
 # Questions without markers are not candidates (a question != a conclusion), but with
 # a "why/what if" marker they are candidates (a line of thought).
-QUESTION_WORDS = ("как сделать", "как работает", "как устроен", "расскажи",
-                  "объясни", "что такое", "что думаешь")
+QUESTION_WORDS = ("how to do", "how does it work", "how is it built", "tell me",
+                  "explain", "what is", "what do you think")
 
 
 def parse_history(path):
@@ -154,7 +155,7 @@ def already_exists(con, topic):
 def cmd_main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--file", default=DEFAULT_HISTORY,
-                    help="history file (default sherpa-voice history.md)")
+                    help="history file (default $FINDINGS_HISTORY)")
     ap.add_argument("--min-len", type=int, default=40,
                     help="minimum length of a candidate line (default 40)")
     ap.add_argument("--add", default="",

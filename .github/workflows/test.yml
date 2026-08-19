@@ -6,7 +6,11 @@ on:
 
 jobs:
   gates:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -20,3 +24,5 @@ jobs:
         run: python scripts/tools/check_file_sizes.py --ci
       - name: Trap-suite (dry-run validation)
         run: python eval/runner.py
+      - name: Unit tests (install + root resolver)
+        run: python -m unittest discover -s tests

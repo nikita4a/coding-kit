@@ -101,7 +101,7 @@ def empty_queries(limit=30):
         "GROUP BY query HAVING n >= 2 ORDER BY n DESC LIMIT ?",
         (limit,)).fetchall()
     con.close()
-    junk = {"test", "foo", "удал", "настройк", "подмешка"}
+    junk = {"test", "foo", "delet", "sett", "hint"}
     out = []
     for r in rows:
         q = r["query"]
