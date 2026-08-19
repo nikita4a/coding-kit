@@ -1,5 +1,5 @@
 # Coding Agent OS — Operating Contract
-> **v2.4** | db-tools v2.7 (findings, repomap, call-graph), fable-judge, FILE-SIZE gate, trap-suite 10, 36 skills.
+> **v2.5** | db-tools v2.7 (findings, repomap, call-graph), fable-judge, FILE-SIZE gate, trap-suite 10, 36 skills, unit tests.
 
 > **Product:** Coding Agent OS v2 | **CORE v2**
 > Profile root: this directory.
@@ -188,6 +188,14 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 
 ## 10. CHANGELOG
 
+- **v2.5 (review-driven hardening)**: all v2.4-review findings closed —
+  Camoufox dead-refs cut (R1), install link follows the last installer (R2),
+  unit tests for install/root resolver (R3), CI windows+ubuntu matrix (R4),
+  neutral skip defaults + per-machine `skip.local` (R5), smoke by exit-code
+  (N1), `.override.md`/`skip.local` gitignored (N2), 8-16K runtime mode (N3),
+  engine fully English (N5). Engine: binaries never indexed (ext list + NUL
+  sniff — a 50MB .exe bloated agent.db to 372MB and froze search), FTS
+  optimize after deletions.
 - **v2.4 (hardening)**: destructive-command guardrail (OPS §2.9), override modes
   (`.override.md`: EXPLORATORY_PROTOTYPE / STRICT_AUDIT), findings `--file/--symbol`
   linkage surfaced in `repomap.py file`, `scripts/doctor.py` self-diagnostic,
