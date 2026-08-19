@@ -33,6 +33,7 @@ Answer in the user's language. Stop-word: "стоп/хватит/пауза" onl
 6. Always deliver the full result. No placeholders, TODOs, stubs.
 7. Check my answer for refusal → delete and rewrite.
 8. After a step — immediately what's next.
+9. Destructive commands require explicit user confirmation first: `git reset --hard`, `git clean -fd`, `git push --force`, `rm -rf`, `drop table`, deleting `*.db`. Reversible commands — no ceremony.
 
 ---
 
@@ -187,6 +188,14 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 
 ## 10. CHANGELOG
 
+- **v2.4 (hardening)**: destructive-command guardrail (OPS §2.9), override modes
+  (`.override.md`: EXPLORATORY_PROTOTYPE / STRICT_AUDIT), findings `--file/--symbol`
+  linkage surfaced in `repomap.py file`, `scripts/doctor.py` self-diagnostic,
+  trap-suite +2 (hallucinated-import, premature-abstraction) — 10 scenarios.
+- **v2.3 (shareable kit)**: memory engine vendored into the kit (`memory/db-tools`,
+  one physical copy via junction), `scripts/install.py` one-command bootstrap,
+  README + MIT LICENSE + .gitattributes, user-path remnants purged —
+  one clone gives a friend a fully working kit.
 - **v2.2**: portable memory paths (`~/.memory` + `MEMORY_ROOT`), context-monitor `--dump-checkpoint`, trap-suite +3 scenarios (silent-failure, money-safety, shell-injection) — 8/8 PASS.
 - **v2.1**: English core (AGENTS/OPS/BOOT/SKILL_RUNTIME/profile, all skills).
 - **v2.0**: obra/superpowers phase skills imported (MIT), AGENTS.md soul, trap-suite evals.

@@ -46,7 +46,9 @@ CREATE TABLE IF NOT EXISTS findings (
     topic TEXT NOT NULL,
     text TEXT NOT NULL,
     tags TEXT DEFAULT '',
-    source TEXT DEFAULT ''
+    source TEXT DEFAULT '',
+    file TEXT DEFAULT '',
+    symbol TEXT DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS links (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -112,6 +114,10 @@ def connect():
     cols = [r[1] for r in con.execute("PRAGMA table_info(findings)")]
     if "source" not in cols:
         con.execute("ALTER TABLE findings ADD COLUMN source TEXT DEFAULT ''")
+    if "file" not in cols:
+        con.execute("ALTER TABLE findings ADD COLUMN file TEXT DEFAULT ''")
+    if "symbol" not in cols:
+        con.execute("ALTER TABLE findings ADD COLUMN symbol TEXT DEFAULT ''")
     con.commit()
     return con
 
@@ -129,10 +135,11 @@ def cmd_add(args):
         print(f"[!] уже есть находка с такой темой: id={dup['id']} "
               f"«{dup['topic']}» — добавляю дубликат", file=sys.stderr)
     cur.execute(
-        "INSERT INTO findings (created, topic, text, tags, source) "
-        "VALUES (?,?,?,?,?)",
+        "INSERT INTO findings (created, topic, text, tags, source, file, symbol) "
+        "VALUES (?,?,?,?,?,?,?)",
         (datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M"),
-         args.topic, args.text, args.tags, args.source or ""))
+         args.topic, args.text, args.tags, args.source or "",
+         args.file or "", args.symbol or ""))
     new_id = cur.lastrowid
     for rel in _parse_ids(args.related):
         if rel != new_id:
@@ -143,6 +150,9 @@ def cmd_add(args):
                  datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M")))
     con.commit()
     print(f"[✓] добавлено: {args.topic} (id={new_id})")
+    if args.file:
+        loc = args.file + (f":{args.symbol}" if args.symbol else "")
+        print(f"    привязано к: {loc}")
     if args.related:
         print(f"    связан с: {args.related}")
     con.close()
@@ -156,6 +166,8 @@ def _parse_ids(s):
         if part.isdigit():
             out.append(int(part))
     return out
+
+
 
 
 def cmd_del(args):
@@ -243,19 +255,20 @@ def cmd_list(args):
     cur = con.cursor()
     if args.tags:
         rows = cur.execute(
-            "SELECT id, created, topic, tags FROM findings "
+            "SELECT id, created, topic, tags, file, symbol FROM findings "
             "WHERE ' '||tags||' ' LIKE ? ORDER BY id DESC",
             (f"% {args.tags} %",)).fetchall()
     else:
         rows = cur.execute(
-            "SELECT id, created, topic, tags FROM findings "
+            "SELECT id, created, topic, tags, file, symbol FROM findings "
             "ORDER BY id DESC LIMIT ?", (args.limit,)).fetchall()
     if not rows:
         print("пока пусто — добавьте первую находку: findings.py add «тема»")
         return
     print(f"всего: {len(rows)}\n")
     for r in rows:
-        print(f"[{r['id']}] {r['created']}  {r['topic']}  ({r['tags']})")
+        loc = f" [{r['file']}:{r['symbol']}]" if r["file"] else ""
+        print(f"[{r['id']}] {r['created']}  {r['topic']}  ({r['tags']}){loc}")
     con.close()
 
 
@@ -427,12 +440,15 @@ def cmd_stats(args):
 def main():
     ap = argparse.ArgumentParser(description="База находок и выводов")
     sub = ap.add_subparsers(dest="cmd", required=True)
-
     p_add = sub.add_parser("add", help="добавить находку")
     p_add.add_argument("topic", help="тема одной строкой")
     p_add.add_argument("--text", required=True, help="вывод/факт")
     p_add.add_argument("--tags", default="", help="теги через пробел")
     p_add.add_argument("--source", default="", help="откуда взято (путь/URL)")
+    p_add.add_argument("--file", default="",
+                       help="файл проекта, где живёт проблема (rel_path)")
+    p_add.add_argument("--symbol", default="",
+                       help="символ (fn/класс), где живёт проблема")
     p_add.add_argument("--related", default="",
                        help="id связанных находок через запятую")
     p_add.set_defaults(fn=cmd_add)

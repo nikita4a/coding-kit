@@ -4,6 +4,7 @@
 > Contract: OPS.md. Full methods live in `skills/`, not here.
 > Answer the user in THEIR language. Everything else — English.
 > Memory root: `~/.memory` (shell expands `~`; env `MEMORY_ROOT` overrides).
+> Modes: an optional `.override.md` next to AGENTS.md may contain `MODE: EXPLORATORY_PROTOTYPE` (TDD relaxed for hypothesis spikes; TDD closed before merge) or `MODE: STRICT_AUDIT` (review + findings only, no edits). Absent = default contract.
 
 ---
 

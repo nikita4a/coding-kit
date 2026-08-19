@@ -14,6 +14,17 @@ description: 'Use when you need a fact from the outside world: "find out", "look
 5. **Dating.** When is the data current? "As of August 2026..."
 6. **Answer with sources.** Every fact with a link. Mark unverified claims "verify".
 
+## Source hierarchy & fallback (403/429/captcha)
+
+1. **Official docs / GitHub repo / source code** — the primary source.
+2. **Issue trackers, ADRs, engineering blogs** — industry practice.
+3. **Direct HTTP fetch of the page** (`read` on the URL) — when search engines
+   block you.
+
+On 403/429/captcha: switch to the next level immediately; never stop the task
+and never fill the gap by inventing a result. If every level fails: "not
+verified — sources unreachable", and name exactly what was tried.
+
 ## Research depth
 
 - **Quick fact** (date, number, definition) — 2-3 sources, one pass.

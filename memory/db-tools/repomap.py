@@ -176,6 +176,26 @@ def map_project(conn, tokens: int = 2000, focus: list | None = None) -> str:
         shown += 1
     return "\n".join(out)
 
+def _findings_for(rel_path: str) -> str:
+    """Находки research.db, привязанные к файлу (findings.py add --file)."""
+    try:
+        con = sqlite3.connect(chulan_root() / "db" / "research.db")
+        con.row_factory = sqlite3.Row
+        rows = con.execute(
+            "SELECT id, topic, symbol FROM findings "
+            "WHERE file = ? OR file LIKE ? ORDER BY id DESC",
+            (rel_path, f"{rel_path}%")).fetchall()
+        con.close()
+    except Exception:  # research.db может не быть — карта не ломается
+        return ""
+    if not rows:
+        return ""
+    out = [f"\nНаходки по файлу ({len(rows)}):"]
+    for r in rows:
+        sym = f":{r['symbol']}" if r["symbol"] else ""
+        out.append(f"  #research {r['id']} {r['topic']} [{rel_path}{sym}]")
+    return "\n".join(out)
+
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
@@ -195,6 +215,7 @@ def main() -> int:
             print(map_project(conn, tokens=args.tokens, focus=args.focus))
         else:
             print(map_file(conn, args.path, tokens=args.tokens))
+            print(_findings_for(args.path))
     finally:
         conn.close()
     return 0
