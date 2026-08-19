@@ -115,7 +115,9 @@ def main() -> int:
     build_indexes(root)
 
     smoke = subprocess.run(
-        [sys.executable, str(ENGINE / "search_all.py"), "memory is a database"],
+        # probe token from the root's own scripts (memory-warmup.py):
+        # indexed on every OS, unlike engine-link traversal
+        [sys.executable, str(ENGINE / "search_all.py"), "warmup"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     ok = smoke.returncode == 0 and bool(smoke.stdout.strip())

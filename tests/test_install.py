@@ -23,7 +23,7 @@ _spec = importlib.util.spec_from_file_location(
 install = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(install)
 
-PROBE = "memory is a database"  # smoke query; indexed so search returns 0
+PROBE = "warmup"  # matches memory-warmup.py, indexed on every OS
 
 def _make_foreign_link(target: Path, dest: Path) -> None:
     """Create a link (junction on NT, symlink elsewhere) target -> dest."""
@@ -47,7 +47,7 @@ class InstallTest(unittest.TestCase):
         (self.root / "Wiki" / "reference").mkdir(parents=True)
         (self.root / "Wiki" / "reference" / "probe.md").write_text(
             "---\ntype: reference\ntitle: probe\n---\n"
-            "memory is a database, not a conversation\n", encoding="utf-8")
+            "warmup: the agent searches the memory database\n", encoding="utf-8")
         self._env = os.environ.get("MEMORY_ROOT")
         os.environ["MEMORY_ROOT"] = str(self.root)
 

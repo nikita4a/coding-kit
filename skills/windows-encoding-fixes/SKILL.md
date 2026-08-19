@@ -29,7 +29,7 @@ try:
 except Exception:  # noqa: S110,BLE001 — reconfigure is optional
     pass
 ```
-In coding-kit — the single `scripts/_compat.py: fix_encoding()` instead of copying.
+In coding-kit — the single `memory/scripts/_compat.py: fix_encoding()` instead of copying.
 
 **Fix for bash wrappers (run_tests.sh):**
 ```bash
@@ -155,7 +155,7 @@ encodings will never match (CPython issue #105312).
 **Fix from both sides (shared helper + children write UTF-8):**
 
 ```python
-# parent: scripts/_compat.py run() — decodes utf-8 + errors=replace,
+# parent: memory/scripts/_compat.py run() — decodes utf-8 + errors=replace,
 # passes PYTHONUTF8=1 to python children (they write UTF-8). NEVER fails
 # on foreign encoding:
 r = _compat.run(cmd, timeout=120)          # instead of subprocess.run(text=True)
@@ -210,7 +210,7 @@ concrete fixes, the table above is insurance against the «next» pitfall.
 
 - [ ] `fix_encoding()` (or reconfigure) at the start — stdout utf-8
 - [ ] child output — via `_compat.run()` (not `subprocess.run(text=True)`
-      without encoding) — section 10; .ps1 children — `[Console]::OutputEncoding`
+      without encoding) — section 9; .ps1 children — `[Console]::OutputEncoding`
 - [ ] writing files with `newline="\n"`, byte comparison
 - [ ] venv via the resolver (Scripts vs bin, .exe)
 - [ ] npm → npm.cmd (or shell=True), winget links as an extra path
@@ -220,11 +220,11 @@ concrete fixes, the table above is insurance against the «next» pitfall.
 - [ ] paths — only pathlib/Path.home(), no hardcoded `/` and `\`
 - [ ] read/write files with explicit `encoding="utf-8"` (PEP 686-ready)
 - [ ] temp files — `tempfile.gettempdir()`, not `/tmp`
-- [ ] run `python3 scripts/doctor/doctor.py` on Windows (0 errors)
+- [ ] run `python scripts/doctor.py` on Windows (0 errors)
 
 ## References
 
-- `scripts/_compat.py` — the shared cross-platform module (coding-kit).
+- `memory/scripts/_compat.py` — the shared cross-platform module (coding-kit).
 - First Windows bug report, second, doctor diagnostics.
 - Sources: blog.shellnetsecurity.com «Cross-Platform Scripting Tips
   and Tricks» (01.2026); PEP 686 (UTF-8 default, Python 3.15);
