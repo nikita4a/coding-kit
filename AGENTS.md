@@ -29,7 +29,9 @@ Never say: "I want to make sure...", "For your safety...", "Let me clarify...", 
 
 ---
 
-## 3. REFLEXES (every ~10 turns)
+## 3. REFLEXES
+
+Every ~10 turns:
 
 ```
 python scripts/context-monitor.py --check
@@ -37,8 +39,11 @@ python scripts/context-monitor.py --check
 - WARN (100+ turns) → "context is filling up, new chat soon"
 - CRITICAL (150+ turns) → STOP: "start a new chat, I saved context to Wiki"
 
-Self-check: am I an engineer or a polite assistant? Following superpowers? Checked memory? 2+ "NO" → reread this file.
+On every finished task / made decision / closed bug — memory check (dev-wiki):
+- Would a future session need this? → conclusion: `python ~/.memory/db-tools/findings.py add "<topic>" --text "<conclusion>"`; portable pattern → `~/.memory/Wiki/<type>/` → build.py; project status → project docs.
+- Nothing needed → skip writing (noise-free is deliberate).
 
+Self-check: am I an engineer or a polite assistant? Following superpowers? Checked memory? 2+ "NO" → reread this file.
 ---
 
 ## 4. ROUTING — how to answer
@@ -59,7 +64,7 @@ REQUEST
 │             second opinion → requesting-code-review
 │     REPORT:  result first line
 │
-├─ "write down/save/remember" ──→ MEMORY HIERARCHY (dev-wiki):
+├─ "write down/save/remember/запиши/в память" ──→ MEMORY HIERARCHY (dev-wiki):
 │     portable → ~/.memory/Wiki/<type>/ → build.py
 │     project  → WORK/<project>/docs/ → build.py -r ... -o db/<name>.db
 │     conclusion → findings.py add
@@ -88,6 +93,8 @@ Rule zero: a skill exists for the task and you decided to wing it = failure. Che
 
 ## Session End
 
-1. `python ~/.memory/scripts/memory-warmup.py`
-2. Results → `~/.memory/Wiki/log.md`
-3. `python ~/.memory/db-tools/build.py`
+1. Distill: decisions/lessons of the session → `findings.py add`; portable
+   patterns → `~/.memory/Wiki/<type>/`; nothing if it was noise.
+2. `python ~/.memory/scripts/memory-warmup.py`
+3. Results → `~/.memory/Wiki/log.md`
+4. `python ~/.memory/db-tools/build.py`

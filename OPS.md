@@ -102,6 +102,8 @@ Memory = database (~/.memory), not conversation. Before "what do we know about X
 python ~/.memory/db-tools/search_all.py "X"
 ```
 
+**Save reflex:** after every finished task / made decision / closed bug — would a future session need this? Yes → findings.py add (conclusion) or Wiki post. No → skip (noise-free is deliberate).
+
 **Boundary rule:** portable knowledge (patterns, lessons, decisions) → `~/.memory/Wiki/<type>/<slug>.md` → `python ~/.memory/db-tools/build.py`. Project status/specifics → file in the project → `python ~/.memory/db-tools/build.py -r <project root> -o ~/.memory/db/<name>.db`. Findings: `python ~/.memory/db-tools/findings.py add "topic" --text "conclusion" --source path`.
 
 **Path convention:** `~/.memory` everywhere; env `MEMORY_ROOT` overrides (shell expands `~`; on Windows use Git Bash / PowerShell `$env:MEMORY_ROOT`).

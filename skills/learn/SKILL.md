@@ -1,6 +1,6 @@
 ---
 name: learn
-description: 'Use when the user wants the agent to teach itself a reusable skill from a session, chat, directory, or URL ("learn", "/learn", "turn this into a skill", "save this procedure", "make a skill from this"). Distills a repeatable procedure into a Hermes-compatible SKILL.md.'
+description: 'Use when the user wants the agent to teach itself a reusable skill from a session, chat, directory, or URL ("learn", "/learn", "скилл", "навык", "turn this into a skill", "save this procedure", "make a skill from this"). Distills a repeatable procedure into a Hermes-compatible SKILL.md.'
 ---
 
 # Learn — turn experience into a reusable skill
