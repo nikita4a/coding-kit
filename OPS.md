@@ -154,6 +154,7 @@ python scripts/install.py   # NEVER delete research.db
 | `git-workflow-and-versioning` | Commits, branches, PRs |
 | `code-graph-review` | Blast radius, impact analysis |
 | `money-path-safety` | Money, payments, balance |
+| `learn` | "Learn this", "/learn", "make a skill" — agent writes a SKILL.md |
 | `web-research` | Web search, fact-checking |
 | `skill-authoring` | Creating skills |
 | `reasoning-engine` | Multi-step thinking before non-trivial actions |

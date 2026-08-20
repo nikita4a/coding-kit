@@ -3,7 +3,7 @@
 # Superpowers: plan → TDD → implement → verify → report.
 # YAGNI: delete weightless code.
 
-version: "2.6"
+version: "2.6.1"
 name: coding-agent-kit
 description: Coding Agent OS — superpowers, YAGNI, TDD, cross-chat memory, trap-suite evals.
 
@@ -58,6 +58,7 @@ skills:
     - money-path-safety
     - web-research
     - skill-authoring
+    - learn                     # self-authoring: session → SKILL.md
     - reasoning-engine
     - testing-discipline
     - debug-incident-protocol

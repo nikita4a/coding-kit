@@ -67,6 +67,9 @@ REQUEST
 ├─ "verify what was done/is it ready" ──→ fable-judge: re-run claimed
 │     checks, verdict VERIFIED / REFUTED
 │
+├─ "learn this / /learn X / make a skill" ──→ learn: distill the
+│     repeatable procedure into a new SKILL.md (format: skill-authoring)
+│
 └─ SMALL THING (<10 lines, no code logic) ──→ do it now, verify after
 ```
 
