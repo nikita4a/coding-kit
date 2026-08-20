@@ -38,6 +38,8 @@ python scripts/context-monitor.py --check
 ```
 - WARN (100+ turns) → "context is filling up, new chat soon"
 - CRITICAL (150+ turns) → STOP: "start a new chat, I saved context to Wiki"
+- Context >50% → checkpoint delta to findings (handoff survives a dead session):
+  `python ~/.memory/db-tools/findings.py add "checkpoint <date>" --text "DONE: / DECISIONS: / NEXT: / FILES: (<=200 words, delta since last, non-obvious only)" --tags checkpoint`
 
 On every finished task / made decision / closed bug — memory check (dev-wiki):
 - Would a future session need this? → conclusion: `python ~/.memory/db-tools/findings.py add "<topic>" --text "<conclusion>"`; portable pattern → `~/.memory/Wiki/<type>/` → build.py; project status → project docs.

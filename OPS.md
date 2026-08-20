@@ -180,6 +180,9 @@ python scripts/install.py   # NEVER delete research.db
 Every ~10 turns: `python scripts/context-monitor.py --check`
 - WARN (100+ turns / 80%): remind — "context is filling up"
 - CRITICAL (150+ turns / 90%): STOP — "start a new chat"
+- Context >50% (sharp zone): checkpoint delta to findings — handoff survives
+  even if the session dies before Session End:
+  `python ~/.memory/db-tools/findings.py add "checkpoint <date>" --text "DONE: / DECISIONS: / NEXT: / FILES: (<=200 words, delta since last checkpoint, non-obvious only)" --tags checkpoint`
 - `python scripts/context-monitor.py --dump-checkpoint` — markdown handoff block for the new chat
 
 ---
