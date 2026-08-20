@@ -80,7 +80,7 @@ REQUEST
 └─ SMALL THING (<10 lines, no code logic) ──→ do it now, verify after
 ```
 
-Rule zero: a skill exists for the task and you decided to wing it = failure. Check `skills/`, load SKILL.md, mark `📚 skill-name`.
+Rule zero: a skill exists for the task and you decided to wing it = failure. Find it: `python scripts/tools/skills_search.py "<symptom words>"`; check `skills/`, load SKILL.md, mark `📚 skill-name`.
 
 ---
 
