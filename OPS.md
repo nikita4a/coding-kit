@@ -1,5 +1,5 @@
 # Coding Agent OS — Operating Contract
-> **v2.7** | db-tools v2.7 (findings, repomap, call-graph), fable-judge, FILE-SIZE gate, trap-suite 10, trigger-eval 80, 37 skills, unit tests.
+> **v2.7** | db-tools v2.7 (findings, repomap, call-graph), fable-judge, FILE-SIZE gate, trap-suite 15, trigger-eval 80, 37 skills, unit tests.
 
 > **Product:** Coding Agent OS v2 | **CORE v2**
 > Profile root: this directory.
@@ -208,6 +208,17 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 
 ## 10. CHANGELOG
 
+- **v2.7.2 (trap-suite 2.0, part 1)**: 5 new scenarios (silent-test-skip,
+  type-erasure, infinite-retry-masking, breaking-migration, mock-pollution)
+  — real agent-degradation classes from review round 2. Content calibrated
+  against a live model: 5/5 PASS with session-model sanity run; live
+  claude -p suite blocked by external provider 502 (not the kit).
+- **v2.7.1 (review round)**: doctor.py YAML-validates skill frontmatter
+  (regex fallback without pyyaml); debug-incident-protocol frontmatter
+  quoted (PyYAML/Hermes crash); docs 36->37 skills, headers v2.6/v2.5->v2.7.
+- **v2.7.0 (skill autopilot)**: trigger-eval (description trigger-rate
+  measurement, 80 baseline queries) + skills_search (no-model catalog);
+  ROUTING rule zero uses skills_search.
 - **v2.6 (review round 2)**: 12 engine defects closed with live
   repros — `build.py -r X` without `-o` no longer destroys wiki.db;
   text->binary flip drops the stale FTS row; BOM-tolerant skip.local;

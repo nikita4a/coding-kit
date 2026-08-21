@@ -14,7 +14,7 @@ Works in any environment that reads an agent rules file and SKILL.md skills: Cla
 | Manifest | `profile.yml` | single source of truth: paths, skills |
 | Skills | `skills/` | 37: always-on core + obra phase skills + domain |
 | Memory engine | `memory/db-tools/` | build, search_all, findings, repomap (FTS5) |
-| Evals | `eval/` | trap-suite: 10 scenarios + runner |
+| Evals | `eval/` | trap-suite: 15 scenarios + runner |
 | Adapters | `adapters/` | per-environment setup guides |
 
 ## Install (one command)
