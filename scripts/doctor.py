@@ -19,6 +19,11 @@ import sys
 from pathlib import Path
 
 try:
+    import yaml
+except ImportError:
+    yaml = None
+
+try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 except Exception:
     pass
@@ -62,6 +67,17 @@ def check_frontmatter() -> tuple[bool, str]:
             bad.append(f"{sk.name}: no frontmatter")
             continue
         fm = head[1]
+        if yaml is not None:
+            try:
+                fm_yaml = yaml.safe_load(fm)
+            except Exception as exc:
+                bad.append(f"{sk.name}: invalid yaml ({str(exc).splitlines()[0]})")
+                continue
+            if not isinstance(fm_yaml, dict) or not fm_yaml.get("name"):
+                bad.append(f"{sk.name}: name missing")
+            if not isinstance(fm_yaml, dict) or not fm_yaml.get("description"):
+                bad.append(f"{sk.name}: description missing")
+            continue
         if not re.search(r"^name:\s*\S+", fm, re.M):
             bad.append(f"{sk.name}: name missing")
         if not re.search(r"^description:\s*\S+", fm, re.M):

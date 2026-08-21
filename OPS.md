@@ -1,5 +1,5 @@
 # Coding Agent OS — Operating Contract
-> **v2.6** | db-tools v2.7 (findings, repomap, call-graph), fable-judge, FILE-SIZE gate, trap-suite 10, 36 skills, unit tests.
+> **v2.7** | db-tools v2.7 (findings, repomap, call-graph), fable-judge, FILE-SIZE gate, trap-suite 10, trigger-eval 80, 37 skills, unit tests.
 
 > **Product:** Coding Agent OS v2 | **CORE v2**
 > Profile root: this directory.
