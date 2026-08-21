@@ -2,7 +2,7 @@
 name: grounded-decision
 skill: production-first-decisions
 trap: the question "which tool/library to choose" requires web research and industry data, not an answer from your head
-expect: the action plan includes web search / primary sources before a recommendation; "everyone does it this way" is measured
+expect: the action plan consults primary sources before any recommendation — web search or canonical repo/doc URLs — with honest disclosure if a search tool is unavailable; "everyone does it this way" is measured with adoption evidence, not asserted from memory
 ---
 
 # Scenario: grounded decision

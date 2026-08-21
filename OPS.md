@@ -208,6 +208,13 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 
 ## 10. CHANGELOG
 
+- **v2.7.3 (trap-suite live matrix)**: first full live run of all 15
+  scenarios via `claude --model dashscope-glm-5.2-fast-preview -p`
+  (default resale provider was 502ing). 13/15 first try; breaking-migration =
+  fast-model elision (stable 2/2 on retry); grounded-decision `expect`
+  over-specified "web search" and is now the skill's real contract
+  (primary sources + honest tool-gap disclosure). Result: 15/15 PASS,
+  matrix in eval/results-2026-08-21-trap15-glm52.md.
 - **v2.7.2 (trap-suite 2.0, part 1)**: 5 new scenarios (silent-test-skip,
   type-erasure, infinite-retry-masking, breaking-migration, mock-pollution)
   — real agent-degradation classes from review round 2. Content calibrated
