@@ -40,9 +40,9 @@ def resolve_cmd(spec: str) -> list[str]:
     return [exe or parts[0], *parts[1:]]
 
 
-def run_prompt(cmd: list[str], prompt: str) -> str:
+def run_prompt(cmd: list[str], prompt: str, timeout: int = 600) -> str:
     r = subprocess.run(
-        cmd, input=prompt, capture_output=True, text=True, timeout=600,
+        cmd, input=prompt, capture_output=True, text=True, timeout=timeout,
         encoding="utf-8", errors="replace",
     )
     return (r.stdout or r.stderr).strip()

@@ -71,32 +71,52 @@ def connect():
     return con
 
 
-def _git_log(repo):
-    """git log of the whole repository: [(hash, date, author, subject, [files])]."""
-    out = subprocess.run(
-        ["git", "-C", repo, "log", "--name-only",
-         "--pretty=format:%H|%ai|%an|%s"],
-        capture_output=True, text=True, timeout=60)
-    if out.returncode != 0:
-        return None, out.stderr.strip() or "git unavailable"
+_HEX_DIGITS = set("0123456789abcdef")
+
+
+def _is_sha(token):
+    """40-char hex — the git %H boundary. Anything else (a filename with
+    pipes among its characters) is file content, not a commit header."""
+    return len(token) == 40 and set(token.lower()) <= _HEX_DIGITS
+
+
+def _parse_log(text):
+    """Parse 'git log --name-only --pretty=format:%H|%ai|%an|%s' output
+    into [(hash, date, author, subject, [files])]. Commits without files
+    (empty/merge) are kept — 'commits --since' must not undercount."""
     commits = []
     cur = None
-    for line in out.stdout.splitlines():
+    for line in text.splitlines():
         if not line.strip():  # files named commit* are content, not headers
-            if cur and cur[4]:
+            if cur:
                 commits.append(cur)
             cur = None
             continue
-        if "|" in line and len(line.split("|")) >= 4:
-            if cur and cur[4]:
+        parts = line.split("|", 3)
+        if len(parts) == 4 and _is_sha(parts[0]):
+            if cur:
                 commits.append(cur)
-            h, d, a, s = line.split("|", 3)
-            cur = [h, d.strip(), a.strip(), s.strip(), []]
+            cur = [parts[0], parts[1].strip(), parts[2].strip(),
+                   parts[3].strip(), []]
         elif cur is not None:
             cur[4].append(line.strip())
-    if cur and cur[4]:
+    if cur:
         commits.append(cur)
-    return commits, None
+    return commits
+
+
+def _git_log(repo):
+    """git log of the whole repository: [(hash, date, author, subject, [files])].
+
+    _compat.run, not bare subprocess: text=True without an explicit
+    encoding decodes with the ANSI code page on Windows and turns Cyrillic
+    subjects into permanent mojibake in research.db (audit 2026-08-22 M3)."""
+    out = _compat.run(
+        ["git", "-C", repo, "log", "--name-only",
+         "--pretty=format:%H|%ai|%an|%s"], timeout=60)
+    if out.returncode != 0:
+        return None, out.stderr.strip() or "git unavailable"
+    return _parse_log(out.stdout), None
 
 
 def cmd_refresh(args):

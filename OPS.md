@@ -208,6 +208,24 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 
 ## 10. CHANGELOG
 
+> **Claim discipline (v2.7.4):** every "fixed"/"verified" claim below must cite the regression test (tests/test_*.py) or doctor check that re-verifies it. A claim without a check is not a claim — the v2.6 "githist 40-hex boundary" entry had neither code nor test (audit 2026-08-22). Sub-agent/cross-model verdicts are testimony: re-run fresh before reporting.
+
+- **v2.7.4 (contract-truth release — closes all 4 MAJOR of audit 2026-08-22)**:
+  `search.py --refresh` refuses a (-r, -b) pair that does not match
+  build.py's own mapping; `--force-refresh` overrides
+  (tests/test_search_refresh.py — wiki.db and project indexes can no
+  longer silently cross-destroy; the v2.6 bug class, reopened by the
+  audit as reachable via --refresh). `context-monitor.py --check` always
+  prints a status line; exit codes 0/1/2 = ok/warn/critical
+  (tests/test_context_monitor.py — the OPS §7 reflex used to be a silent
+  no-op). githist.py: git output decoded via _compat.run (no permanent
+  cp1251 mojibake in research.db on Windows), real 40-hex commit
+  boundary, empty commits kept (tests/test_githist.py — the misdocumented
+  v2.6 claim is now true). `trigger_eval --timeout` reaches the executor
+  (tests/test_trigger_eval.py). sanitize_query comment now matches
+  behavior (quoted phrase-prefix verified live). ZCode adapter
+  (adapters/zcode.md, profile.yml, README, UNIVERSAL).
+
 - **v2.7.3 (trap-suite live matrix)**: first full live run of all 15
   scenarios via `claude --model dashscope-glm-5.2-fast-preview -p`
   (default resale provider was 502ing). 13/15 first try; breaking-migration =

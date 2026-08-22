@@ -9,7 +9,8 @@ Usage:
     python scripts/context-monitor.py                    # check from env
     python scripts/context-monitor.py --turns 120        # check by turn count
     python scripts/context-monitor.py --tokens 800000    # check by token estimate
-    python scripts/context-monitor.py --check            # quick check, exit 0=ok 1=warn
+    python scripts/context-monitor.py --check            # status line + exit code
+                                                         # 0=ok 1=warn 2=critical
 
 Environment variables (set by agent):
     CONTEXT_TURNS=120      - current turn count
@@ -123,7 +124,9 @@ def main():
     p.add_argument("--turns", type=int, help="Current turn count")
     p.add_argument("--tokens", type=int, help="Estimated token usage")
     p.add_argument("--max-tokens", type=int, default=1_000_000, help="Context window size")
-    p.add_argument("--check", action="store_true", help="Quick check, exit 0=ok 1=warn")
+    p.add_argument("--check", action="store_true",
+                   help="print a status line (+ warnings, recommendation); "
+                        "exit 0=ok 1=warn 2=critical")
     p.add_argument("--json", action="store_true", help="JSON output")
     p.add_argument("--dump-checkpoint", action="store_true",
                    help="Print a markdown checkpoint block for a fresh chat")
@@ -144,7 +147,20 @@ def main():
         print(json.dumps(result, ensure_ascii=False, indent=2))
 
     if args.check:
-        sys.exit(0 if result["status"] == "ok" else 1)
+        # A reflex command must never be silent (audit 2026-08-22 M2):
+        # the OPS routing depends on a human/agent readable status and
+        # distinguishable warn vs critical exit codes.
+        line = f"context: {result['status']}"
+        if turns is not None:
+            line += f" turns={turns} (warn>={TURN_WARN}, critical>={TURN_CRITICAL})"
+        if tokens is not None:
+            line += f" tokens={tokens}/{max_tokens}"
+        print(line)
+        for w in result["warnings"]:
+            print(f"  - {w}")
+        if result["recommendation"]:
+            print(result["recommendation"])
+        sys.exit({"ok": 0, "warn": 1, "critical": 2}[result["status"]])
 
 
 if __name__ == "__main__":

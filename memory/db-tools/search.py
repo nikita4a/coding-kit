@@ -54,8 +54,10 @@ def sanitize_query(query):
             # body, keep the star outside (quoted '*' is a literal)
             out.append('"' + tok[:-1].replace('"', '""') + '"*')
         elif any(c in tok for c in '"-()*:^'):
-            # plain prefix ('firmware*') stays unquoted; other specials
-            # get wrapped (hyphen = column filter otherwise)
+            # wrap the whole token. A trailing '*' INSIDE quotes keeps
+            # phrase-prefix semantics (verified live 2026-08-22: raw
+            # 'firmware*' and quoted '"firmware*"' match the same rows);
+            # raw hyphens/parens would be parsed as FTS syntax instead.
             out.append('"' + tok.replace('"', '""') + '"')
         else:
             out.append(tok)
@@ -67,6 +69,22 @@ def _connect(db_path):
     con = sqlite3.connect(db_path)
     con.row_factory = sqlite3.Row
     return con
+
+
+def _same_path(a, b):
+    """Case-insensitive path equality (on Windows 'C:\\Memory' == 'c:\\memory')."""
+    return os.path.normcase(os.path.abspath(a)) == \
+        os.path.normcase(os.path.abspath(b))
+
+
+def _default_db_for(root):
+    """The db build.py itself derives for this root (wiki.db for the memory
+    root, db/<name>.db for a project). --refresh accepts only this pair —
+    a mismatched pair would rebuild one root into another root's index
+    (audit 2026-08-22 M1, the v2.6 wiki.db-destruction bug class)."""
+    if _same_path(root, str(ROOT)):
+        return os.path.join(ROOT, "db", "wiki.db")
+    return os.path.join(ROOT, "db", os.path.basename(root) + ".db")
 
 
 def _out(args, data):
@@ -419,6 +437,11 @@ def main():
     ap.add_argument("--refresh", action="store_true",
                     help="rebuild the database (incrementally) before searching; "
                          "-r/--root and --extra-files are taken from the arguments")
+    ap.add_argument("--force-refresh", action="store_true",
+                    help="allow --refresh even when (-r, -b) do not match "
+                         "build.py's own default pair for that root "
+                         "(refused otherwise: a mismatched pair silently "
+                         "rebuilds one root into another root's index)")
     ap.add_argument("-r", "--root", default=str(ROOT),
                     help="project root for --refresh (default: memory)")
     ap.add_argument("--extra-files", nargs="*", default=[],
@@ -433,6 +456,16 @@ def main():
         cmd_empty(args)
         return
     if args.refresh:
+        root_abs = os.path.abspath(args.root)
+        default_db = _default_db_for(root_abs)
+        if not _same_path(db_path, default_db) and not args.force_refresh:
+            print(
+                f"refused: --refresh would rebuild {root_abs} into {db_path},\n"
+                f"but build.py's own index for that root is {default_db}.\n"
+                "A mismatched pair silently replaces the other root's "
+                "content. Use the matching -b, or pass --force-refresh.",
+                file=sys.stderr)
+            sys.exit(2)
         import subprocess
         build_py = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build.py")
         cmd = [sys.executable, build_py, "-r", os.path.abspath(args.root),

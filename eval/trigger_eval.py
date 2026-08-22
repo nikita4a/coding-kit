@@ -112,11 +112,12 @@ def prompt_for(query: str) -> str:
     return PRELUDE + "User request: " + query + "\n"
 
 
-def run_query(cmd: list[str], q: dict, runs: int) -> tuple[str, bool]:
+def run_query(cmd: list[str], q: dict, runs: int,
+              timeout: int = TIMEOUT_DEFAULT) -> tuple[str, bool]:
     """Runs one query `runs` times; majority vote decides triggered."""
     hits = 0
     for _ in range(runs):
-        answer = run_prompt(cmd, prompt_for(q["query"]))
+        answer = run_prompt(cmd, prompt_for(q["query"]), timeout=timeout)
         if detect(q["skill"], answer):
             hits += 1
     return q["query"], hits * 2 > runs
@@ -181,7 +182,8 @@ def main() -> int:
 
     results: dict[str, list[tuple[str, bool, bool]]] = {}
     with ThreadPoolExecutor(max_workers=args.parallel) as pool:
-        futs = {pool.submit(run_query, cmd, q, args.runs): q for q in selected}
+        futs = {pool.submit(run_query, cmd, q, args.runs,
+                            args.timeout): q for q in selected}
         for fut in as_completed(futs):
             q = futs[fut]
             query_text, passed = fut.result()

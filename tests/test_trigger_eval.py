@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "eval"))
 from trigger_eval import detect, summarize, validate
+import trigger_eval
 
 
 class ValidateTest(unittest.TestCase):
@@ -69,6 +70,28 @@ class SummarizeTest(unittest.TestCase):
                           ("n2", False, True), ("n3", False, True)]}
         problems, _ = summarize(rows)
         self.assertTrue(any("false rate" in p for p in problems))
+
+
+class TimeoutPassthroughTest(unittest.TestCase):
+    """--timeout must reach run_prompt (audit 2026-08-22, M4: the flag was
+    parsed and documented but never used — run_prompt hardcoded 600s)."""
+
+    def test_run_query_passes_timeout(self):
+        seen = {}
+
+        def fake_run_prompt(cmd, prompt, timeout=None):
+            seen["timeout"] = timeout
+            return "SKILLS LOADED: yagni"
+
+        orig = trigger_eval.run_prompt
+        trigger_eval.run_prompt = fake_run_prompt
+        try:
+            _, passed = trigger_eval.run_query(
+                ["x"], {"skill": "yagni", "query": "q"}, 1, timeout=42)
+        finally:
+            trigger_eval.run_prompt = orig
+        self.assertTrue(passed)
+        self.assertEqual(seen["timeout"], 42)
 
 
 if __name__ == "__main__":
