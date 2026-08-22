@@ -1,5 +1,5 @@
 # Coding Agent OS — Operating Contract
-> **v2.8** | db-tools v2.9 (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, trigger-eval 80, doctor 10 checks, 37 skills, unit tests.
+> **v3.0** | db-tools v2.9 (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, trigger-eval 80, doctor 10 checks, 37 skills, unit tests.
 
 > **Product:** Coding Agent OS v2 | **CORE v2**
 > Profile root: this directory.
@@ -210,6 +210,13 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 
 > **Claim discipline (v2.7.4):** every "fixed"/"verified" claim below must cite the regression test (tests/test_*.py) or doctor check that re-verifies it. A claim without a check is not a claim — the v2.6 "githist 40-hex boundary" entry had neither code nor test (audit 2026-08-22). Sub-agent/cross-model verdicts are testimony: re-run fresh before reporting.
 
+- **v3.0.0 (publication-ready)**: `scripts/kitctl.py` — one command for
+  the lifecycle (install/doctor/gate/eval/triggers/tests/warmup/
+  checkpoint/context; thin dispatcher, tests/test_kitctl.py).
+  install.py CLI guard: '--help' prints usage instead of running the
+  installer, unknown argv refused (tests/test_kitctl.py; the audit's
+  '--help ran the install' hazard). README: kitctl daily loop,
+  trigger-eval row. Version 3.0.0 across VERSION/profile/OPS.
 - **v2.9.0 (memory quality)**: single FTS sanitizer — db-tools/
   ftsquery.py; the three drifting copies (search.py / findings.py /
   memory-warmup.py) import it now (tests/test_v29.py; quoted

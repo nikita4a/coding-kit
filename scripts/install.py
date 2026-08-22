@@ -94,7 +94,20 @@ def build_indexes(root: Path) -> None:
         print("  build.py WARN:\n" + (build.stderr or build.stdout)[:500])
 
 
-def main() -> int:
+def main(argv: list = None) -> int:
+    argv = list(sys.argv[1:]) if argv is None and \
+        __name__ == "__main__" else list(argv or [])
+    if argv in (["--help"], ["-h"]):
+        print(__doc__)
+        return 0
+    if argv:
+        # '--help' used to fall through and RUN the installer (v3.0
+        # audit follow-up): arbitrary argv is never "yes, install"
+        print(f"unexpected arguments: {' '.join(argv)}\n"
+              "install.py takes no arguments; configure the root via the "
+              "MEMORY_ROOT environment variable.\n"
+              "Usage: python scripts/install.py [--help]", file=sys.stderr)
+        return 2
     root = memory_root()
     print(f"coding-kit install -> {root}")
     for d in [root / "db", root / "scripts"] + [
@@ -136,4 +149,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

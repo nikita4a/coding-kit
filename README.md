@@ -14,7 +14,7 @@ Works in any environment that reads an agent rules file and SKILL.md skills: Cla
 | Manifest | `profile.yml` | single source of truth: paths, skills |
 | Skills | `skills/` | 37: always-on core + obra phase skills + domain |
 | Memory engine | `memory/db-tools/` | build, search_all, findings, repomap (FTS5) |
-| Evals | `eval/` | trap-suite: 18 scenarios + runner |
+| Evals | `eval/` | trap-suite: 18 scenarios + runner, trigger-eval (80 queries) |
 | Adapters | `adapters/` | per-environment setup guides |
 
 ## Install (one command)
@@ -40,11 +40,13 @@ Pick your agent from `adapters/`:
 ## Daily loop
 
 ```
-python scripts/context-monitor.py --check      # every ~10 turns
+python scripts/kitctl.py context               # every ~10 turns (0=ok 1=warn 2=critical)
 python ~/.memory/db-tools/search_all.py "X"    # before "what do we know about X"
-python scripts/tools/check_file_sizes.py --ci  # file-size gate
-python eval/runner.py                          # trap-suite
 ```
+
+`scripts/kitctl.py` — one command for the kit's lifecycle: `install`,
+`doctor` (10 self-diagnostic checks), `gate`, `eval`, `triggers`, `tests`,
+`warmup`, `checkpoint`, `context`.
 
 ## Where your data lives
 
