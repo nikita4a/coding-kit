@@ -20,9 +20,11 @@ import os
 import sqlite3
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 import _compat
+from ftsquery import sanitize_query
 
 ROOT = _compat.chulan_root()
 
@@ -79,29 +81,7 @@ CREATE TRIGGER IF NOT EXISTS findings_au AFTER UPDATE ON findings BEGIN
 END;
 """
 
-OPS = {"AND", "OR", "NOT", "NEAR"}
-
-
-def sanitize_query(query):
-    """Escapes an FTS5 query: tokens with special characters (including a dash —
-    "agent-lsp" breaks FTS) are wrapped in double quotes; operators and
-    ready-made phrases are left untouched."""
-    out = []
-    for tok in query.split():
-        upper = tok.upper()
-        if upper in OPS or upper.startswith("NEAR(") or \
-                (tok.startswith('"') and tok.endswith('"')):
-            out.append(tok)
-        elif any(c in tok for c in '"-()*:^'):
-            # Prefix search (prefix*) is not wrapped: inside quotes the
-            # asterisk becomes a literal and prefix search stops working.
-            if tok.endswith("*") and not any(c in tok[:-1] for c in '"-():^'):
-                out.append(tok)
-            else:
-                out.append('"' + tok.replace('"', '""') + '"')
-        else:
-            out.append(tok)
-    return " ".join(out)
+OPS = {"AND", "OR", "NOT", "NEAR"}  # noqa: F401 — re-exported for old imports
 
 
 def connect():
@@ -118,6 +98,12 @@ def connect():
         con.execute("ALTER TABLE findings ADD COLUMN file TEXT DEFAULT ''")
     if "symbol" not in cols:
         con.execute("ALTER TABLE findings ADD COLUMN symbol TEXT DEFAULT ''")
+    if "verify_cmd" not in cols:
+        con.execute(
+            "ALTER TABLE findings ADD COLUMN verify_cmd TEXT DEFAULT ''")
+    if "verified_at" not in cols:
+        con.execute(
+            "ALTER TABLE findings ADD COLUMN verified_at TEXT DEFAULT ''")
     con.commit()
     return con
 
@@ -135,11 +121,11 @@ def cmd_add(args):
         print(f"[!] a finding with this topic already exists: id={dup['id']} "
               f"\"{dup['topic']}\" — adding a duplicate", file=sys.stderr)
     cur.execute(
-        "INSERT INTO findings (created, topic, text, tags, source, file, symbol) "
-        "VALUES (?,?,?,?,?,?,?)",
+        "INSERT INTO findings (created, topic, text, tags, source, file, "
+        "symbol, verify_cmd) VALUES (?,?,?,?,?,?,?,?)",
         (datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M"),
          args.topic, args.text, args.tags, args.source or "",
-         args.file or "", args.symbol or ""))
+         args.file or "", args.symbol or "", getattr(args, "verify_cmd", "") or ""))
     new_id = cur.lastrowid
     for rel in _parse_ids(args.related):
         if rel != new_id:
@@ -212,6 +198,43 @@ def cmd_edit(args):
     con.commit()
     print(f"[✓] updated: id={args.id} \"{row['topic']}\"")
     con.close()
+
+
+def cmd_verify(args):
+    """Re-run a finding's verify-cmd: memory that proves itself fresh.
+    VERIFIED (exit 0, verified_at stamped) or FAILED (exit 1)."""
+    import shlex
+    con = connect()
+    cur = con.cursor()
+    r = cur.execute("SELECT topic, verify_cmd, verified_at FROM findings "
+                    "WHERE id = ?", (args.id,)).fetchone()
+    if not r:
+        print(f"no finding with id={args.id}")
+        con.close()
+        sys.exit(1)
+    if not r["verify_cmd"]:
+        print(f"finding [{args.id}] has no verify-cmd "
+              "(add one: findings.py edit ... / add --verify-cmd)")
+        con.close()
+        sys.exit(1)
+    cmd = shlex.split(r["verify_cmd"])
+    print(f"[~] running: {r['verify_cmd']}")
+    out = _compat.run(cmd, timeout=getattr(args, "timeout", None) or 300)
+    tail = "\n".join(((out.stdout or "") + (out.stderr or "")).splitlines()[-5:])
+    if out.returncode == 0:
+        now = datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M")
+        cur.execute("UPDATE findings SET verified_at = ? WHERE id = ?",
+                    (now, args.id))
+        con.commit()
+        print(f"[✓] VERIFIED: \"{r['topic']}\" at {now}")
+        con.close()
+        return
+    print(f"[✗] FAILED (rc={out.returncode}): \"{r['topic']}\" — "
+          f"last verified: {r['verified_at'] or 'never'}")
+    if tail:
+        print(tail)
+    con.close()
+    sys.exit(1)
 
 
 def cmd_search(args):
@@ -405,6 +428,9 @@ def cmd_show(args):
         print(f"tags: {r['tags']}")
     if r["source"]:
         print(f"source: {r['source']}")
+    if r["verify_cmd"]:
+        print(f"verify-cmd: {r['verify_cmd']} "
+              f"(last: {r['verified_at'] or 'never'})")
     print()
     print(r["text"])
     links = _row_links(cur, args.id)
@@ -451,7 +477,16 @@ def main():
                        help="symbol (fn/class) where the problem lives")
     p_add.add_argument("--related", default="",
                        help="ids of linked findings, comma-separated")
+    p_add.add_argument("--verify-cmd", default="",
+                       help="command that re-verifies this conclusion "
+                            "(findings.py verify <id> runs it)")
     p_add.set_defaults(fn=cmd_add)
+
+    p_verify = sub.add_parser("verify", help="re-run a finding's verify-cmd")
+    p_verify.add_argument("id", type=int)
+    p_verify.add_argument("--timeout", type=int, default=300,
+                          help="verify-cmd timeout seconds (default 300)")
+    p_verify.set_defaults(fn=cmd_verify)
 
     p_search = sub.add_parser("search", help="search findings")
     p_search.add_argument("query", help="FTS5 query")

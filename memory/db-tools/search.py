@@ -33,35 +33,8 @@ import _compat
 ROOT = _compat.chulan_root()
 
 DEFAULT_DB = os.path.join(ROOT, "db", "wiki.db")
+from ftsquery import sanitize_query
 from log import empty_queries, log_search, search_stats
-
-OPS = {"AND", "OR", "NOT", "NEAR"}
-
-
-def sanitize_query(query):
-    """Escapes an FTS5 query: tokens with special characters (quotes, parens,
-    hyphen — the known «agent-lsp» gotcha, asterisks) are wrapped in double
-    quotes. AND/OR/NOT/NEAR operators and ready-made quoted phrases are left
-    untouched so boolean logic keeps working."""
-    out = []
-    for tok in query.split():
-        upper = tok.upper()
-        if upper in OPS or upper.startswith("NEAR(") or \
-                (tok.startswith('"') and tok.endswith('"')):
-            out.append(tok)
-        elif tok.endswith("*") and any(c in tok[:-1] for c in '"-():^'):
-            # prefix on a special-char body ('agent-lsp*'): quote the
-            # body, keep the star outside (quoted '*' is a literal)
-            out.append('"' + tok[:-1].replace('"', '""') + '"*')
-        elif any(c in tok for c in '"-()*:^'):
-            # wrap the whole token. A trailing '*' INSIDE quotes keeps
-            # phrase-prefix semantics (verified live 2026-08-22: raw
-            # 'firmware*' and quoted '"firmware*"' match the same rows);
-            # raw hyphens/parens would be parsed as FTS syntax instead.
-            out.append('"' + tok.replace('"', '""') + '"')
-        else:
-            out.append(tok)
-    return " ".join(out)
 
 
 def _connect(db_path):

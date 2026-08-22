@@ -15,7 +15,6 @@ Examples:
 import argparse
 import os
 import sqlite3
-import subprocess
 import sys
 
 sys.path.insert(0, os.path.join(

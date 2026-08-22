@@ -424,6 +424,42 @@ def schema_ok(con):
         return False
 
 
+def atomic_full_build(db_path, root, skip_dirs, skip_files, extra=None,
+                      use_gitignore=False):
+    """Full rebuild into a temp db + atomic rename over db_path. A crash
+    mid-build leaves the previous index intact (audit 2026-08-22 m3: the
+    old code DROPped+CREATEd in place and a failed rebuild left the db
+    empty)."""
+    tmp = db_path + ".tmp-full"
+    for side in (tmp, tmp + "-wal", tmp + "-shm", tmp + "-journal"):
+        if os.path.exists(side):
+            os.remove(side)
+    con = sqlite3.connect(tmp)
+    try:
+        stats = full_build(con, root, skip_dirs, skip_files, extra,
+                           use_gitignore)
+        con.commit()
+        con.close()
+    except BaseException:
+        con.close()
+        for side in (tmp, tmp + "-wal", tmp + "-shm", tmp + "-journal"):
+            if os.path.exists(side):
+                os.remove(side)
+        raise
+    try:
+        # a stale -wal/-shm from the previous index would corrupt the
+        # replaced file; they are checkpoints-by-close, safe to drop
+        for side in (db_path + "-wal", db_path + "-shm"):
+            if os.path.exists(side):
+                os.remove(side)
+        os.replace(tmp, db_path)
+    except OSError:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        raise
+    return stats
+
+
 def main():
     ap = argparse.ArgumentParser(description="Build a file database in sqlite")
     ap.add_argument("-r", "--root", default=str(ROOT))
@@ -444,12 +480,21 @@ def main():
         sys.exit(1)
     if args.out:
         db_path = os.path.abspath(args.out)
-    elif os.path.abspath(root) == os.path.abspath(str(ROOT)):
+    elif os.path.normcase(os.path.abspath(root)) == \
+            os.path.normcase(os.path.abspath(str(ROOT))):
         db_path = os.path.join(ROOT, "db", "wiki.db")
     else:
         # project build: its own db, never the wiki (a documented
         # invocation used to destroy wiki.db: '-r X' without '-o')
         db_path = os.path.join(ROOT, "db", os.path.basename(root) + ".db")
+        if os.path.basename(root) == "research":
+            # would collide with the findings store (research.db): a
+            # schema check would then CREATE index tables inside it
+            # (audit 2026-08-22 m-adjacent). Explicit -o only.
+            print("refused: a project named 'research' defaults to "
+                  "db/research.db — the findings store. Pass -o "
+                  "with another path.", file=sys.stderr)
+            sys.exit(2)
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
     local_dirs, local_files = load_local_skip(root)
@@ -461,9 +506,12 @@ def main():
     con = sqlite3.connect(db_path)
     con.execute("PRAGMA journal_mode=WAL")
     if args.full or not existed or not schema_ok(con):
-        stats = full_build(con, root, skip_dirs, skip_files, extra,
-                           args.gitignore)
+        con.close()
+        stats = atomic_full_build(db_path, root, skip_dirs, skip_files,
+                                  extra, args.gitignore)
         mode = "full"
+        con = sqlite3.connect(db_path)
+        con.execute("PRAGMA journal_mode=WAL")
     else:
         stats = incremental_build(con, root, skip_dirs, skip_files, extra,
                                   args.gitignore)

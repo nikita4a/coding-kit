@@ -32,7 +32,7 @@ except Exception:
 KIT = Path(__file__).resolve().parents[1]
 ENGINE = KIT / "memory" / "db-tools"
 WIKI_TYPES = ("reference", "howto", "errors", "decisions", "ideas")
-ENGINE_VERSION = "2.7"
+ENGINE_VERSION = "2.9"
 
 
 def memory_root() -> Path:

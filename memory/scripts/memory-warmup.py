@@ -11,16 +11,25 @@ Usage:
     python scripts/memory-warmup.py --json       # JSON for the agent
 """
 import json
+import os
 import sqlite3
 import sys
 from datetime import datetime
 from pathlib import Path
 
-PROFILE_ROOT = Path(__file__).resolve().parent.parent
+# MEMORY_ROOT overrides the install location (OPS §5 contract; the kit
+# copy and ~/.memory/scripts copy both resolve correctly via __file__).
+PROFILE_ROOT = Path(os.environ.get(
+    "MEMORY_ROOT", str(Path(__file__).resolve().parent.parent))).expanduser()
 DB_DIR = PROFILE_ROOT / "db"
 WIKI_ROOT = PROFILE_ROOT / "Wiki"
 WIKI_DB = DB_DIR / "wiki.db"
 RESEARCH_DB = DB_DIR / "research.db"
+
+# one sanitizer for the whole kit (ftsquery.py); the sibling db-tools dir
+# exists in both layouts (kit source and the ~/.memory junction)
+sys.path.insert(0, str(PROFILE_ROOT / "db-tools"))
+from ftsquery import sanitize_query as _sanitize
 
 
 def list_dbs() -> list:
@@ -40,29 +49,6 @@ def list_dbs() -> list:
         if has:
             out.append(p)
     return out
-
-
-def _sanitize(query: str) -> str:
-    """Quote tokens with FTS5 specials (hyphen = column filter:
-    'agent-lsp' dies as 'no such column: lsp' without this). Mirrors
-    search.py sanitize_query; duplicated because warmup ships to
-    ~/.memory/scripts without db-tools. Prefix wildcards stay unquoted
-    (a quoted '*' is a literal and kills the prefix search)."""
-    out = []
-    for tok in query.split():
-        up = tok.upper()
-        if up in ("AND", "OR", "NOT") or up.startswith("NEAR(") or \
-                (tok.startswith('"') and tok.endswith('"')):
-            out.append(tok)
-        elif tok.endswith("*") and any(c in tok[:-1] for c in '"-():^'):
-            # prefix on a special-char body: quote the body, keep the
-            # star outside (quoted '*' is a literal in FTS5)
-            out.append('"' + tok[:-1].replace('"', '""') + '"*')
-        elif any(c in tok for c in '"-()*:^'):
-            out.append('"' + tok.replace('"', '""') + '"')
-        else:
-            out.append(tok)
-    return " ".join(out)
 
 
 def search_all_dbs(query: str, limit: int = 5) -> list:
