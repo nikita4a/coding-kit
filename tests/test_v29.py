@@ -138,9 +138,14 @@ class AtomicFullBuildTest(unittest.TestCase):
         self.fx.close()
 
     def _import_build(self):
+        saved = os.environ.get("MEMORY_ROOT")
+        self.addCleanup(os.environ.pop, "MEMORY_ROOT", None)
+        if saved is not None:
+            self.addCleanup(os.environ.__setitem__, "MEMORY_ROOT", saved)
         os.environ["MEMORY_ROOT"] = str(self.fx.root)
         for mod in ("build", "_compat", "parsers"):
             sys.modules.pop(mod, None)
+        self.addCleanup(sys.path.remove, str(DB_TOOLS))
         sys.path.insert(0, str(DB_TOOLS))
         import build  # noqa: F401 — resolves ROOT from MEMORY_ROOT env
         return build
