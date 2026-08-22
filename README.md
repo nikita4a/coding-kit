@@ -34,6 +34,7 @@ Pick your agent from `adapters/`:
 - **Claude Code / OMP**: rules → `~/.claude/CLAUDE.md`; skills → `~/.claude/skills/`
 - **Gemini CLI**: rules → `~/.gemini/GEMINI.md`; skills → `~/.gemini/skills/` (junction recommended)
 - **Antigravity**: rules → `~/AGENTS.md`; skills → `~/.agents/skills/`
+- **ZCode (Z.ai)**: rules → `~/.zcode/AGENTS.md`; skills → `~/.zcode/skills/` (junction recommended)
 - **Hermes**: soul → `SOUL.md`; `config.yaml` → `skills.external_dirs`
 
 ## Daily loop

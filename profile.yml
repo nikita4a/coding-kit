@@ -82,6 +82,8 @@ adapters:
     target: adapters/gemini.md
   - platform: antigravity
     target: adapters/antigravity.md
+  - platform: zcode
+    target: adapters/zcode.md
   - platform: universal
     target: adapters/UNIVERSAL.md
 

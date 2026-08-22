@@ -40,6 +40,12 @@ cp -r skills/. ~/.claude/skills/   # contents; safe when the dir exists
 # skills: ~/.agents/skills/
 ```
 
+### ZCode (Z.ai)
+```bash
+# rules: ~/.zcode/AGENTS.md
+# skills: ~/.zcode/skills/ (junction recommended)
+```
+
 ## Verify
 
 Ask the agent: "who are you and what do you know?" — it must answer: engineer agent, superpowers method, memory from the base. And "what do we know about X" must trigger a search, not memory.
