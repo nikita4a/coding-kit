@@ -20,7 +20,7 @@ Works in any environment that reads an agent rules file and SKILL.md skills: Cla
 ## Install (one command)
 
 ```bash
-git clone <this-repo> coding-kit
+git clone https://github.com/oleg494/coding-kit.git coding-kit
 cd coding-kit
 python scripts/install.py
 ```
@@ -52,6 +52,21 @@ python ~/.memory/db-tools/search_all.py "X"    # before "what do we know about X
 
 The kit repo contains only methodology and engine. Your knowledge (Wiki posts, findings, indexes) lives in `~/.memory/` — personal, never committed, gitignored in every place it can appear.
 
+## Platform note
+
+Developed and tested Windows-first (CI also runs ubuntu-latest). The engine link
+is a junction on Windows, a symlink elsewhere — `install.py` picks automatically.
+
+## Credits
+
+Phase-workflow skills (`brainstorming`, `writing-plans`, `executing-plans`,
+`subagent-driven-development`, `using-git-worktrees`, `requesting-code-review`,
+`receiving-code-review`, `verification-before-completion`, `systematic-debugging`,
+`dispatching-parallel-agents`, `finishing-a-development-branch`) are derived from
+[obra/superpowers](https://github.com/obra/superpowers) (MIT) © Jesse Vincent,
+reworked and extended for coding-kit. See `skills/superpowers/LICENSE`.
+
 ## License
+
 
 MIT — see LICENSE.
