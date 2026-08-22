@@ -2,16 +2,21 @@
 """doctor.py — kit self-diagnostic: one command, full health picture.
 
 Checks:
-  1. manifest sync      profile.yml skill lists == skills/ dirs (both ways)
-  2. version sync       VERSION == profile.yml version
-  3. skill frontmatter  name/description present, description non-empty
-  4. file-size gate     scripts/tools/check_file_sizes.py --ci
-  5. memory             ~/.memory root + SQLite integrity of every db/*.db
-  6. adapters           every adapter file named in profile.yml exists
+  1.  manifest sync      profile.yml skill lists == skills/ dirs (both ways)
+  2.  version sync       VERSION == profile.yml version
+  3.  skill frontmatter  name/description present, description non-empty
+  4.  file-size gate     scripts/tools/check_file_sizes.py --ci
+  5.  memory             ~/.memory root + SQLite integrity of every db/*.db
+  6.  adapters           every adapter file named in profile.yml exists
+  7.  override           .override.md mode validity
+  8.  engine sync        the two shipped _compat.py copies are identical
+  9.  reflex commands    documented reflex commands actually produce output
+ 10.  encoding discipline no bare text=True subprocess calls (cp1251 class)
 
 Usage:
     python scripts/doctor.py          # table + exit 1 on any failure
 """
+import os
 import re
 import sqlite3
 import subprocess
@@ -152,6 +157,70 @@ def check_engine_sync() -> tuple[bool, str]:
     return (False, "memory/db-tools/_compat.py != memory/scripts/_compat.py")
 
 
+def find_bare_text_true(source: str) -> list[int]:
+    """Line numbers of subprocess.* calls whose text=True keyword has no
+    encoding= sibling. The v2.4 BUG-1/4 class: text=True decodes child
+    output with the ANSI code page on Windows (cp1251) — mojibake or
+    UnicodeDecodeError on Cyrillic (audit 2026-08-22 M3). AST-based:
+    docstrings/strings mentioning the pattern never match."""
+    try:
+        import ast
+        tree = ast.parse(source)
+    except SyntaxError:
+        return []  # unparsable files are another gate's problem
+    hits = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        name = getattr(func, "attr", None) or getattr(func, "id", "")
+        if name not in ("run", "Popen", "check_output", "check_call"):
+            continue
+        has_text_true = any(
+            k.arg == "text" and getattr(k.value, "value", None) is True
+            for k in node.keywords)
+        has_encoding = any(k.arg == "encoding" for k in node.keywords)
+        if has_text_true and not has_encoding:
+            hits.append(node.lineno)
+    return sorted(hits)
+
+
+def check_encoding_discipline() -> tuple[bool, str]:
+    """No bare text=True subprocess calls in engine/script code — each one
+    is a latent cp1251 mojibake bug on Windows (use _compat.run, or pass
+    encoding='utf-8', errors='replace')."""
+    bad = []
+    patterns = ("memory/db-tools/*.py", "memory/scripts/*.py",
+                "scripts/*.py", "scripts/tools/*.py", "eval/*.py")
+    for pattern in patterns:
+        for p in sorted(KIT.glob(pattern)):
+            for ln in find_bare_text_true(
+                    p.read_text(encoding="utf-8", errors="replace")):
+                bad.append(f"{p.relative_to(KIT).as_posix()}:{ln}")
+    return (not bad, "no bare text=True" if not bad else "; ".join(bad[:5]))
+
+
+def check_reflex_commands() -> tuple[bool, str]:
+    """A documented reflex command must actually speak: run
+    context-monitor --check with a clean CONTEXT_* env and require exit 0
+    + non-empty stdout (before v2.7.4 it was a silent no-op — the OPS §7
+    reflex could never fire; audit 2026-08-22 M2)."""
+    env = {k: v for k, v in os.environ.items()
+           if not k.startswith("CONTEXT_")}
+    try:
+        r = subprocess.run(
+            [sys.executable,
+             str(KIT / "scripts" / "context-monitor.py"), "--check"],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace", env=env, timeout=30)
+    except (OSError, subprocess.SubprocessError) as e:
+        return (False, f"context-monitor --check failed to run: {e}")
+    if r.returncode != 0 or not r.stdout.strip():
+        return (False, f"context-monitor --check: rc={r.returncode}, "
+                       "stdout empty (reflex commands must print status)")
+    return (True, "context-monitor --check speaks (exit 0 + status line)")
+
+
 def main() -> int:
     checks = [
         ("manifest", check_manifest()),
@@ -162,6 +231,8 @@ def main() -> int:
         ("adapters", check_adapters()),
         ("override", check_override()),
         ("engine sync", check_engine_sync()),
+        ("reflex commands", check_reflex_commands()),
+        ("encoding discipline", check_encoding_discipline()),
     ]
     fails = 0
     print(f"{'CHECK':<16} {'RESULT':<6} DETAIL")

@@ -102,6 +102,7 @@ def dump_checkpoint() -> str:
             ["git", "status", "--porcelain"],
             cwd=Path(__file__).resolve().parents[1],
             capture_output=True, text=True, timeout=10,
+            encoding="utf-8", errors="replace",
         )
         changed = git.stdout.strip() or "(clean)"
     except Exception:

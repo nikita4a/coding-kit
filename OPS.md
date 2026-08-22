@@ -1,5 +1,5 @@
 # Coding Agent OS — Operating Contract
-> **v2.7** | db-tools v2.7 (findings, repomap, call-graph), fable-judge, FILE-SIZE gate, trap-suite 15, trigger-eval 80, 37 skills, unit tests.
+> **v2.8** | db-tools v2.7 (findings, repomap, call-graph), fable-judge, FILE-SIZE gate, trap-suite 18, trigger-eval 80, doctor 10 checks, 37 skills, unit tests.
 
 > **Product:** Coding Agent OS v2 | **CORE v2**
 > Profile root: this directory.
@@ -210,6 +210,16 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 
 > **Claim discipline (v2.7.4):** every "fixed"/"verified" claim below must cite the regression test (tests/test_*.py) or doctor check that re-verifies it. A claim without a check is not a claim — the v2.6 "githist 40-hex boundary" entry had neither code nor test (audit 2026-08-22). Sub-agent/cross-model verdicts are testimony: re-run fresh before reporting.
 
+- **v2.8.0 (self-verifying kit)**: doctor learns the two classes the
+  2026-08-22 audit sailed past — `check_reflex_commands` (a documented
+  reflex command must print status and exit non-zero on trouble; catches
+  the v2.7.3 silent no-op context-monitor) and `check_encoding_discipline`
+  (no bare text=True in engine/scripts/eval — the cp1251 mojibake class;
+  the one live instance, context-monitor dump_checkpoint, fixed)
+  (tests/test_doctor.py; doctor is now 10 checks). Trap-suite 15 -> 18:
+  dead-flag, contract-drift, silent-cross-write — the three degradation
+  classes the audit itself demonstrated (eval/scenarios/, dry-run
+  validated). CI: trigger-queries validation step in the gates workflow.
 - **v2.7.4 (contract-truth release — closes all 4 MAJOR of audit 2026-08-22)**:
   `search.py --refresh` refuses a (-r, -b) pair that does not match
   build.py's own mapping; `--force-refresh` overrides
