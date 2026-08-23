@@ -76,6 +76,9 @@ def main() -> int:
     ap.add_argument("--scenario", help="single scenario name (no .md)")
     ap.add_argument("--repeat", type=int, default=1,
                     help="flake gate: scenario must PASS N times in a row")
+    ap.add_argument("--json", default=None, metavar="PATH|auto",
+                    help="write a JSON result doc: explicit path or 'auto' "
+                         "for the shared timestamped store (eval/results/)")
     args = ap.parse_args()
 
     executor = resolve_cmd(args.executor) if args.executor else None
@@ -89,9 +92,13 @@ def main() -> int:
         return 1
 
     fails = 0
+    rows = []
     for f in files:
         sc = parse(f.read_text(encoding="utf-8"))
         ok = all(k in sc for k in ("name", "skill", "trap", "expect", "body"))
+        rows.append({"name": sc.get("name", f.stem),
+                     "skill": sc.get("skill", "?"),
+                     "verdict": "PASS" if ok else "FAIL"})
         print(f"{'OK ' if ok else 'BAD'} {f.name} [{sc.get('skill','?')}] "
               f"trap: {sc.get('trap','?')[:60]}")
         if not ok:
@@ -119,10 +126,20 @@ def main() -> int:
             outcomes.append(f"attempt {i+1}: {verdict[:160]}")
         print("\n     " + "\n     ".join(outcomes)
               if outcomes else f"     (no runs)")
+        rows[-1]["verdict"] = "PASS" if passed else rows[-1]["verdict"]
     print(f"\noverall: {'ALL GREEN' if not fails else f'{fails} non-PASS'}"
           f" ({len(files)} scenarios x {args.repeat})")
-    return 1 if fails else 0
 
+    if args.json:
+        sys.path.insert(0, str(ROOT / "eval"))
+        from results_io import save_result
+        override = None if str(args.json) == "auto" else Path(args.json)
+        save_result("trap", args.executor or "dry-run",
+                    {"scenarios": rows,
+                     "passed": sum(1 for r in rows if r["verdict"] == "PASS"),
+                     "total": len(rows)},
+                    path=override)
+    return 1 if fails else 0
 
 if __name__ == "__main__":
     try:

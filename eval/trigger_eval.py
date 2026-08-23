@@ -155,6 +155,9 @@ def main() -> int:
     ap.add_argument("--timeout", type=int, default=TIMEOUT_DEFAULT,
                     help="per-call timeout seconds")
     ap.add_argument("--out", help="append results as JSONL")
+    ap.add_argument("--json", default=None, metavar="PATH|auto",
+                    help="write a JSON result doc: explicit path or 'auto' "
+                         "for the shared timestamped store (eval/results/)")
     args = ap.parse_args()
 
     try:
@@ -172,8 +175,10 @@ def main() -> int:
 
     if not args.executor:
         print("dry-run: no --executor, queries validated only")
+        if args.json:
+            _emit_json(args, mode="dry-run", total=len(queries),
+                       fired=0, misses=[])
         return 0
-
     cmd = resolve_cmd(args.executor)
     selected = [q for q in queries
                 if not args.only or q["skill"] == args.only]
@@ -205,9 +210,27 @@ def main() -> int:
     if problems:
         print("\nBELOW THRESHOLD:")
         print("\n".join(f"  - {p}" for p in problems))
+        _emit_json(args, mode="live", total=len(selected),
+                   fired=sum(1 for rows in results.values()
+                             for (_, s, p) in rows if p == s),
+                   misses=[p for p in problems])
         return 1
     print("\nall measured skills above threshold")
+    _emit_json(args, mode="live", total=len(selected),
+               fired=sum(1 for rows in results.values()
+                         for (_, s, p) in rows if p == s),
+               misses=[])
     return 0
+
+
+def _emit_json(args, mode: str, total: int, fired: int,
+               misses: list[str]) -> None:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from results_io import save_result
+    override = None if str(args.json) == "auto" else Path(args.json)
+    save_result("trigger", args.executor or "dry-run",
+                {"mode": mode, "fired": fired, "total": total,
+                 "misses": misses}, path=override)
 
 
 if __name__ == "__main__":
