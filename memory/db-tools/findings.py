@@ -37,76 +37,16 @@ except Exception:  # noqa: S110,BLE001 — reconfigure is optional, we live with
     pass
 
 
-# The DB can be overridden for tests/sandbox (isolation from the prod store):
-# MEMORY_ROOT_RESEARCH_DB=/tmp/test.db python3 db-tools/findings.py ...
-DB = os.environ.get("MEMORY_ROOT_RESEARCH_DB", os.path.join(ROOT, "db", "research.db"))
-
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS findings (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    created TEXT NOT NULL,
-    topic TEXT NOT NULL,
-    text TEXT NOT NULL,
-    tags TEXT DEFAULT '',
-    source TEXT DEFAULT '',
-    file TEXT DEFAULT '',
-    symbol TEXT DEFAULT ''
-);
-CREATE TABLE IF NOT EXISTS links (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    from_id INTEGER NOT NULL,
-    to_id INTEGER NOT NULL,
-    kind TEXT NOT NULL DEFAULT 'related',
-    note TEXT DEFAULT '',
-    created TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_links_from ON links(from_id);
-CREATE INDEX IF NOT EXISTS idx_links_to ON links(to_id);
-CREATE VIRTUAL TABLE IF NOT EXISTS findings_fts USING fts5(
-    topic, text, content='findings', content_rowid='id'
-);
-CREATE TRIGGER IF NOT EXISTS findings_ai AFTER INSERT ON findings BEGIN
-    INSERT INTO findings_fts(rowid, topic, text)
-    VALUES (new.id, new.topic, new.text);
-END;
-CREATE TRIGGER IF NOT EXISTS findings_ad AFTER DELETE ON findings BEGIN
-    INSERT INTO findings_fts(findings_fts, rowid, topic, text)
-    VALUES ('delete', old.id, old.topic, old.text);
-END;
-CREATE TRIGGER IF NOT EXISTS findings_au AFTER UPDATE ON findings BEGIN
-    INSERT INTO findings_fts(findings_fts, rowid, topic, text)
-    VALUES ('delete', old.id, old.topic, old.text);
-    INSERT INTO findings_fts(rowid, topic, text)
-    VALUES (new.id, new.topic, new.text);
-END;
-"""
-
+from findings_db import DB, SCHEMA, connect
+from findings_links import (
+    _print_chain,
+    _row_links,
+    cmd_link_add,
+    cmd_link_list,
+    cmd_link_rm,
+    cmd_related,
+)
 OPS = {"AND", "OR", "NOT", "NEAR"}  # noqa: F401 — re-exported for old imports
-
-
-def connect():
-    os.makedirs(os.path.dirname(DB), exist_ok=True)
-    con = sqlite3.connect(DB)
-    con.row_factory = sqlite3.Row
-    con.execute("PRAGMA journal_mode=WAL")
-    con.executescript(SCHEMA)
-    # Soft migration of old databases: columns that did not exist before
-    cols = [r[1] for r in con.execute("PRAGMA table_info(findings)")]
-    if "source" not in cols:
-        con.execute("ALTER TABLE findings ADD COLUMN source TEXT DEFAULT ''")
-    if "file" not in cols:
-        con.execute("ALTER TABLE findings ADD COLUMN file TEXT DEFAULT ''")
-    if "symbol" not in cols:
-        con.execute("ALTER TABLE findings ADD COLUMN symbol TEXT DEFAULT ''")
-    if "verify_cmd" not in cols:
-        con.execute(
-            "ALTER TABLE findings ADD COLUMN verify_cmd TEXT DEFAULT ''")
-    if "verified_at" not in cols:
-        con.execute(
-            "ALTER TABLE findings ADD COLUMN verified_at TEXT DEFAULT ''")
-    con.commit()
-    return con
-
 
 def cmd_add(args):
     con = connect()
@@ -293,125 +233,6 @@ def cmd_list(args):
         loc = f" [{r['file']}:{r['symbol']}]" if r["file"] else ""
         print(f"[{r['id']}] {r['created']}  {r['topic']}  ({r['tags']}){loc}")
     con.close()
-
-
-def _row_links(cur, fid):
-    """Finding links in both directions: [(direction, linked_id, kind, note)]."""
-    out = []
-    for r in cur.execute(
-            "SELECT l.id link_id, l.from_id, l.to_id, l.kind, l.note, "
-            "f.topic FROM links l JOIN findings f ON f.id = "
-            "CASE WHEN l.from_id = ? THEN l.to_id ELSE l.from_id END "
-            "WHERE l.from_id = ? OR l.to_id = ? ORDER BY l.id",
-            (fid, fid, fid)).fetchall():
-        direction = "->" if r["from_id"] == fid else "<-"
-        out.append((r["link_id"], direction, r["kind"], r["topic"],
-                    r["note"]))
-    return out
-
-
-def cmd_link_add(args):
-    con = connect()
-    cur = con.cursor()
-    for fid in (args.from_id, args.to_id):
-        if not cur.execute("SELECT 1 FROM findings WHERE id = ?",
-                           (fid,)).fetchone():
-            print(f"no finding with id={fid}", file=sys.stderr)
-            con.close()
-            sys.exit(1)
-    cur.execute(
-        "INSERT INTO links (from_id, to_id, kind, note, created) "
-        "VALUES (?,?,?,?,?)",
-        (args.from_id, args.to_id, args.kind, args.note or "",
-         datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M")))
-    con.commit()
-    print(f"[✓] link: {args.from_id} --{args.kind}--> {args.to_id} (id={cur.lastrowid})")
-    con.close()
-
-
-def cmd_link_list(args):
-    con = connect()
-    cur = con.cursor()
-    if not cur.execute("SELECT 1 FROM findings WHERE id = ?",
-                       (args.id,)).fetchone():
-        print(f"no finding with id={args.id}")
-        con.close()
-        return
-    links = _row_links(cur, args.id)
-    if not links:
-        print(f"finding [{args.id}] has no links")
-        con.close()
-        return
-    print(f"links of finding [{args.id}]:\n")
-    for _link_id, direction, kind, topic, note in links:
-        note_s = f"  ({note})" if note else ""
-        print(f"  {direction} {kind:12} [{_link_id}] {topic}{note_s}")
-    con.close()
-
-
-def cmd_link_rm(args):
-    con = connect()
-    cur = con.cursor()
-    row = cur.execute("SELECT id, from_id, to_id, kind FROM links WHERE id = ?",
-                      (args.id,)).fetchone()
-    if not row:
-        print(f"no link with id={args.id}")
-        return
-    cur.execute("DELETE FROM links WHERE id = ?", (args.id,))
-    con.commit()
-    print(f"[✓] link deleted: {row['from_id']} --{row['kind']}--> {row['to_id']}")
-    con.close()
-
-
-def cmd_related(args):
-    """Quick answer to "what is linked to this finding": id + topics.
-    --depth N — transitive links (graph over links, KG pattern from
-    mcp-memory entities/relations: knowledge chains, not just neighbors)."""
-    con = connect()
-    cur = con.cursor()
-    if getattr(args, "depth", 0) > 0:
-        _print_chain(cur, args.id, args.depth)
-        con.close()
-        return
-    links = _row_links(cur, args.id)
-    if not links:
-        print(f"finding [{args.id}] has no links")
-        con.close()
-        return
-    print(f"linked to [{args.id}]:\n")
-    for _link_id, direction, kind, topic, note in links:
-        note_s = f"  ({note})" if note else ""
-        print(f"  {direction} {kind:12} {topic}{note_s}")
-    con.close()
-
-
-def _print_chain(cur, fid, depth):
-    """Link graph down to the given depth: recursive CTE over links."""
-    rows = cur.execute(
-        "WITH RECURSIVE chain(id, d, path) AS ("
-        "  SELECT ?, 0, '' "
-        "  UNION "
-        "  SELECT CASE WHEN l.from_id = chain.id THEN l.to_id "
-        "              ELSE l.from_id END,"
-        "         chain.d + 1,"
-        "         chain.path || ' >' || l.kind || '> '"
-        "  FROM links l JOIN chain "
-        "  ON (l.from_id = chain.id OR l.to_id = chain.id) "
-        "  AND chain.d < ?"
-        ") SELECT DISTINCT c.id, MIN(c.d) AS d, "
-        "  (SELECT path FROM chain c2 WHERE c2.id = c.id "
-        "   ORDER BY c2.d LIMIT 1) AS path, "
-        "  (SELECT topic FROM findings f WHERE f.id = c.id) AS topic "
-        "FROM chain c WHERE c.id != ? GROUP BY c.id ORDER BY d",
-        (fid, depth, fid)).fetchall()
-    if not rows:
-        print(f"finding [{fid}] has no links")
-        return
-    print(f"link graph [{fid}] (depth {depth}):\n")
-    for r in rows:
-        print(f"  [{r['id']}] d={r['d']}  {r['topic']}")
-        if r["path"]:
-            print(f"       path: {r['path'].strip()}")
 
 
 def cmd_show(args):
