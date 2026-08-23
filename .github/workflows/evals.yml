@@ -1,0 +1,61 @@
+name: evals
+on:
+  schedule:
+    - cron: "0 3 * * *"        # nightly 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      executor:
+        description: "Live executor CLI (empty = dry-run only)"
+        default: ""
+      live_windows:
+        description: "Run live leg on Windows too (nt-only code paths)"
+        default: "false"
+
+jobs:
+  evals:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Dry validations (always, both OS)
+        run: |
+          python -m pytest tests -q
+          python eval/runner.py
+          python eval/task_runner.py --dry-run
+          python eval/trigger_eval.py --queries eval/trigger_queries.json
+
+      # Live leg: untrusted agent output never runs on the checkout itself.
+      # task_runner sandboxes work in temp dirs; results are written by the
+      # runner processes only.
+      - name: Live run (dispatch with executor only)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.executor != ''
+        env:
+          EXECUTOR: ${{ github.event.inputs.executor }}
+        run: |
+          python eval/task_runner.py --executor "$EXECUTOR" --json auto
+          if [ "${{ matrix.os }}" = "windows-latest" ] && [ "${{ github.event.inputs.live_windows }}" != "true" ]; then
+            echo "skip live trap-suite on this leg (live_windows=false)"
+            exit 0
+          fi
+          python eval/runner.py --executor "$EXECUTOR" --json auto
+          python eval/trigger_eval.py --queries eval/trigger_queries.json --executor "$EXECUTOR" --json auto
+        shell: bash
+
+      - name: Trend report
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.executor != ''
+        run: python eval/trend.py > eval/results/TREND.md || true
+
+      - name: Commit fresh results
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.executor != ''
+        run: |
+          git config user.name "eval-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add eval/results/
+          git diff --cached --quiet || git commit -m "chore(eval): results $(date -u +%F) (${{ matrix.os }})"
+          git push
