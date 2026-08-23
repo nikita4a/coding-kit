@@ -1,5 +1,5 @@
 # Coding Agent OS — Operating Contract
-> **v3.0** | db-tools v2.9 (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, trigger-eval 80, doctor 10 checks, 37 skills, unit tests.
+> **v3.1** | db-tools (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, task-benchmark 3, trigger-eval 80, trend/proposals, doctor 10 checks, 37 skills, 73 unit tests.
 
 > **Product:** Coding Agent OS v2 | **CORE v2**
 > Profile root: this directory.
@@ -210,6 +210,16 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 
 > **Claim discipline (v2.7.4):** every "fixed"/"verified" claim below must cite the regression test (tests/test_*.py) or doctor check that re-verifies it. A claim without a check is not a claim — the v2.6 "githist 40-hex boundary" entry had neither code nor test (audit 2026-08-22). Sub-agent/cross-model verdicts are testimony: re-run fresh before reporting.
 
+- **v3.1.0 (quantitative evals & trend loop)**: `eval/task_runner.py` —
+  test-oracle task benchmark (3 seed tasks with `verify.py` oracle, no LLM
+  judge; tests/test_task_runner.py). `eval/results_io.py` — append-only
+  JSON store in `eval/results/` (tests/test_results_io.py). `eval/trend.py` —
+  pass-rate history + failure-driven harness proposal engine (tests/test_trend.py).
+  Runner flags: `--json <PATH|auto>` wired into trap-suite, task benchmark,
+  and trigger-eval (tests/test_json_output.py). CI: `.github/workflows/evals.yml`
+  (nightly dry gates on win+ubuntu matrix + non-blocking live scoring).
+  Size-gate cleanup: `file_scanner.py`, `findings_db.py`, `findings_links.py`
+  extracted; all files within limits (soft 0, hard 0; doctor check green).
 - **v3.0.0 (publication-ready)**: `scripts/kitctl.py` — one command for
   the lifecycle (install/doctor/gate/eval/triggers/tests/warmup/
   checkpoint/context; thin dispatcher, tests/test_kitctl.py).
