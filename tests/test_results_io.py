@@ -44,3 +44,16 @@ def test_explicit_path_override(tmp_path):
     assert p == out and p.exists()
     # explicit path must NOT pollute the shared store
     assert json.loads(out.read_text(encoding="utf-8"))["total"] == 18
+
+
+def test_kind_filter(tmp_path, monkeypatch):
+    monkeypatch.setattr("results_io.RESULTS_DIR", tmp_path)
+    save_result("trap", "m1", {"passed": 18})
+    save_result("tasks", "m1", {"score": 1.0})
+    save_result("trigger", "m1", {"fired": 80})
+    traps = load_runs("trap")
+    assert len(traps) == 1 and traps[0]["kind"] == "trap"
+    tasks = load_runs("tasks")
+    assert len(tasks) == 1 and tasks[0]["kind"] == "tasks"
+    all_runs = load_runs()
+    assert len(all_runs) == 3

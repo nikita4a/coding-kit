@@ -48,6 +48,8 @@ def load_runs(kind: str | None = None) -> list[dict]:
     out = []
     for p in sorted(RESULTS_DIR.glob("*.json")):
         doc = json.loads(p.read_text(encoding="utf-8"))
+        if kind is not None and doc.get("kind") != kind:
+            continue
         try:
             doc["_path"] = str(p.relative_to(ROOT))
         except ValueError:            # patched RESULTS_DIR (tests) — keep absolute
