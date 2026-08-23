@@ -38,7 +38,8 @@ jobs:
         env:
           EXECUTOR: ${{ github.event.inputs.executor }}
         run: |
-          python eval/task_runner.py --executor "$EXECUTOR" --json auto
+          # Task benchmark is informational (3 tasks = small sample, warn-not-block)
+          python eval/task_runner.py --executor "$EXECUTOR" --json auto || true
           if [ "${{ matrix.os }}" = "windows-latest" ] && [ "${{ github.event.inputs.live_windows }}" != "true" ]; then
             echo "skip live trap-suite on this leg (live_windows=false)"
             exit 0
