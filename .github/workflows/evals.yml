@@ -23,12 +23,12 @@ jobs:
         run: |
           python -m pytest tests -q
           python scripts/tools/check_file_sizes.py --ci
-          python eval/runner.py
-          python eval/task_runner.py --dry-run
-          python eval/trigger_eval.py --queries eval/trigger_queries.json
+          python eval/runner.py --json eval/ci-results/trap.json
+          python eval/task_runner.py --dry-run --json eval/ci-results/tasks.json
+          python eval/trigger_eval.py --queries eval/trigger_queries.json --json eval/ci-results/trigger.json
       - name: Upload eval results
         uses: actions/upload-artifact@v4
         with:
           name: eval-results-${{ matrix.os }}
-          path: eval/results/*.json
-          if-no-files-found: ignore
+          path: eval/ci-results
+          if-no-files-found: error

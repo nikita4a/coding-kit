@@ -452,6 +452,72 @@ def test_task_executor_uses_secret_free_environment(monkeypatch):
     assert "GITHUB_TOKEN" not in env
     assert "OPENAI_API_KEY" not in env
 
+def test_verify_subprocess_isolated_in_fresh_sandbox(tmp_path, monkeypatch):
+    # verify.py imports and executes model-written Python, and its child
+    # pytest inherits the verifier's environment. The verifier subprocess must
+    # therefore run with cwd=sandbox (the fresh fixture copy, not the repo
+    # root) and the same secret-free executor_env() allowlist, never the
+    # runner's full secret-bearing environment. cwd here is a working
+    # directory only — it is not, and is not claimed to be, an OS sandbox.
+    import task_runner
+
+    executor = tmp_path / "passthrough_exec.py"
+    executor.write_text("import sys\nsys.exit(0)\n", encoding="utf-8")
+    executor_cmd = f"{sys.executable} {executor}"
+
+    monkeypatch.setenv("PATH", r"C:\safe-bin")
+    monkeypatch.setenv("OPENAI_API_KEY", "sentinel-openai")
+    monkeypatch.setenv("GITHUB_TOKEN", "sentinel-github")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "sentinel-aws")
+    monkeypatch.setenv("SENTINEL_SECRET", "sentinel-value")
+
+    real_run = task_runner.subprocess.run
+    captured = {}
+
+    def spy_run(args, **kwargs):
+        if (isinstance(args, list) and len(args) >= 3
+                and args[0] == sys.executable
+                and args[1].endswith("verify.py")):
+            cwd = kwargs.get("cwd")
+            env = kwargs.get("env")
+            captured["sandbox_arg"] = args[2]
+            captured["cwd"] = cwd
+            captured["env"] = env
+            captured["env_explicit"] = "env" in kwargs
+            captured["cwd_is_dir"] = cwd is not None and Path(cwd).is_dir()
+            captured["has_calc"] = cwd is not None and (Path(cwd) / "calc.py").is_file()
+            captured["has_test"] = cwd is not None and (Path(cwd) / "test_calc.py").is_file()
+            return subprocess.CompletedProcess(args, returncode=0,
+                                               stdout=b"ok", stderr=b"")
+        return real_run(args, **kwargs)
+
+    monkeypatch.setattr(task_runner.subprocess, "run", spy_run)
+
+    rc = run_task_suite(["001-fix-div-zero"], executor_cmd=executor_cmd,
+                        tries=1, model="iso-model")
+    assert rc == 0
+    assert captured, "verifier subprocess was never invoked"
+
+    # The verifier is invoked with the sandbox path as its only argument, and
+    # its working directory is that same fresh fixture copy.
+    sandbox_arg = Path(captured["sandbox_arg"])
+    assert captured["cwd"] is not None
+    assert Path(captured["cwd"]) == sandbox_arg
+    assert Path(captured["cwd"]) != ROOT
+    assert captured["cwd_is_dir"] is True
+    assert captured["has_calc"] is True
+    assert captured["has_test"] is True
+
+    # Environment must be the explicit secret-free allowlist: no secret/API/
+    # token variables ever reach the verifier (or the pytest it spawns).
+    assert captured["env_explicit"] is True
+    env = captured["env"]
+    assert env is not None
+    assert env["PATH"] == r"C:\safe-bin"
+    for secret in ("OPENAI_API_KEY", "GITHUB_TOKEN",
+                   "AWS_SECRET_ACCESS_KEY", "SENTINEL_SECRET"):
+        assert secret not in env, f"{secret} leaked into verifier env"
+
 
 def test_executor_launch_error_records_truthful_fail(tmp_path):
     # A nonexistent executor raises OSError/FileNotFoundError at launch. The

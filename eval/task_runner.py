@@ -186,7 +186,9 @@ def _run_attempt(name: str, cmd: list[str], *, timeout: int) -> dict:
             v = subprocess.run(
                 [sys.executable, str(TASKS / name / "verify.py"), str(sandbox)],
                 capture_output=True,
-                timeout=60)
+                timeout=60,
+                cwd=sandbox,
+                env=executor_env())
         except subprocess.TimeoutExpired as e:
             v_stdout = (e.stdout or b"").decode("utf-8", "replace") \
                 if isinstance(e.stdout, bytes) else (e.stdout or "")

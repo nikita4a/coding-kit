@@ -6,9 +6,10 @@ Ensures:
 - Both Ubuntu and Windows matrix OSes.
 - Deterministic dry-only validation commands run on both legs.
 - Uses pytest (not unittest) with exact flags.
-- Uploads eval artifacts via actions/upload-artifact@v4 with if-no-files-found: ignore (evals.yml).
+- Uploads eval artifacts (trap/tasks/trigger dry JSON) via actions/upload-artifact@v4
+  from the CI-only eval/ci-results dir, failing if missing (evals.yml).
 - Absolute absence of live executor inputs, secret-bearing env, live runs,
-  git commit/push steps, invalid dry flags (--json), and OS-specific branch skips.
+  git commit/push steps, --json auto (shared-store pollution), and OS-specific branch skips.
 """
 import re
 import unittest
@@ -64,22 +65,48 @@ class TestCIWorkflow(unittest.TestCase):
                 )
 
     def test_exact_deterministic_dry_commands(self):
-        """Workflows must run all exact deterministic dry validation commands."""
-        expected_commands = [
+        """Both workflows share deterministic gates; producer invocations follow each workflow's dry contract."""
+        shared_commands = [
             "python -m pytest tests -q",
             "python scripts/tools/check_file_sizes.py --ci",
+        ]
+        test_only_commands = [
             "python eval/runner.py",
             "python eval/task_runner.py --dry-run",
             "python eval/trigger_eval.py --queries eval/trigger_queries.json",
         ]
-        for name, content in self.workflows.items():
-            for cmd in expected_commands:
+        evals_only_commands = [
+            "python eval/runner.py --json eval/ci-results/trap.json",
+            "python eval/task_runner.py --dry-run --json eval/ci-results/tasks.json",
+            "python eval/trigger_eval.py --queries eval/trigger_queries.json --json eval/ci-results/trigger.json",
+        ]
+        for cmd in shared_commands:
+            for name, content in self.workflows.items():
                 with self.subTest(workflow=name, command=cmd):
                     self.assertIn(
                         cmd,
                         content,
                         f"Required exact command missing from {name}: {cmd}",
                     )
+        for cmd in test_only_commands:
+            with self.subTest(workflow="test.yml", command=cmd):
+                self.assertIn(
+                    cmd,
+                    self.test_content,
+                    f"Required exact command missing from test.yml: {cmd}",
+                )
+        for cmd in evals_only_commands:
+            with self.subTest(workflow="evals.yml", command=cmd):
+                self.assertIn(
+                    cmd,
+                    self.evals_content,
+                    f"Required exact command missing from evals.yml: {cmd}",
+                )
+        self.assertEqual(
+            self.evals_content.count("--json"),
+            3,
+            "evals.yml must emit exactly three dry JSON outputs (trap, tasks, trigger)",
+        )
 
     def test_uses_pytest_not_unittest(self):
         """Workflows must use pytest rather than unittest."""
@@ -97,7 +124,7 @@ class TestCIWorkflow(unittest.TestCase):
                 )
 
     def test_artifact_upload_v4_configuration(self):
-        """Artifact upload in evals.yml must use actions/upload-artifact@v4 with ignore policy."""
+        """Artifact upload in evals.yml must use upload-artifact@v4 against the CI-only dir and fail if missing."""
         self.assertIn(
             "uses: actions/upload-artifact@v4",
             self.evals_content,
@@ -105,13 +132,18 @@ class TestCIWorkflow(unittest.TestCase):
         )
         self.assertRegex(
             self.evals_content,
+            r"if-no-files-found:\s*error",
+            "evals.yml artifact upload must fail when eval/ci-results is missing",
+        )
+        self.assertNotRegex(
+            self.evals_content,
             r"if-no-files-found:\s*ignore",
-            "evals.yml artifact upload must set 'if-no-files-found: ignore'",
+            "evals.yml artifact upload must reject 'if-no-files-found: ignore'",
         )
         self.assertIn(
-            "eval/results/*.json",
+            "eval/ci-results",
             self.evals_content,
-            "evals.yml artifact upload path must target 'eval/results/*.json'",
+            "evals.yml artifact upload path must target the CI-only 'eval/ci-results' dir",
         )
 
     def test_absence_of_live_executor_inputs(self):
@@ -158,15 +190,25 @@ class TestCIWorkflow(unittest.TestCase):
                 self.assertNotIn("git config", content, f"{name} must not configure git bot")
                 self.assertNotIn("git add", content, f"{name} must not git add")
 
-    def test_absence_of_invalid_dry_flags(self):
-        """Dry commands in CI must not request JSON output flags."""
+    def test_no_json_auto_or_test_gate_json(self):
+        """Dry CI must never use '--json auto'; the push/PR gate (test.yml) emits no JSON and never touches the shared store."""
         for name, content in self.workflows.items():
             with self.subTest(workflow=name):
                 self.assertNotIn(
-                    "--json",
+                    "--json auto",
                     content,
-                    f"Dry commands in {name} must not pass --json flag",
+                    f"{name} must not request '--json auto' (shared-store pollution)",
                 )
+                self.assertNotIn(
+                    "eval/results",
+                    content,
+                    f"{name} must not write the shared 'eval/results' store",
+                )
+        self.assertNotIn(
+            "--json",
+            self.test_content,
+            "test.yml (push/PR gate) must run producers dry with no JSON persistence",
+        )
 
     def test_absence_of_mixed_os_shell_logic(self):
         """No shell-specific branching or OS skips in workflow steps."""
