@@ -10,6 +10,15 @@ import sys
 import tempfile
 
 
+# Shared AST oracle helpers (eval/tasks/_verify_common.py).
+_TASKS_DIR = Path(__file__).resolve().parent.parent
+if str(_TASKS_DIR) not in sys.path:
+    sys.path.insert(0, str(_TASKS_DIR))
+from _verify_common import audit_test_calc_file  # noqa: E402
+_TASK_ID = "002-add-validation"
+
+
+
 def _isolated_suite(sandbox: Path, calc_source: str, tmp_dir: Path):
     """Run the candidate's test_calc.py against one calc.py in an empty dir.
 
@@ -43,10 +52,18 @@ def main() -> int:
         print(f"FAIL: invalid sandbox directory: {sandbox}")
         return 1
 
-    tasks_dir = Path(__file__).resolve().parent.parent
+    tasks_dir = _TASKS_DIR
     pristine_calc = tasks_dir / "repo-fixture" / "calc.py"
     if not pristine_calc.is_file():
         print(f"FAIL: pristine fixture missing at {pristine_calc}")
+        return 1
+
+    # 0. AST audit: reject implementation introspection and require real
+    #    behavioral regression coverage before any behavior/mutation check.
+    ok, failures = audit_test_calc_file(sandbox, _TASK_ID)
+    if not ok:
+        for reason in failures:
+            print(f"FAIL: {reason}")
         return 1
 
     # 1. Direct behavior checks on candidate calc.py

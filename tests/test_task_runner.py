@@ -680,3 +680,147 @@ def test_verify_rejects_malicious_conftest_bypass(tmp_path):
             capture_output=True, text=True, encoding="utf-8", errors="replace",
         )
         assert r.returncode == 1, f"{task} must reject malicious conftest bypass: {r.stdout} {r.stderr}"
+
+
+def test_verify_rejects_source_introspection_bypass(tmp_path):
+    # A candidate that fixes calc.py but "verifies" the fix by reading
+    # implementation source, files, or bytecode metadata instead of asserting
+    # observable behavior must be rejected by the AST audit before any
+    # behavior or mutation check runs. Three distinct vectors, one per oracle.
+    fixed_calc = {
+        "001-fix-div-zero": (
+            'def divide(a, b):\n'
+            '    if b == 0:\n'
+            '        raise ValueError("division by zero")\n'
+            '    return a / b\n\n'
+            'def parse_int(s):\n'
+            '    return int(s)\n\n'
+            'def clamp(v, lo, hi):\n'
+            '    if lo > v < hi:\n'
+            '        return hi\n'
+            '    return v\n'
+        ),
+        "002-add-validation": (
+            'def divide(a, b):\n'
+            '    return a / b\n\n'
+            'def parse_int(s):\n'
+            '    s = str(s).strip()\n'
+            '    try:\n'
+            '        return int(s)\n'
+            '    except ValueError:\n'
+            '        raise ValueError(f"not an integer: {s}")\n\n'
+            'def clamp(v, lo, hi):\n'
+            '    if lo > v < hi:\n'
+            '        return hi\n'
+            '    return v\n'
+        ),
+        "003-regression-guard": (
+            'def divide(a, b):\n'
+            '    return a / b\n\n'
+            'def parse_int(s):\n'
+            '    return int(s)\n\n'
+            'def clamp(v, lo, hi):\n'
+            '    if v < lo:\n'
+            '        return lo\n'
+            '    if v > hi:\n'
+            '        return hi\n'
+            '    return v\n'
+        ),
+    }
+    introspecting_tests = {
+        # source text via inspect alias
+        "001-fix-div-zero": (
+            'from calc import divide\n'
+            'import inspect as insp\n\n\n'
+            'def test_divide_by_zero():\n'
+            '    assert "division by zero" in insp.getsource(divide)\n'
+        ),
+        # file read via read_text
+        "002-add-validation": (
+            'from calc import parse_int\n'
+            'from pathlib import Path\n\n\n'
+            'def test_parse_int_whitespace():\n'
+            '    assert "strip" in Path("calc.py").read_text()\n'
+        ),
+        # bytecode metadata via __code__
+        "003-regression-guard": (
+            'from calc import clamp\n\n\n'
+            'def test_clamp_bounds():\n'
+            '    assert len(clamp.__code__.co_code) > 10\n'
+        ),
+    }
+    for task, calc_code in fixed_calc.items():
+        sb = tmp_path / ("introspect_" + task)
+        shutil.copytree(ROOT / "eval" / "tasks" / "repo-fixture", sb)
+        (sb / "calc.py").write_text(calc_code, encoding="utf-8", newline="\n")
+        (sb / "test_calc.py").write_text(
+            introspecting_tests[task], encoding="utf-8", newline="\n"
+        )
+        v = ROOT / "eval" / "tasks" / task / "verify.py"
+        r = subprocess.run(
+            [sys.executable, str(v), str(sb)],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        assert r.returncode == 1, f"{task} must reject source-introspection bypass: {r.stdout} {r.stderr}"
+
+
+def test_verify_rejects_partial_behavior_coverage(tmp_path):
+    # Task 002 requires BOTH whitespace-success and non-numeric ValueError;
+    # task 003 requires BOTH a v<lo->lo and a v>hi->hi boundary. A single
+    # covered branch (which would satisfy the mutation checks) must still be
+    # rejected by the structural AST audit.
+    sb2 = tmp_path / "partial_002"
+    shutil.copytree(ROOT / "eval" / "tasks" / "repo-fixture", sb2)
+    (sb2 / "calc.py").write_text(
+        (sb2 / "calc.py").read_text(encoding="utf-8").replace(
+            "def parse_int(s):\n    return int(s)",
+            'def parse_int(s):\n    s = str(s).strip()\n'
+            '    try:\n        return int(s)\n'
+            '    except ValueError:\n'
+            '        raise ValueError(f"not an integer: {s}")',
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+    (sb2 / "test_calc.py").write_text(
+        (sb2 / "test_calc.py").read_text(encoding="utf-8")
+        + '\n\ndef test_parse_int_whitespace():\n    assert parse_int(" 42 ") == 42\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    r2 = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "eval" / "tasks" / "002-add-validation" / "verify.py"),
+            str(sb2),
+        ],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert r2.returncode == 1, f"002 whitespace-only must fail verify: {r2.stdout} {r2.stderr}"
+
+    sb3 = tmp_path / "partial_003"
+    shutil.copytree(ROOT / "eval" / "tasks" / "repo-fixture", sb3)
+    (sb3 / "calc.py").write_text(
+        (sb3 / "calc.py").read_text(encoding="utf-8").replace(
+            "def clamp(v, lo, hi):\n    if lo > v < hi:\n        return hi\n    return v",
+            "def clamp(v, lo, hi):\n    if v < lo:\n        return lo\n"
+            "    if v > hi:\n        return hi\n    return v",
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+    (sb3 / "test_calc.py").write_text(
+        (sb3 / "test_calc.py").read_text(encoding="utf-8")
+        + '\n\ndef test_clamp_low():\n    assert clamp(-5, 0, 10) == 0\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    r3 = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "eval" / "tasks" / "003-regression-guard" / "verify.py"),
+            str(sb3),
+        ],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert r3.returncode == 1, f"003 lo-only must fail verify: {r3.stdout} {r3.stderr}"
