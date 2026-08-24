@@ -44,6 +44,25 @@ class KitctlTest(unittest.TestCase):
         r = _run(KITCTL, ["trend"])
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("Eval trends", r.stdout)
+
+    def test_trend_cli_handles_unicode_evidence_on_ascii_stdout(self):
+        code = (
+            "import io, sys; "
+            "path = sys.argv[1]; sys.argv = [path]; "
+            "sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='ascii', errors='strict'); "
+            "exec(compile(open(path, encoding='utf-8').read(), path, 'exec'), "
+            "{'__name__': '__main__', '__file__': path})"
+        )
+        r = subprocess.run(
+            [sys.executable, "-c", code, str(KIT / "eval" / "trend.py")],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=180,
+        )
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("Eval trends", r.stdout)
     def test_unknown_command_rejected(self):
         r = _run(KITCTL, ["nope"])
         self.assertNotEqual(r.returncode, 0)
