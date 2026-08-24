@@ -1,5 +1,5 @@
 # Coding Agent OS — Operating Contract
-> **v3.1** | db-tools (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, task-benchmark 3, trigger-eval 80, trend/proposals, doctor 10 checks, 37 skills, 73 unit tests.
+> **v3.2** | db-tools (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, task-smoke 3 (oracle verify), trigger-eval 80, schema-v1 results store, evidence trend, doctor 10 checks, 37 skills.
 
 > **Product:** Coding Agent OS v2 | **CORE v2**
 > Profile root: this directory.
@@ -210,16 +210,23 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 
 > **Claim discipline (v2.7.4):** every "fixed"/"verified" claim below must cite the regression test (tests/test_*.py) or doctor check that re-verifies it. A claim without a check is not a claim — the v2.6 "githist 40-hex boundary" entry had neither code nor test (audit 2026-08-22). Sub-agent/cross-model verdicts are testimony: re-run fresh before reporting.
 
-- **v3.1.0 (quantitative evals & trend loop)**: `eval/task_runner.py` —
-  test-oracle task benchmark (3 seed tasks with `verify.py` oracle, no LLM
-  judge; tests/test_task_runner.py). `eval/results_io.py` — append-only
-  JSON store in `eval/results/` (tests/test_results_io.py). `eval/trend.py` —
-  pass-rate history + failure-driven harness proposal engine (tests/test_trend.py).
-  Runner flags: `--json <PATH|auto>` wired into trap-suite, task benchmark,
-  and trigger-eval (tests/test_json_output.py). CI: `.github/workflows/evals.yml`
-  (nightly dry gates on win+ubuntu matrix + non-blocking live scoring).
-  Size-gate cleanup: `file_scanner.py`, `findings_db.py`, `findings_links.py`
-  extracted; all files within limits (soft 0, hard 0; doctor check green).
+- **v3.2.0 (evidence-first evals & reliable trend loop)**: `eval/results_io.py` —
+  schema_version 1 append-only store with atomic `os.link` temp-writes, unique UTC
+  microsecond+uuid4 `run_id`, separate `model` and sanitized `executor_spec`, kind
+  validation (`trap`, `tasks`, `trigger`), concurrent write safety, and resilient loading
+  (`tests/test_results_io.py`). `eval/task_runner.py` — task smoke canary on 3 real
+  coding tasks using binary `verify.py` oracles (no LLM judge), pristine fixture sandbox
+  isolation per attempt, default `--tries 2`, shared 6-class failure taxonomy, and trace
+  tail capture (`tests/test_task_runner.py`). `eval/runner.py` & `eval/trigger_eval.py` —
+  truthful per-attempt duration, error, and verdict recording, decoupled `--model` metadata,
+  and cleanup regression tests (`tests/test_json_output.py`). `eval/trend.py` — reliable
+  history reporting grouped by `(kind, model)`, pass-rate calculation, warn-only baseline
+  deltas (exit 0), and structured Failure Evidence Packets without unsupervised source
+  edits (`tests/test_trend.py`). `scripts/kitctl.py` — `tasks` (dry-run default), `trend`,
+  and pytest-based `tests` dispatch (`tests/test_kitctl.py`). CI & gates: `.github/workflows/evals.yml`
+  dry-only validation on Ubuntu and Windows matrix (`permissions: contents: read`),
+  no live push races; eliminated plan baseline grandfather loophole in `scripts/file_size_baseline.json`;
+  memory extraction equivalence tests for `file_scanner.py`, `findings_db.py`, `findings_links.py`.
 - **v3.0.0 (publication-ready)**: `scripts/kitctl.py` — one command for
   the lifecycle (install/doctor/gate/eval/triggers/tests/warmup/
   checkpoint/context; thin dispatcher, tests/test_kitctl.py).

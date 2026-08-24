@@ -1,6 +1,2 @@
 {
-  "docs/superpowers/plans/2026-08-24-eval-metrics-and-evolution.md": {
-    "lines": 714,
-    "reason": "implementation plan: 6 tasks with full TDD step bodies; shrinks as tasks complete, then remove from baseline"
-  }
 }

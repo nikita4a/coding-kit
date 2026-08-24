@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""kitctl + install.py CLI-guard contract tests (v3.0).
+"""kitctl + install.py CLI-guard contract tests (v3.2).
 
 - kitctl: one command dispatching the kit's own lifecycle/gates, thin
   (delegates to the existing scripts, no logic duplication);
@@ -26,8 +26,8 @@ class KitctlTest(unittest.TestCase):
     def test_help_lists_commands(self):
         r = _run(KITCTL, ["--help"])
         self.assertEqual(r.returncode, 0)
-        for cmd in ("install", "doctor", "gate", "eval", "triggers",
-                    "tests", "warmup", "checkpoint", "context"):
+        for cmd in ("install", "doctor", "gate", "eval", "tasks", "triggers",
+                    "trend", "tests", "warmup", "checkpoint", "context"):
             self.assertIn(cmd, r.stdout)
 
     def test_doctor_passes_through(self):
@@ -35,6 +35,15 @@ class KitctlTest(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("GREEN", r.stdout)
 
+    def test_tasks_default_dry_run(self):
+        r = _run(KITCTL, ["tasks"])
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertTrue("dry-run" in r.stdout.lower() or "discovered" in r.stdout.lower() or "pass" in r.stdout.lower())
+
+    def test_trend_passes_through(self):
+        r = _run(KITCTL, ["trend"])
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("Eval trends", r.stdout)
     def test_unknown_command_rejected(self):
         r = _run(KITCTL, ["nope"])
         self.assertNotEqual(r.returncode, 0)

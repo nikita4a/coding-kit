@@ -14,7 +14,7 @@ Works in any environment that reads an agent rules file and SKILL.md skills: Cla
 | Manifest | `profile.yml` | single source of truth: paths, skills |
 | Skills | `skills/` | 37: always-on core + obra phase skills + domain |
 | Memory engine | `memory/db-tools/` | build, search_all, findings, repomap (FTS5) |
-| Evals | `eval/` | trap-suite: 18 scenarios + runner, trigger-eval (80 queries) |
+| Evals | `eval/` | trap-suite (18 scenarios), task smoke (3 tasks, oracle-verified), trigger-eval (80 queries), schema-v1 store + trend |
 | Adapters | `adapters/` | per-environment setup guides |
 
 ## Install (one command)
@@ -39,14 +39,29 @@ Pick your agent from `adapters/`:
 
 ## Daily loop
 
-```
+```bash
 python scripts/kitctl.py context               # every ~10 turns (0=ok 1=warn 2=critical)
 python ~/.memory/db-tools/search_all.py "X"    # before "what do we know about X"
 ```
 
-`scripts/kitctl.py` — one command for the kit's lifecycle: `install`,
-`doctor` (10 self-diagnostic checks), `gate`, `eval`, `triggers`, `tests`,
-`warmup`, `checkpoint`, `context`.
+`scripts/kitctl.py` — one command for the kit's lifecycle:
+- `doctor` — 10 self-diagnostic health checks.
+- `tests` — run unit test suite via pytest.
+- `gate` — file-size limits enforcement (`--ci`).
+- `eval` — trap-suite (18 adversarial scenarios, dry-run validate by default).
+- `tasks` — task smoke canary on 3 oracle-verified coding tasks (dry-run validate by default).
+- `triggers` — 80-query trigger evaluation.
+- `trend` — pass-rate history and failure evidence packets across runs.
+- `warmup`, `checkpoint`, `context` — memory and session monitoring tools.
+
+## Evals & Trend Loop
+
+The kit includes an evidence-first evaluation harness:
+- **Trap-suite (`eval/runner.py`)**: 18 adversarial scenarios testing adherence to superpowers, YAGNI, and security invariants.
+- **Task Smoke (`eval/task_runner.py`)**: 3 real coding tasks verified by deterministic `verify.py` test oracles (no LLM judge). Each attempt runs in an isolated sandbox cloned fresh from `eval/tasks/repo-fixture` (default `--tries 2`). This serves as a smoke canary, not a statistical benchmark.
+- **Trigger Evals (`eval/trigger_eval.py`)**: 80 queries testing skill activation routing.
+- **Schema-v1 Results Store (`eval/results_io.py`)**: atomic append-only JSON storage under `eval/results/` with microsecond UTC timestamps, UUID `run_id`, separate `model` metadata, and standardized failure taxonomies.
+- **Trend Reporting (`eval/trend.py`)**: summarizes newest runs by `(kind, model)`, reports baseline deltas, and produces structured Failure Evidence Packets with bounded trace tails for debugging.
 
 ## Where your data lives
 

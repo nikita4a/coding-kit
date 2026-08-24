@@ -233,5 +233,24 @@ class SanitizeUnificationTest(unittest.TestCase):
         self.assertEqual(n, 3, f"quoted prefix must match all: {q}")
 
 
+class BaselineAndEvalHygieneTest(unittest.TestCase):
+    def test_file_size_baseline_is_empty(self):
+        baseline_file = KIT / "scripts" / "file_size_baseline.json"
+        self.assertTrue(baseline_file.is_file(), f"{baseline_file} must exist")
+        data = json.loads(baseline_file.read_text(encoding="utf-8"))
+        self.assertEqual(data, {}, "file size baseline must be exactly empty object")
+
+    def test_superseded_plan_is_absent(self):
+        superseded = KIT / "docs" / "superpowers" / "plans" / "2026-08-24-eval-metrics-and-evolution.md"
+        self.assertFalse(superseded.exists(), f"superseded plan {superseded.name} must be absent")
+
+    def test_no_dry_run_debris_present(self):
+        eval_results_dir = KIT / "eval" / "results"
+        if eval_results_dir.exists():
+            debris = list(eval_results_dir.glob("trap-dry-run-*.json"))
+            self.assertEqual(debris, [], f"trap-dry-run debris found in eval/results: {debris}")
+        debris_repo = [p for p in KIT.rglob("trap-dry-run-*.json") if ".git" not in p.parts]
+        self.assertEqual(debris_repo, [], f"trap-dry-run debris found in repo: {debris_repo}")
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,4 +1,6 @@
 name: kit gates
+permissions:
+  contents: read
 
 on:
   push:
@@ -24,7 +26,9 @@ jobs:
         run: python scripts/tools/check_file_sizes.py --ci
       - name: Trap-suite (dry-run validation)
         run: python eval/runner.py
+      - name: Task-runner (dry-run validation)
+        run: python eval/task_runner.py --dry-run
       - name: Trigger queries validation
         run: python eval/trigger_eval.py --queries eval/trigger_queries.json
-      - name: Unit tests (install + root resolver)
-        run: python -m unittest discover -s tests
+      - name: Run tests
+        run: python -m pytest tests -q

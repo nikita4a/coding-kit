@@ -2,8 +2,11 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "eval"))
+import runner
 
 
 def test_runner_dry_run_json(tmp_path):
@@ -15,7 +18,9 @@ def test_runner_dry_run_json(tmp_path):
     data = json.loads(out.read_text(encoding="utf-8"))
     assert data["kind"] == "trap" and data["total"] >= 18
     assert data["passed"] == data["total"]  # dry-run: all scenarios valid
-
+    assert data["schema_version"] == 1
+    assert data["model"] == "unspecified"
+    assert data["mode"] == "dry-run"
 
 def test_trigger_dry_run_json(tmp_path):
     out = tmp_path / "t.json"
@@ -39,12 +44,332 @@ def test_auto_json_writes_shared_store(tmp_path, monkeypatch):
         [sys.executable, str(ROOT / "eval" / "runner.py"), "--json", "auto"],
         capture_output=True, text=True, encoding="utf-8")
     after = set((ROOT / "eval" / "results").glob("*.json"))
-    new = after - before
+    new = set(after - before)
     try:
         assert r.returncode == 0, r.stderr
         assert len(new) == 1
-        data = json.loads(new.pop().read_text(encoding="utf-8"))
+        target = next(iter(new))
+        data = json.loads(target.read_text(encoding="utf-8"))
         assert data["kind"] == "trap"
     finally:
         for p in new:
-            p.unlink()
+            p.unlink(missing_ok=True)
+
+
+def test_runner_records_judge_fail_and_trace_tail(tmp_path, monkeypatch):
+    out_json = tmp_path / "judge_fail.json"
+    sc_file = tmp_path / "sc1.md"
+    sc_file.write_text(
+        "name: sc1\nskill: s1\ntrap: t1\nexpect: pass\n\nagent prompt body",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(runner, "run_prompt", lambda cmd, prompt, timeout=600: "agent answer text here")
+    monkeypatch.setattr(runner, "judge_one", lambda cmd, exp, ans, timeout=600: "FAIL: agent hallucinated output")
+
+    code = runner.run_scenarios(
+        executor=["mock_exe"],
+        judge=["mock_judge"],
+        scenario_files=[sc_file],
+        repeat=1,
+        json_out=out_json,
+        model="model-fail",
+        executor_spec="mock_exe --api-key SECRET999",
+    )
+    assert code == 1
+    doc = json.loads(out_json.read_text(encoding="utf-8"))
+    assert doc["schema_version"] == 1
+    assert doc["kind"] == "trap"
+    assert doc["model"] == "model-fail"
+    assert doc["executor_name"] == "mock_exe"
+    assert "SECRET999" not in json.dumps(doc)
+    assert doc["passed"] == 0
+    assert doc["total"] == 1
+    sc = doc["scenarios"][0]
+    assert sc["name"] == "sc1"
+    assert sc["verdict"] == "FAIL"
+    assert len(sc["attempts"]) == 1
+    att = sc["attempts"][0]
+    assert att["verdict"] == "FAIL"
+    assert att["duration_s"] >= 0
+    assert "FAIL: agent hallucinated" in att["error"]
+    assert att["trace_tail"] == "agent answer text here"
+
+
+def test_runner_records_executor_exception_and_writes_json(tmp_path, monkeypatch):
+    out_json = tmp_path / "exec_exc.json"
+    sc_file = tmp_path / "sc2.md"
+    sc_file.write_text(
+        "name: sc2\nskill: s2\ntrap: t2\nexpect: pass\n\nbody text",
+        encoding="utf-8",
+    )
+
+    def _broken_exec(*args, **kwargs):
+        raise RuntimeError("Subprocess died unexpectedly")
+
+    monkeypatch.setattr(runner, "run_prompt", _broken_exec)
+
+    code = runner.run_scenarios(
+        executor=["mock_exe"],
+        judge=["mock_judge"],
+        scenario_files=[sc_file],
+        repeat=1,
+        json_out=out_json,
+        model="model-crash",
+        executor_spec="mock_exe",
+    )
+    assert code == 1
+    doc = json.loads(out_json.read_text(encoding="utf-8"))
+    assert doc["schema_version"] == 1
+    assert doc["kind"] == "trap"
+    assert doc["passed"] == 0
+    assert doc["total"] == 1
+    sc = doc["scenarios"][0]
+    assert sc["verdict"] == "FAIL"
+    assert len(sc["attempts"]) == 1
+    att = sc["attempts"][0]
+    assert att["verdict"] == "FAIL"
+    assert "Subprocess died unexpectedly" in att["error"]
+
+
+def test_runner_all_repeat_semantics(tmp_path, monkeypatch):
+    out_json = tmp_path / "repeat_flake.json"
+    sc_file = tmp_path / "sc3.md"
+    sc_file.write_text(
+        "name: sc3\nskill: s3\ntrap: t3\nexpect: pass\n\nrepeat body",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(runner, "run_prompt", lambda cmd, prompt, timeout=600: "agent reply")
+
+    judge_responses = iter(["PASS: attempt 1 good", "FAIL: attempt 2 flaky bug", "PASS: attempt 3 good"])
+    monkeypatch.setattr(runner, "judge_one", lambda cmd, exp, ans, timeout=600: next(judge_responses))
+
+    code = runner.run_scenarios(
+        executor=["mock_exe"],
+        judge=["mock_judge"],
+        scenario_files=[sc_file],
+        repeat=3,
+        json_out=out_json,
+        model="model-repeat",
+    )
+    assert code == 1
+    doc = json.loads(out_json.read_text(encoding="utf-8"))
+    assert doc["passed"] == 0
+    sc = doc["scenarios"][0]
+    assert sc["verdict"] == "FAIL"
+    assert len(sc["attempts"]) == 3
+    assert sc["attempts"][0]["verdict"] == "PASS"
+    assert sc["attempts"][1]["verdict"] == "FAIL"
+    assert "flaky bug" in sc["attempts"][1]["error"]
+    assert sc["attempts"][2]["verdict"] == "PASS"
+
+
+def test_runner_all_repeat_success(tmp_path, monkeypatch):
+    out_json = tmp_path / "repeat_success.json"
+    sc_file = tmp_path / "sc4.md"
+    sc_file.write_text(
+        "name: sc4\nskill: s4\ntrap: t4\nexpect: pass\n\nrepeat body",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(runner, "run_prompt", lambda cmd, prompt, timeout=600: "agent reply")
+    monkeypatch.setattr(runner, "judge_one", lambda cmd, exp, ans, timeout=600: "PASS: all good")
+
+    code = runner.run_scenarios(
+        executor=["mock_exe"],
+        judge=["mock_judge"],
+        scenario_files=[sc_file],
+        repeat=2,
+        json_out=out_json,
+        model="model-repeat-ok",
+    )
+    assert code == 0
+    doc = json.loads(out_json.read_text(encoding="utf-8"))
+    assert doc["passed"] == 1
+    sc = doc["scenarios"][0]
+    assert sc["verdict"] == "PASS"
+    assert len(sc["attempts"]) == 2
+    assert all(a["verdict"] == "PASS" for a in sc["attempts"])
+
+
+def test_runner_model_executor_separation(tmp_path, monkeypatch):
+    out_json = tmp_path / "separation.json"
+    sc_file = tmp_path / "sc5.md"
+    sc_file.write_text(
+        "name: sc5\nskill: s5\ntrap: t5\nexpect: pass\n\nbody",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(runner, "run_prompt", lambda cmd, prompt, timeout=600: "agent reply")
+    monkeypatch.setattr(runner, "judge_one", lambda cmd, exp, ans, timeout=600: "PASS: ok")
+
+    code = runner.run_scenarios(
+        executor=["custom-cli", "--auth=TOKEN123"],
+        judge=["custom-cli", "--auth=TOKEN123"],
+        scenario_files=[sc_file],
+        repeat=1,
+        json_out=out_json,
+        model=None,
+        executor_spec="custom-cli --auth=TOKEN123",
+    )
+    assert code == 0
+    doc = json.loads(out_json.read_text(encoding="utf-8"))
+    assert doc["model"] == "unspecified"
+    assert doc["executor_name"] == "custom-cli"
+    assert "TOKEN123" not in json.dumps(doc)
+
+
+def test_runner_no_json_does_not_persist(tmp_path, monkeypatch):
+    sc_file = tmp_path / "sc6.md"
+    sc_file.write_text(
+        "name: sc6\nskill: s6\ntrap: t6\nexpect: pass\n\nbody",
+        encoding="utf-8",
+    )
+    saved = []
+    monkeypatch.setattr(runner, "save_result", lambda *args, **kwargs: saved.append(args))
+    code = runner.run_scenarios(
+        executor=None,
+        judge=None,
+        scenario_files=[sc_file],
+        repeat=1,
+        json_out=None,
+    )
+    assert code == 0
+    assert len(saved) == 0
+
+
+def test_runner_passes_timeout_to_executor_and_judge(tmp_path, monkeypatch):
+    sc_file = tmp_path / "sc_to.md"
+    sc_file.write_text(
+        "name: sc_to\nskill: s_to\ntrap: t_to\nexpect: pass\n\nbody",
+        encoding="utf-8",
+    )
+    seen_timeouts = []
+
+    def fake_run_prompt(cmd, prompt, timeout=600):
+        seen_timeouts.append(timeout)
+        if "EXPECT:" in prompt:
+            return "PASS: good"
+        return "agent output"
+
+    monkeypatch.setattr(runner, "run_prompt", fake_run_prompt)
+    code = runner.run_scenarios(
+        executor=["mock_exe"],
+        judge=["mock_judge"],
+        scenario_files=[sc_file],
+        repeat=1,
+        timeout=45,
+    )
+    assert code == 0
+    assert seen_timeouts == [45, 45]
+
+
+def test_runner_timeout_expired_records_trace_tail(tmp_path, monkeypatch):
+    out_json = tmp_path / "timeout_tail.json"
+    sc_file = tmp_path / "sc_tt.md"
+    sc_file.write_text(
+        "name: sc_tt\nskill: s_tt\ntrap: t_tt\nexpect: pass\n\nbody",
+        encoding="utf-8",
+    )
+
+    def _timing_out(*args, **kwargs):
+        raise subprocess.TimeoutExpired(cmd=args[0], timeout=kwargs.get("timeout", 600), stderr="partial agent error tail")
+
+    monkeypatch.setattr(runner, "run_prompt", _timing_out)
+    code = runner.run_scenarios(
+        executor=["mock_exe"],
+        judge=["mock_judge"],
+        scenario_files=[sc_file],
+        repeat=1,
+        json_out=out_json,
+        timeout=30,
+    )
+    assert code == 1
+    doc = json.loads(out_json.read_text(encoding="utf-8"))
+    sc = doc["scenarios"][0]
+    assert sc["verdict"] == "FAIL"
+    att = sc["attempts"][0]
+    assert att["verdict"] == "FAIL"
+    assert "TimeoutExpired" in att["error"]
+    assert att["trace_tail"] == "partial agent error tail"
+
+
+def test_runner_dry_run_cli_no_json_does_not_create_files(tmp_path):
+    results_dir = ROOT / "eval" / "results"
+    before = set(results_dir.glob("*.json")) if results_dir.exists() else set()
+    r = subprocess.run(
+        [sys.executable, str(ROOT / "eval" / "runner.py")],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    after = set(results_dir.glob("*.json")) if results_dir.exists() else set()
+    new = after - before
+    try:
+        assert r.returncode == 0, r.stderr
+        assert len(new) == 0
+    finally:
+        for p in new:
+            p.unlink(missing_ok=True)
+
+
+def test_trigger_dry_run_cli_no_json_does_not_create_files(tmp_path):
+    results_dir = ROOT / "eval" / "results"
+    before = set(results_dir.glob("*.json")) if results_dir.exists() else set()
+    r = subprocess.run(
+        [sys.executable, str(ROOT / "eval" / "trigger_eval.py"),
+         "--queries", str(ROOT / "eval" / "trigger_queries.json")],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    after = set(results_dir.glob("*.json")) if results_dir.exists() else set()
+    new = after - before
+    try:
+        assert r.returncode == 0, r.stderr
+        assert len(new) == 0
+    finally:
+        for p in new:
+            p.unlink(missing_ok=True)
+
+
+def test_runner_resolve_cmd_windows_paths(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(
+        runner.shutil,
+        "which",
+        lambda x: r"C:\Users\test\AppData\npm\claude.cmd" if x == "claude" else None,
+    )
+
+    # Empty / whitespace
+    assert runner.resolve_cmd("") == []
+    assert runner.resolve_cmd("   ") == []
+
+    # Unquoted backslash path to exe
+    assert runner.resolve_cmd(r"C:\tools\agent.exe --flag") == [r"C:\tools\agent.exe", "--flag"]
+
+    # Quoted path with spaces to exe
+    cmd_exe = runner.resolve_cmd(r'"C:\Program Files\My Agent\agent.exe" --model gpt-4')
+    assert cmd_exe == [r"C:\Program Files\My Agent\agent.exe", "--model", "gpt-4"]
+
+    # Quoted path with spaces to .cmd -> cmd /c with quotes removed
+    cmd_batch = runner.resolve_cmd(r'"C:\Program Files\npm\claude.cmd" run --arg "val with space"')
+    assert cmd_batch == ["cmd", "/c", r"C:\Program Files\npm\claude.cmd", "run", "--arg", "val with space"]
+
+    # Unquoted .bat
+    assert runner.resolve_cmd(r"C:\bin\agent.bat --flag") == ["cmd", "/c", r"C:\bin\agent.bat", "--flag"]
+
+    # Single-quoted path with spaces to .bat
+    assert runner.resolve_cmd(r"'C:\Program Files\tool.bat' arg") == ["cmd", "/c", r"C:\Program Files\tool.bat", "arg"]
+
+    # Command resolved via which to .cmd
+    assert runner.resolve_cmd("claude --flag") == ["cmd", "/c", r"C:\Users\test\AppData\npm\claude.cmd", "--flag"]
+
+
+def test_executor_env_keeps_runtime_paths_and_drops_secrets(monkeypatch):
+    monkeypatch.setenv("PATH", r"C:\safe-bin")
+    monkeypatch.setenv("USERPROFILE", r"C:\Users\safe")
+    monkeypatch.setenv("GITHUB_TOKEN", "github-secret")
+    monkeypatch.setenv("OPENAI_API_KEY", "openai-secret")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "anthropic-secret")
+
+    env = runner.executor_env()
+
+    assert env["PATH"] == r"C:\safe-bin"
+    assert env["USERPROFILE"] == r"C:\Users\safe"
+    assert "GITHUB_TOKEN" not in env
+    assert "OPENAI_API_KEY" not in env
+    assert "ANTHROPIC_API_KEY" not in env

@@ -9,3 +9,6 @@ __pycache__/
 .override.md
 # per-machine index exclusions
 skip.local
+
+# private superpowers execution workspace
+.superpowers/

@@ -36,9 +36,9 @@ import re
 import shlex
 import subprocess
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-
 HERE = Path(__file__).resolve().parent          # eval/
 ROOT = HERE.parent                              # kit root
 sys.path.insert(0, str(HERE))
@@ -112,16 +112,68 @@ def prompt_for(query: str) -> str:
     return PRELUDE + "User request: " + query + "\n"
 
 
+def run_query_detailed(cmd: list[str], q: dict, runs: int,
+                       timeout: int = TIMEOUT_DEFAULT) -> dict:
+    """Runs one query `runs` times; records per-attempt timings and errors."""
+    hits = 0
+    attempts: list[dict] = []
+    for _ in range(runs):
+        t0 = time.perf_counter()
+        err_msg = None
+        is_fired = False
+        trace_tail = None
+        try:
+            answer = run_prompt(cmd, prompt_for(q["query"]), timeout=timeout)
+            is_fired = detect(q["skill"], answer)
+        except subprocess.TimeoutExpired as e:
+            err_msg = f"TimeoutExpired: command timed out after {timeout}s"
+            out = getattr(e, "stderr", None) or getattr(e, "stdout", None)
+            if out:
+                if isinstance(out, bytes):
+                    out = out.decode("utf-8", errors="replace")
+                trace_tail = str(out).strip()[-500:]
+        except Exception as e:
+            err_msg = f"{type(e).__name__}: {e}"
+            out = getattr(e, "stderr", None) or getattr(e, "stdout", None)
+            if out:
+                if isinstance(out, bytes):
+                    out = out.decode("utf-8", errors="replace")
+                trace_tail = str(out).strip()[-500:]
+        dur = round(time.perf_counter() - t0, 4)
+        if is_fired:
+            hits += 1
+        att: dict = {
+            "fired": is_fired,
+            "duration_s": dur,
+        }
+        if err_msg:
+            att["error"] = err_msg
+        if trace_tail:
+            att["trace_tail"] = trace_tail
+        attempts.append(att)
+
+    fired_aggregate = hits * 2 > runs
+    expected = bool(q.get("should", False))
+    is_pass = (fired_aggregate == expected)
+    verdict = "PASS" if is_pass else "FAIL"
+    total_dur = round(sum(a["duration_s"] for a in attempts), 4)
+
+    return {
+        "query": q.get("query", ""),
+        "skill": q.get("skill", ""),
+        "expected": expected,
+        "fired": fired_aggregate,
+        "verdict": verdict,
+        "duration_s": total_dur,
+        "attempts": attempts,
+    }
+
+
 def run_query(cmd: list[str], q: dict, runs: int,
               timeout: int = TIMEOUT_DEFAULT) -> tuple[str, bool]:
     """Runs one query `runs` times; majority vote decides triggered."""
-    hits = 0
-    for _ in range(runs):
-        answer = run_prompt(cmd, prompt_for(q["query"]), timeout=timeout)
-        if detect(q["skill"], answer):
-            hits += 1
-    return q["query"], hits * 2 > runs
-
+    res = run_query_detailed(cmd, q, runs, timeout=timeout)
+    return res["query"], res["fired"]
 
 def summarize(results: dict[str, list[tuple[str, bool, bool]]]) -> tuple[list[str], dict]:
     """Return (problem lines, per-skill stats)."""
@@ -148,6 +200,8 @@ def main() -> int:
     ap.add_argument("--queries", required=True, help="JSON file with {skill, should, query}")
     ap.add_argument("--executor", help='CLI reading prompt from stdin, '
                      'printing answer to stdout (e.g. "gemini -p -")')
+    ap.add_argument("--model", default=None,
+                    help="model identifier (e.g. gpt-4o, claude-3-5-sonnet)")
     ap.add_argument("--runs", type=int, default=RUNS_DEFAULT,
                     help=f"runs per query (default {RUNS_DEFAULT})")
     ap.add_argument("--parallel", type=int, default=1, help="parallel workers")
@@ -177,7 +231,7 @@ def main() -> int:
         print("dry-run: no --executor, queries validated only")
         if args.json:
             _emit_json(args, mode="dry-run", total=len(queries),
-                       fired=0, misses=[])
+                       passed=0, fired=0, misses=[], rows=[])
         return 0
     cmd = resolve_cmd(args.executor)
     selected = [q for q in queries
@@ -186,52 +240,91 @@ def main() -> int:
         print(f"--only {args.only}: no such skill in queries"); return 2
 
     results: dict[str, list[tuple[str, bool, bool]]] = {}
+    rows: list[dict] = []
     with ThreadPoolExecutor(max_workers=args.parallel) as pool:
-        futs = {pool.submit(run_query, cmd, q, args.runs,
+        futs = {pool.submit(run_query_detailed, cmd, q, args.runs,
                             args.timeout): q for q in selected}
         for fut in as_completed(futs):
             q = futs[fut]
-            query_text, passed = fut.result()
-            tag = "PASS" if passed == q["should"] else "FAIL"
+            try:
+                row = fut.result()
+            except Exception as e:
+                row = {
+                    "query": q.get("query", ""),
+                    "skill": q.get("skill", ""),
+                    "expected": bool(q.get("should", False)),
+                    "fired": False,
+                    "verdict": "FAIL",
+                    "duration_s": 0.0,
+                    "attempts": [{"fired": False, "duration_s": 0.0,
+                                  "error": f"{type(e).__name__}: {e}"}],
+                }
+            rows.append(row)
+            query_text = row["query"]
+            passed_should = row["fired"]
+            tag = row["verdict"]
             print(f"[{tag}] {q['skill']:30s} should={str(q['should']):5s} "
                   f"'{query_text[:60]}'")
-            results.setdefault(q["skill"], []).append((query_text, q["should"], passed))
+            results.setdefault(q["skill"], []).append((query_text, q["should"], passed_should))
             if args.out:
                 with open(args.out, "a", encoding="utf-8") as f:
                     f.write(json.dumps(
                         {"skill": q["skill"], "should": q["should"],
-                         "query": query_text, "result": tag}, ensure_ascii=False) + "\n")
+                         "query": query_text, "result": tag},
+                        ensure_ascii=False) + "\n")
 
     problems, stats = summarize(results)
     print("\nper-skill summary (trigger = should-passed rate, false = should-not-passed):")
     for skill, s in sorted(stats.items()):
         print(f"  {skill:30s} trigger {s['trigger']:.2f}  false {s['false']:.2f}  "
               f"({s['should']}+{s['not']} queries)")
+
+    fired_count = sum(1 for r in rows if r.get("fired") is True)
+    passed_count = sum(1 for r in rows if r.get("verdict") == "PASS")
+
     if problems:
         print("\nBELOW THRESHOLD:")
         print("\n".join(f"  - {p}" for p in problems))
-        _emit_json(args, mode="live", total=len(selected),
-                   fired=sum(1 for rows in results.values()
-                             for (_, s, p) in rows if p == s),
-                   misses=[p for p in problems])
+        if args.json:
+            _emit_json(args, mode="live", total=len(selected),
+                       passed=passed_count,
+                       fired=fired_count,
+                       misses=problems,
+                       rows=rows)
         return 1
     print("\nall measured skills above threshold")
-    _emit_json(args, mode="live", total=len(selected),
-               fired=sum(1 for rows in results.values()
-                         for (_, s, p) in rows if p == s),
-               misses=[])
+    if args.json:
+        _emit_json(args, mode="live", total=len(selected),
+                   passed=passed_count,
+                   fired=fired_count,
+                   misses=[],
+                   rows=rows)
     return 0
 
 
-def _emit_json(args, mode: str, total: int, fired: int,
-               misses: list[str]) -> None:
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
+def _emit_json(args, mode: str, total: int, passed: int, fired: int,
+               misses: list[str], rows: list[dict] | None = None) -> None:
+    if not getattr(args, "json", None):
+        return
+    sys.path.insert(0, str(HERE))
     from results_io import save_result
     override = None if str(args.json) == "auto" else Path(args.json)
-    save_result("trigger", args.executor or "dry-run",
-                {"mode": mode, "fired": fired, "total": total,
-                 "misses": misses}, path=override)
+    model = args.model if getattr(args, "model", None) else "unspecified"
+    payload = {
+        "mode": mode,
+        "passed": passed,
+        "fired": fired,
+        "total": total,
+        "misses": misses,
+        "rows": rows if rows is not None else [],
+    }
+    save_result("trigger", model, payload, path=override,
+                executor_spec=getattr(args, "executor", None))
 
 
 if __name__ == "__main__":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
     sys.exit(main())

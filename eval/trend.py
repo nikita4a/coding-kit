@@ -1,73 +1,399 @@
 #!/usr/bin/env python3
-"""eval/trend.py — pass-rate history + failure-driven harness proposals.
+"""eval/trend.py — pass-rate history + failure evidence reporting.
 
 Reads the shared JSON store (eval/results_io.load_runs) and prints:
-  1. a markdown table of the last runs per kind/model with scores;
-  2. a Proposals section: every non-PASS in the NEWEST run of each kind,
-     grouped by owning component — the semi-automatic half of the harness
-     evolution loop (machine proposes, human merges, evals re-verify).
+  1. a markdown table of the newest run per (kind, model) with baseline deltas;
+  2. a Failure Evidence Packets section: failure details for non-PASS targets
+     in the newest run of each kind/model group (evidence only, no proposals).
 
 Usage:
-    python eval/trend.py                 # report to stdout
-    python eval/trend.py > TREND.md      # or redirect
+    python eval/trend.py                      # report to stdout
+    python eval/trend.py --update-baselines   # refresh baseline JSON files
+    python eval/trend.py > TREND.md           # or redirect
 """
+import argparse
+import json
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
+
 from results_io import load_runs
 
+BASELINES_DIR = ROOT / "eval" / "baselines"
 KIND_ORDER = {"trap": 0, "tasks": 1, "trigger": 2}
+
+def _is_dry_run(r: dict) -> bool:
+    if not isinstance(r, dict):
+        return False
+    if r.get("mode") in ("dry-run", "dry_run", "dry"):
+        return True
+    if r.get("dry_run") is True or r.get("dry") is True:
+        return True
+    if r.get("verdict") == "DRY_RUN":
+        return True
+    rows = r.get("rows")
+    if isinstance(rows, list) and any(isinstance(x, dict) and x.get("verdict") == "DRY_RUN" for x in rows):
+        return True
+    scenarios = r.get("scenarios")
+    if isinstance(scenarios, list) and any(isinstance(x, dict) and x.get("verdict") == "DRY_RUN" for x in scenarios):
+        return True
+    return False
+
+
+def _bound_text(text: object, max_chars: int = 500) -> str:
+    s = str(text).strip()
+    if len(s) > max_chars:
+        return s[:max_chars] + "..."
+    return s
 
 
 def _score(r: dict) -> str:
+    kind = r.get("kind")
     if "passed" in r and "total" in r:
         return f"{r['passed']}/{r['total']}"
+    if kind == "trap" and "scenarios" in r and isinstance(r["scenarios"], list):
+        scenarios = r["scenarios"]
+        passed = sum(1 for s in scenarios if isinstance(s, dict) and s.get("verdict") == "PASS")
+        return f"{passed}/{len(scenarios)}"
+    if kind == "tasks" and "rows" in r and isinstance(r["rows"], list):
+        rows = r["rows"]
+        passed = sum(1 for row in rows if isinstance(row, dict) and row.get("verdict") == "PASS")
+        return f"{passed}/{len(rows)}"
+    if kind == "trigger":
+        if "fired" in r and "total" in r:
+            return f"fired {r['fired']}/{r['total']}"
+        if "rows" in r and isinstance(r["rows"], list) and r["rows"]:
+            rows = r["rows"]
+            fired = sum(1 for row in rows if isinstance(row, dict) and row.get("fired") is True)
+            return f"fired {fired}/{len(rows)}"
     if "fired" in r and "total" in r:
         return f"fired {r['fired']}/{r['total']}"
     return "?"
 
 
-def _proposals(newest: dict[str, dict]) -> list[str]:
-    out = []
-    for kind in sorted(newest, key=lambda k: KIND_ORDER.get(k, 9)):
-        r = newest[kind]
-        for row in r.get("scenarios", []):
-            if row.get("verdict") != "PASS":
-                out.append(f"- [{row.get('skill', '?')}] trap `{row['name']}` "
-                           f"FAILED on {r['model']} ({r['utc'][:16]}): tighten "
-                           f"skill wording; re-verify: "
-                           f"python eval/runner.py --scenario {row['name']} "
-                           f"--executor ... --repeat 2")
-        if "fired" in r and r["fired"] < r.get("total", 0):
-            out.append(f"- [routing] trigger misses on {r['model']} "
-                       f"({r['utc'][:16]}): {'; '.join(r.get('misses', []))}; "
-                       f"re-verify: python eval/trigger_eval.py "
-                       f"--queries eval/trigger_queries.json --executor ...")
-        for row in r.get("rows", []):
-            if row.get("verdict") != "PASS":
-                out.append(f"- [{row['name']}] task FAILED on {r['model']} "
-                           f"({r['utc'][:16]}): inspect sandbox behavior; "
-                           f"re-verify: python eval/task_runner.py "
-                           f"--executor ...")
-    return out
+def _rate(r: dict) -> float | None:
+    kind = r.get("kind")
+    if "passed" in r and "total" in r:
+        try:
+            total = float(r["total"])
+            passed = float(r["passed"])
+            return passed / total if total > 0 else 0.0
+        except (ValueError, TypeError, ZeroDivisionError):
+            pass
+    if kind == "trap" and "scenarios" in r and isinstance(r["scenarios"], list):
+        scenarios = r["scenarios"]
+        total = len(scenarios)
+        if total > 0:
+            passed = sum(1 for s in scenarios if isinstance(s, dict) and s.get("verdict") == "PASS")
+            return float(passed) / float(total)
+        return 0.0
+    if kind == "tasks" and "rows" in r and isinstance(r["rows"], list):
+        rows = r["rows"]
+        total = len(rows)
+        if total > 0:
+            passed = sum(1 for row in rows if isinstance(row, dict) and row.get("verdict") == "PASS")
+            return float(passed) / float(total)
+        return 0.0
+    if kind == "trigger":
+        if "fired" in r and "total" in r:
+            try:
+                total = float(r["total"])
+                fired = float(r["fired"])
+                return fired / total if total > 0 else 0.0
+            except (ValueError, TypeError, ZeroDivisionError):
+                pass
+        if "rows" in r and isinstance(r["rows"], list):
+            rows = r["rows"]
+            total = len(rows)
+            if total > 0:
+                fired = sum(1 for row in rows if isinstance(row, dict) and row.get("fired") is True)
+                return float(fired) / float(total)
+            return 0.0
+    return None
 
 
-def render() -> str:
-    runs = load_runs()
+def _load_baseline(kind: str, baselines_dir: Path | None = None) -> dict[str, float]:
+    b_dir = Path(baselines_dir) if baselines_dir is not None else BASELINES_DIR
+    path = b_dir / f"{kind}.json"
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            out: dict[str, float] = {}
+            for k, v in data.items():
+                if isinstance(v, (int, float)) and not isinstance(v, bool):
+                    out[str(k)] = float(v)
+            return out
+    except Exception:
+        pass
+    return {}
+
+def _status_and_delta(rate: float | None, baseline_rate: float | None) -> tuple[str, str, str]:
+    if baseline_rate is None:
+        return "-", "-", "-"
+    baseline_str = f"{baseline_rate * 100:.1f}%"
+    if rate is None:
+        return baseline_str, "-", "-"
+    delta = round((rate - baseline_rate) * 100.0, 6)
+    delta_str = f"{delta:+.1f}pp"
+    if delta >= -3.0:
+        status_str = "OK"
+    elif delta <= -8.0:
+        status_str = "CRITICAL"
+    else:
+        status_str = "WARN"
+    return baseline_str, delta_str, status_str
+
+
+def _evidence_packets(newest_runs: list[dict]) -> list[str]:
+    packets: list[str] = []
+    sorted_runs = sorted(
+        newest_runs,
+        key=lambda r: (KIND_ORDER.get(r.get("kind", ""), 99), r.get("model", ""))
+    )
+    for r in sorted_runs:
+        kind = r.get("kind", "")
+        model = r.get("model", "unspecified")
+        utc = r.get("utc", "")[:16]
+
+        if kind == "trap":
+            scenarios = r.get("scenarios")
+            if isinstance(scenarios, list):
+                for scenario in scenarios:
+                    if not isinstance(scenario, dict):
+                        continue
+                    verdict = scenario.get("verdict")
+                    if verdict != "PASS":
+                        name = scenario.get("name", "unknown")
+                        skill = scenario.get("skill")
+                        error = scenario.get("error")
+                        trace_tail = scenario.get("trace_tail")
+                        if not error or not trace_tail:
+                            for att in scenario.get("attempts", []):
+                                if not isinstance(att, dict):
+                                    continue
+                                if not error and att.get("error"):
+                                    error = att.get("error")
+                                if not trace_tail and att.get("trace_tail"):
+                                    trace_tail = att.get("trace_tail")
+                        re_verify = f"python eval/runner.py --scenario {name} --executor ... --repeat 2"
+                        target_desc = f"{name} (skill: {skill})" if skill else name
+                        packet_lines = [
+                            f"- [trap] target: `{target_desc}` | model: `{model}` | utc: `{utc}`",
+                        ]
+                        if error:
+                            packet_lines.append(f"  error: {_bound_text(error)}")
+                        if trace_tail:
+                            packet_lines.append(f"  trace_tail: {_bound_text(trace_tail)}")
+                        packet_lines.append(f"  re-verify: {re_verify}")
+                        packets.append("\n".join(packet_lines))
+
+        elif kind == "tasks":
+            rows = r.get("rows")
+            if isinstance(rows, list):
+                for row in rows:
+                    if not isinstance(row, dict):
+                        continue
+                    verdict = row.get("verdict")
+                    if verdict != "PASS":
+                        name = row.get("name", "unknown")
+                        error = row.get("error") or row.get("error_class")
+                        trace_tail = row.get("trace_tail")
+                        if not error or not trace_tail:
+                            for att in row.get("attempts", []):
+                                if not isinstance(att, dict):
+                                    continue
+                                if not error:
+                                    error = att.get("error") or att.get("error_class")
+                                if not trace_tail and att.get("trace_tail"):
+                                    trace_tail = att.get("trace_tail")
+                        re_verify = "python eval/task_runner.py --executor ..."
+                        packet_lines = [
+                            f"- [tasks] target: `{name}` | model: `{model}` | utc: `{utc}`",
+                        ]
+                        if error:
+                            packet_lines.append(f"  error: {_bound_text(error)}")
+                        if trace_tail:
+                            packet_lines.append(f"  trace_tail: {_bound_text(trace_tail)}")
+                        packet_lines.append(f"  re-verify: {re_verify}")
+                        packets.append("\n".join(packet_lines))
+
+        elif kind == "trigger":
+            rows = r.get("rows")
+            has_row_failures = False
+            if isinstance(rows, list):
+                for row in rows:
+                    if not isinstance(row, dict):
+                        continue
+                    verdict = row.get("verdict")
+                    expected = row.get("expected") if "expected" in row else row.get("should")
+                    fired = row.get("fired")
+                    failed = False
+                    if verdict is not None:
+                        failed = (verdict != "PASS")
+                    elif expected is not None and fired is not None:
+                        failed = (expected != fired)
+                    if failed:
+                        has_row_failures = True
+                        query = row.get("query", "unknown")
+                        skill = row.get("skill")
+                        error = row.get("error")
+                        trace_tail = row.get("trace_tail")
+                        if not error or not trace_tail:
+                            for att in row.get("attempts", []):
+                                if not isinstance(att, dict):
+                                    continue
+                                if not error and att.get("error"):
+                                    error = att.get("error")
+                                if not trace_tail and att.get("trace_tail"):
+                                    trace_tail = att.get("trace_tail")
+                        re_verify = "python eval/trigger_eval.py --queries eval/trigger_queries.json --executor ..."
+                        target_desc = f"{query} (skill: {skill})" if skill else query
+                        packet_lines = [
+                            f"- [trigger] target: `{target_desc}` | model: `{model}` | utc: `{utc}`",
+                        ]
+                        if error:
+                            packet_lines.append(f"  error: {_bound_text(error)}")
+                        if trace_tail:
+                            packet_lines.append(f"  trace_tail: {_bound_text(trace_tail)}")
+                        packet_lines.append(f"  re-verify: {re_verify}")
+                        packets.append("\n".join(packet_lines))
+
+            if not has_row_failures:
+                misses = r.get("misses")
+                if isinstance(misses, list) and misses:
+                    for miss in misses:
+                        re_verify = "python eval/trigger_eval.py --queries eval/trigger_queries.json --executor ..."
+                        packet_lines = [
+                            f"- [trigger] target: `{miss}` | model: `{model}` | utc: `{utc}`",
+                            f"  error: trigger miss",
+                            f"  re-verify: {re_verify}",
+                        ]
+                        packets.append("\n".join(packet_lines))
+                elif "passed" in r and "total" in r and r["passed"] < r["total"]:
+                    re_verify = "python eval/trigger_eval.py --queries eval/trigger_queries.json --executor ..."
+                    packet_lines = [
+                        f"- [trigger] target: `trigger misses` | model: `{model}` | utc: `{utc}`",
+                        f"  error: passed {r['passed']}/{r['total']}",
+                        f"  re-verify: {re_verify}",
+                    ]
+                    packets.append("\n".join(packet_lines))
+
+    return packets
+
+
+def render(results_dir: Path | None = None, baselines_dir: Path | None = None) -> str:
+    runs = load_runs(results_dir=results_dir)
+    runs = [r for r in runs if not _is_dry_run(r)]
     if not runs:
         return ("# Eval trends\n\nno results yet — run any eval with "
                 "`--json auto`\n")
-    lines = ["# Eval trends\n",
-             "| kind | model | utc | score |",
-             "|---|---|---|---|"]
-    for r in runs[-20:]:
-        lines.append(f"| {r['kind']} | {r['model']} | {r['utc'][:16]} "
-                     f"| {_score(r)} |")
-    newest: dict[str, dict] = {}
+
+    # Group runs by (kind, model), keeping newest run by utc
+    grouped: dict[tuple[str, str], dict] = {}
     for r in runs:
-        newest[r["kind"]] = r          # last write wins = newest per kind
-    lines += ["", "## Proposals", ""]
-    props = _proposals(newest)
-    lines += props or ["all-green: no open failures", ""]
+        kind = str(r.get("kind") or "unspecified")
+        model = str(r.get("model") or "unspecified")
+        existing = grouped.get((kind, model))
+        if existing is None or str(r.get("utc", "")) >= str(existing.get("utc", "")):
+            grouped[(kind, model)] = r
+
+    lines = [
+        "# Eval trends\n",
+        "| kind | model | utc | score | baseline | delta | status |",
+        "|---|---|---|---|---|---|---|",
+    ]
+
+    sorted_groups = sorted(
+        grouped.items(),
+        key=lambda item: (KIND_ORDER.get(item[0][0], 99), item[0][0], item[0][1])
+    )
+
+    newest_runs = []
+    for (kind, model), r in sorted_groups:
+        newest_runs.append(r)
+        utc_str = r.get("utc", "")[:16]
+        score_str = _score(r)
+        rate = _rate(r)
+        baselines = _load_baseline(kind, baselines_dir=baselines_dir)
+        baseline_rate = baselines.get(model)
+        b_str, d_str, status_str = _status_and_delta(rate, baseline_rate)
+        lines.append(f"| {kind} | {model} | {utc_str} | {score_str} | {b_str} | {d_str} | {status_str} |")
+
+    lines += ["", "## Failure Evidence Packets", ""]
+    packets = _evidence_packets(newest_runs)
+    if packets:
+        lines += packets
+        lines.append("")
+    else:
+        lines += ["all-green: no open failures", ""]
+
     return "\n".join(lines)
 
 
+def update_baselines(results_dir: Path | None = None, baselines_dir: Path | None = None, n: int = 5) -> None:
+    b_dir = Path(baselines_dir) if baselines_dir is not None else BASELINES_DIR
+    b_dir.mkdir(parents=True, exist_ok=True)
+    runs = load_runs(results_dir=results_dir)
+    runs = [r for r in runs if not _is_dry_run(r)]
+    rates_by_group: dict[tuple[str, str], list[float]] = {}
+    for r in runs:
+        kind = r.get("kind")
+        model = r.get("model") or "unspecified"
+        if not kind:
+            continue
+        rate = _rate(r)
+        if rate is not None:
+            rates_by_group.setdefault((kind, str(model)), []).append(rate)
+
+    kinds = set(k for k, _ in rates_by_group.keys())
+    for kind in sorted(kinds):
+        existing: dict[str, float] = {}
+        target_file = b_dir / f"{kind}.json"
+        if target_file.is_file():
+            try:
+                loaded = json.loads(target_file.read_text(encoding="utf-8"))
+                if isinstance(loaded, dict):
+                    existing = {str(k): float(v) for k, v in loaded.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
+            except Exception:
+                existing = {}
+
+        for (k, model), rates in rates_by_group.items():
+            if k == kind and rates:
+                last_n = rates[-n:]
+                avg = sum(last_n) / len(last_n)
+                existing[model] = round(avg, 4)
+
+        if existing:
+            content = json.dumps(existing, indent=2, sort_keys=True) + "\n"
+            target_file.write_text(content, encoding="utf-8", newline="\n")
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--update-baselines", action="store_true",
+                        help="update rolling baseline JSON files from last N runs")
+    parser.add_argument("-n", "--last-n", type=int, default=5,
+                        help="number of recent runs to average for baselines (default: 5)")
+    parser.add_argument("--results-dir", type=str, default=None,
+                        help="custom results directory")
+    parser.add_argument("--baselines-dir", type=str, default=None,
+                        help="custom baselines directory")
+    args = parser.parse_args(argv)
+
+    res_dir = Path(args.results_dir) if args.results_dir else None
+    base_dir = Path(args.baselines_dir) if args.baselines_dir else None
+
+    if args.update_baselines:
+        update_baselines(results_dir=res_dir, baselines_dir=base_dir, n=args.last_n)
+    print(render(results_dir=res_dir, baselines_dir=base_dir))
+    return 0
+
+
 if __name__ == "__main__":
-    print(render())
+    sys.exit(main())
