@@ -177,6 +177,59 @@ class ModelExecutorSeparationTest(unittest.TestCase):
         self.assertEqual(len(calls), 0)
 
 
+class TelemetryEmitTest(unittest.TestCase):
+    def test_live_attaches_duration_and_reported_usage(self):
+        calls = []
+
+        def fake_save(kind, model, payload, path=None, *, executor_spec=None, results_dir=None):
+            calls.append(payload)
+            return Path("mock.json")
+
+        class Args:
+            json = "auto"
+            executor = "my-cli"
+            model = "gemini-2.5-pro"
+
+        rows = [
+            {"query": "q", "fired": True,
+             "attempts": [{"fired": True, "duration_s": 2.0},
+                          {"fired": True, "duration_s": 4.0}]},
+        ]
+        with unittest.mock.patch("results_io.save_result", fake_save):
+            trigger_eval._emit_json(
+                Args(), mode="live", total=1, passed=1, fired=1, misses=[],
+                rows=rows, reported_usage={"tokens_total": 5, "cost_usd": 0.01})
+
+        self.assertEqual(len(calls), 1)
+        payload = calls[0]
+        self.assertEqual(payload["duration_s_total"], 6.0)
+        self.assertEqual(payload["duration_s_mean"], 3.0)
+        self.assertEqual(payload["reported_usage"], {"tokens_total": 5, "cost_usd": 0.01})
+
+    def test_dry_emit_never_attaches_reported_usage(self):
+        calls = []
+
+        def fake_save(kind, model, payload, path=None, *, executor_spec=None, results_dir=None):
+            calls.append(payload)
+            return Path("mock.json")
+
+        class Args:
+            json = "auto"
+            executor = None
+            model = None
+
+        with unittest.mock.patch("results_io.save_result", fake_save):
+            trigger_eval._emit_json(
+                Args(), mode="dry-run", total=0, passed=0, fired=0, misses=[],
+                rows=[], reported_usage={"cost_usd": 0.1})
+
+        self.assertEqual(len(calls), 1)
+        payload = calls[0]
+        self.assertEqual(payload["duration_s_total"], 0.0)
+        self.assertEqual(payload["duration_s_mean"], 0.0)
+        self.assertNotIn("reported_usage", payload)
+
+
 class RowAttemptEvidenceTest(unittest.TestCase):
     def test_run_query_detailed_records_attempts_and_verdict(self):
         def fake_run_prompt(cmd, prompt, timeout=None):

@@ -13,6 +13,7 @@ Usage:
 """
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -22,6 +23,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 from results_io import load_runs
+from ablation_report import render_ablation_section
 
 BASELINES_DIR = ROOT / "eval" / "baselines"
 KIND_ORDER = {"trap": 0, "tasks": 1, "trigger": 2}
@@ -148,6 +150,26 @@ def _status_and_delta(rate: float | None, baseline_rate: float | None) -> tuple[
     else:
         status_str = "WARN"
     return baseline_str, delta_str, status_str
+
+def _duration_str(r: dict) -> str:
+    mean = r.get("duration_s_mean")
+    if isinstance(mean, bool) or not isinstance(mean, (int, float)):
+        return "-"
+    if not math.isfinite(mean) or mean < 0:
+        return "-"
+    return f"{mean:.3f}s"
+
+
+def _reported_cost_str(r: dict) -> str:
+    usage = r.get("reported_usage")
+    if not isinstance(usage, dict):
+        return "-"
+    cost = usage.get("cost_usd")
+    if isinstance(cost, bool) or not isinstance(cost, (int, float)):
+        return "-"
+    if not math.isfinite(cost) or cost < 0:
+        return "-"
+    return f"${cost:.2f}"
 
 
 def _evidence_packets(newest_runs: list[dict]) -> list[str]:
@@ -294,45 +316,50 @@ def render(results_dir: Path | None = None, baselines_dir: Path | None = None) -
         return ("# Eval trends\n\nno results yet — run any eval with "
                 "`--json auto`\n")
 
+    table_runs = [r for r in runs if r.get("kind") != "ablate"]
+    ablate_runs = [r for r in runs if r.get("kind") == "ablate"]
+
+    lines = ["# Eval trends\n"]
+
     # Group runs by (kind, model), keeping newest run by utc
     grouped: dict[tuple[str, str], dict] = {}
-    for r in runs:
+    for r in table_runs:
         kind = str(r.get("kind") or "unspecified")
         model = str(r.get("model") or "unspecified")
         existing = grouped.get((kind, model))
         if existing is None or str(r.get("utc", "")) >= str(existing.get("utc", "")):
             grouped[(kind, model)] = r
 
-    lines = [
-        "# Eval trends\n",
-        "| kind | model | utc | score | baseline | delta | status |",
-        "|---|---|---|---|---|---|---|",
-    ]
+    if grouped:
+        lines.append(
+            "| kind | model | utc | score | baseline | delta | status | duration | reported cost |")
+        lines.append("|---|---|---|---|---|---|---|---|---|")
 
-    sorted_groups = sorted(
-        grouped.items(),
-        key=lambda item: (KIND_ORDER.get(item[0][0], 99), item[0][0], item[0][1])
-    )
+        sorted_groups = sorted(
+            grouped.items(),
+            key=lambda item: (KIND_ORDER.get(item[0][0], 99), item[0][0], item[0][1])
+        )
 
-    newest_runs = []
-    for (kind, model), r in sorted_groups:
-        newest_runs.append(r)
-        utc_str = r.get("utc", "")[:16]
-        score_str = _score(r)
-        rate = _rate(r)
-        baselines = _load_baseline(kind, baselines_dir=baselines_dir)
-        baseline_rate = baselines.get(model)
-        b_str, d_str, status_str = _status_and_delta(rate, baseline_rate)
-        lines.append(f"| {kind} | {model} | {utc_str} | {score_str} | {b_str} | {d_str} | {status_str} |")
+        newest_runs = []
+        for (kind, model), r in sorted_groups:
+            newest_runs.append(r)
+            utc_str = r.get("utc", "")[:16]
+            score_str = _score(r)
+            rate = _rate(r)
+            baselines = _load_baseline(kind, baselines_dir=baselines_dir)
+            baseline_rate = baselines.get(model)
+            b_str, d_str, status_str = _status_and_delta(rate, baseline_rate)
+            lines.append(f"| {kind} | {model} | {utc_str} | {score_str} | {b_str} | {d_str} | {status_str} | {_duration_str(r)} | {_reported_cost_str(r)} |")
 
-    lines += ["", "## Failure Evidence Packets", ""]
-    packets = _evidence_packets(newest_runs)
-    if packets:
-        lines += packets
-        lines.append("")
-    else:
-        lines += ["all-green: no open failures", ""]
+        lines += ["", "## Failure Evidence Packets", ""]
+        packets = _evidence_packets(newest_runs)
+        if packets:
+            lines += packets
+            lines.append("")
+        else:
+            lines += ["all-green: no open failures", ""]
 
+    lines += render_ablation_section(ablate_runs, _duration_str, _reported_cost_str)
     return "\n".join(lines)
 
 

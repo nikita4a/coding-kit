@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "eval"))
 
+import task_runner
 from task_runner import (
     ERROR_CLASSES,
     classify_error,
@@ -217,6 +218,9 @@ def test_zero_tasks_returns_1_and_no_zero_division(tmp_path):
     assert doc["pass@1"] == 0.0
     assert doc["pass@2"] == 0.0
     assert doc["rows"] == []
+    assert doc["duration_s_total"] == 0.0
+    assert doc["duration_s_mean"] == 0.0
+    assert "reported_usage" not in doc
 
 
 def test_dry_run_no_subprocess_and_persistence(tmp_path):
@@ -242,7 +246,29 @@ def test_dry_run_no_subprocess_and_persistence(tmp_path):
     assert doc["total"] == 1
     assert doc["passed"] == 0
     assert doc["rows"][0]["verdict"] == "DRY_RUN"
+    assert doc["duration_s_total"] == 0.0
+    assert doc["duration_s_mean"] == 0.0
+    assert "reported_usage" not in doc
 
+
+def test_live_persists_duration_and_reported_usage(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        task_runner, "_run_attempt",
+        lambda name, cmd, *, timeout: {"verdict": "PASS", "duration_s": 1.5},
+    )
+    out_file = tmp_path / "live_usage.json"
+    rc = run_task_suite(
+        ["001-fix-div-zero"],
+        "dummy-executor",
+        json_out=out_file,
+        model="usage-model",
+        reported_usage={"tokens_total": 100, "cost_usd": 0.05},
+    )
+    assert rc == 0
+    doc = json.loads(out_file.read_text(encoding="utf-8"))
+    assert doc["duration_s_total"] == 1.5
+    assert doc["duration_s_mean"] == 1.5
+    assert doc["reported_usage"] == {"tokens_total": 100, "cost_usd": 0.05}
 
 def test_fresh_sandboxes_on_retry(tmp_path):
     # State tracking file to record each attempt

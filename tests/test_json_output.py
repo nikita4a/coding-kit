@@ -21,6 +21,58 @@ def test_runner_dry_run_json(tmp_path):
     assert data["schema_version"] == 1
     assert data["model"] == "unspecified"
     assert data["mode"] == "dry-run"
+    assert data["duration_s_total"] == 0.0
+    assert data["duration_s_mean"] == 0.0
+    assert "reported_usage" not in data
+
+
+def test_runner_live_json_persists_duration_and_reported_usage(tmp_path, monkeypatch):
+    out_json = tmp_path / "live_usage.json"
+    sc_file = tmp_path / "sc_usage.md"
+    sc_file.write_text(
+        "name: sc1\nskill: s1\ntrap: t1\nexpect: pass\n\nagent prompt body",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(runner, "run_prompt", lambda cmd, prompt, timeout=600: "answer")
+    monkeypatch.setattr(runner, "judge_one", lambda cmd, exp, ans, timeout=600: "PASS")
+
+    code = runner.run_scenarios(
+        executor=["mock_exe"],
+        judge=["mock_judge"],
+        scenario_files=[sc_file],
+        repeat=1,
+        json_out=out_json,
+        model="model-usage",
+        reported_usage={"tokens_total": 123, "cost_usd": 0.42},
+    )
+    assert code == 0
+    doc = json.loads(out_json.read_text(encoding="utf-8"))
+    assert doc["reported_usage"] == {"tokens_total": 123, "cost_usd": 0.42}
+    assert doc["duration_s_total"] >= 0
+    assert doc["duration_s_mean"] >= 0
+    assert doc["duration_s_total"] == doc["duration_s_mean"]
+
+
+def test_runner_dry_run_never_attaches_reported_usage(tmp_path):
+    sc_file = tmp_path / "sc_dry.md"
+    sc_file.write_text(
+        "name: d\nskill: s\ntrap: t\nexpect: pass\n\nbody",
+        encoding="utf-8",
+    )
+    out_json = tmp_path / "dry_usage.json"
+    code = runner.run_scenarios(
+        executor=None,
+        judge=None,
+        scenario_files=[sc_file],
+        json_out=out_json,
+        reported_usage={"tokens_total": 1, "cost_usd": 0.5},
+    )
+    assert code == 0
+    doc = json.loads(out_json.read_text(encoding="utf-8"))
+    assert doc["mode"] == "dry-run"
+    assert doc["duration_s_total"] == 0.0
+    assert doc["duration_s_mean"] == 0.0
+    assert "reported_usage" not in doc
 
 def test_trigger_dry_run_json(tmp_path):
     out = tmp_path / "t.json"
@@ -504,3 +556,33 @@ def test_runner_live_json_requires_model_cli(tmp_path):
     assert r.returncode == 2, r.stdout + r.stderr
     assert "requires an explicit --model" in r.stderr
     assert not out.exists()
+
+
+def test_run_scenarios_disable_without_skills_root_raises_before_executor(tmp_path, monkeypatch):
+    sc_file = tmp_path / "sc_disable.md"
+    sc_file.write_text(
+        "name: d\nskill: s\ntrap: t\nexpect: pass\n\nbody",
+        encoding="utf-8",
+    )
+    calls = []
+    monkeypatch.setattr(runner, "run_prompt",
+                        lambda *a, **k: calls.append(a))
+    with pytest.raises(ValueError, match="disable-skill requires"):
+        runner.run_scenarios(
+            executor=["mock_exe"],
+            judge=["mock_judge"],
+            scenario_files=[sc_file],
+            disable=frozenset({"yagni"}),
+            skills_root=None,
+        )
+    assert calls == []
+
+
+def test_runner_missing_scenario_cli_exit_2(tmp_path):
+    r = subprocess.run(
+        [sys.executable, str(ROOT / "eval" / "runner.py"),
+         "--scenario", "definitely-missing-scenario"],
+        capture_output=True, text=True, encoding="utf-8")
+    assert r.returncode == 2, r.stdout + r.stderr
+    assert "scenario not found" in r.stderr
+    assert "Traceback" not in r.stderr

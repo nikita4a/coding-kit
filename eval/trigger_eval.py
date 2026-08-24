@@ -43,6 +43,7 @@ HERE = Path(__file__).resolve().parent          # eval/
 ROOT = HERE.parent                              # kit root
 sys.path.insert(0, str(HERE))
 from runner import resolve_cmd, run_prompt      # same executor contract
+from telemetry import load_reported_usage, summarize_durations
 
 TRIGGER_RATE_MIN = 0.5
 FALSE_RATE_MAX = 0.3
@@ -226,6 +227,9 @@ def main() -> int:
     ap.add_argument("--json", default=None, metavar="PATH|auto",
                     help="write a JSON result doc: explicit path or 'auto' "
                          "for the shared timestamped store (eval/results/)")
+    ap.add_argument("--usage-json", default=None, metavar="PATH",
+                    help="optional user-reported {tokens_total, cost_usd} "
+                         "JSON object from the provider dashboard")
     args = ap.parse_args()
 
     if args.executor and args.json and not args.model:
@@ -252,6 +256,7 @@ def main() -> int:
             _emit_json(args, mode="dry-run", total=len(queries),
                        passed=0, fired=0, misses=[], rows=[])
         return 0
+    reported_usage = load_reported_usage(args.usage_json)
     cmd = resolve_cmd(args.executor)
     selected = [q for q in queries
                 if not args.only or q["skill"] == args.only]
@@ -304,7 +309,7 @@ def main() -> int:
                        passed=passed_count,
                        fired=fired_count,
                        misses=problems,
-                       rows=rows)
+                       rows=rows, reported_usage=reported_usage)
         return 1
     print("\nall measured skills above threshold")
     if args.json:
@@ -312,12 +317,13 @@ def main() -> int:
                    passed=passed_count,
                    fired=fired_count,
                    misses=[],
-                   rows=rows)
+                   rows=rows, reported_usage=reported_usage)
     return 0
 
 
 def _emit_json(args, mode: str, total: int, passed: int, fired: int,
-               misses: list[str], rows: list[dict] | None = None) -> None:
+               misses: list[str], rows: list[dict] | None = None,
+               reported_usage: dict | None = None) -> None:
     if not getattr(args, "json", None):
         return
     sys.path.insert(0, str(HERE))
@@ -327,14 +333,20 @@ def _emit_json(args, mode: str, total: int, passed: int, fired: int,
     if mode == "live" and not model:
         raise ValueError("a live trigger result requires an explicit --model")
     model = model or "unspecified"
+    rows = rows if rows is not None else []
+    total_s, mean_s = summarize_durations(rows)
     payload = {
         "mode": mode,
         "passed": passed,
         "fired": fired,
         "total": total,
         "misses": misses,
-        "rows": rows if rows is not None else [],
+        "rows": rows,
+        "duration_s_total": total_s,
+        "duration_s_mean": mean_s,
     }
+    if mode == "live" and reported_usage is not None:
+        payload["reported_usage"] = reported_usage
     save_result("trigger", model, payload, path=override,
                 executor_spec=getattr(args, "executor", None))
 

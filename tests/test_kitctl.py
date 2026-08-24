@@ -27,7 +27,8 @@ class KitctlTest(unittest.TestCase):
         r = _run(KITCTL, ["--help"])
         self.assertEqual(r.returncode, 0)
         for cmd in ("install", "doctor", "gate", "eval", "tasks", "triggers",
-                    "trend", "tests", "warmup", "checkpoint", "context"):
+                    "trend", "tests", "warmup", "checkpoint", "context",
+                    "ablate"):
             self.assertIn(cmd, r.stdout)
 
     def test_doctor_passes_through(self):

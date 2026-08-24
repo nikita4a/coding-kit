@@ -34,6 +34,12 @@ ROOT = Path(__file__).resolve().parent.parent
 TASKS = ROOT / "eval" / "tasks"
 FIXTURE = TASKS / "repo-fixture"
 
+sys.path.insert(0, str(ROOT / "eval"))
+try:
+    from telemetry import load_reported_usage, summarize_durations
+except ImportError:
+    from eval.telemetry import load_reported_usage, summarize_durations
+
 _EXECUTOR_ENV_KEYS = (
     "PATH", "PATHEXT", "SYSTEMROOT", "WINDIR", "COMSPEC",
     "HOME", "USERPROFILE", "HOMEDRIVE", "HOMEPATH", "APPDATA",
@@ -222,7 +228,8 @@ def _save(model: str | None, executor_spec: str | None,
 def run_task_suite(names: list[str], executor_cmd: str | None,
                    tries: int = 2, timeout: int = 900,
                    json_out=None, model: str | None = None,
-                   dry_run: bool = False) -> int:
+                   dry_run: bool = False,
+                   reported_usage: dict | None = None) -> int:
     """Run the named task smokes and return the process exit code.
 
     json_out: None (no persistence), a Path (explicit file), or "auto"
@@ -243,6 +250,7 @@ def run_task_suite(names: list[str], executor_cmd: str | None,
             _save(model, executor_cmd, {
                 "rows": [], "passed": 0, "total": 0,
                 "pass_rate": 0.0, "pass@1": 0.0, "pass@2": 0.0,
+                "duration_s_total": 0.0, "duration_s_mean": 0.0,
             }, json_out)
         return 1
 
@@ -253,6 +261,7 @@ def run_task_suite(names: list[str], executor_cmd: str | None,
             _save(model, executor_cmd, {
                 "rows": rows, "passed": 0, "total": total,
                 "pass_rate": 0.0, "pass@1": 0.0, "pass@2": 0.0,
+                "duration_s_total": 0.0, "duration_s_mean": 0.0,
             }, json_out)
         print("OK (dry-run)")
         return 0
@@ -283,7 +292,7 @@ def run_task_suite(names: list[str], executor_cmd: str | None,
         rows.append({"name": name, "verdict": verdict,
                      "attempts": attempts})
         print(f"{verdict} {name}")
-
+    total_s, mean_s = summarize_durations(rows)
     payload = {
         "rows": rows,
         "passed": passed,
@@ -291,7 +300,11 @@ def run_task_suite(names: list[str], executor_cmd: str | None,
         "pass_rate": round(passed / total, 3),
         "pass@1": round(pass_at_1 / total, 3),
         "pass@2": round(pass_by_2 / total, 3),
+        "duration_s_total": total_s,
+        "duration_s_mean": mean_s,
     }
+    if reported_usage is not None:
+        payload["reported_usage"] = reported_usage
 
     print(f"\noverall: {passed}/{total} tasks PASS "
           f"(pass@1 {payload['pass@1']}, pass@2 {payload['pass@2']})")
@@ -314,6 +327,9 @@ def main() -> int:
     ap.add_argument("--json", default=None, metavar="PATH|auto",
                     help="write a JSON result doc: explicit path or 'auto' "
                          "for the shared timestamped store (eval/results/)")
+    ap.add_argument("--usage-json", default=None, metavar="PATH",
+                    help="optional user-reported {tokens_total, cost_usd} "
+                         "JSON object from the provider dashboard")
     ap.add_argument("--dry-run", action="store_true",
                     help="validate task layout only")
     args = ap.parse_args()
@@ -330,9 +346,14 @@ def main() -> int:
     if args.json is not None:
         json_out = Path(args.json) if str(args.json) != _AUTO else _AUTO
 
+    reported_usage = None
+    if not args.dry_run:
+        reported_usage = load_reported_usage(args.usage_json)
+
     return run_task_suite(discover(), args.executor, tries=args.tries,
                           timeout=args.timeout, json_out=json_out,
-                          model=args.model, dry_run=args.dry_run)
+                          model=args.model, dry_run=args.dry_run,
+                          reported_usage=reported_usage)
 
 
 if __name__ == "__main__":

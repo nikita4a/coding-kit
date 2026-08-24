@@ -14,7 +14,7 @@ Works in any environment that reads an agent rules file and SKILL.md skills: Cla
 | Manifest | `profile.yml` | single source of truth: paths, skills |
 | Skills | `skills/` | 37: always-on core + obra phase skills + domain |
 | Memory engine | `memory/db-tools/` | build, search_all, findings, repomap (FTS5) |
-| Evals | `eval/` | trap-suite (18 scenarios), task smoke (3 tasks, oracle-verified), trigger-eval (80 queries), schema-v1 store + trend |
+| Evals | `eval/` | trap-suite (18 scenarios), task smoke (3 oracle-verified tasks), trigger-eval (80 queries), ablation, schema-v1 store + trend + telemetry |
 | Adapters | `adapters/` | per-environment setup guides |
 
 ## Install (one command)
@@ -52,6 +52,7 @@ python ~/.memory/db-tools/search_all.py "X"    # before "what do we know about X
 - `tasks` — task smoke canary on 3 oracle-verified coding tasks (dry-run validate by default).
 - `triggers` — 80-query trigger evaluation.
 - `trend` — pass-rate history and failure evidence packets across runs.
+- `ablate` — experimental per-skill inlined-prompt contribution (requires a live `--executor`).
 - `warmup`, `checkpoint`, `context` — memory and session monitoring tools.
 
 ## Evals & Trend Loop
@@ -62,6 +63,19 @@ The kit includes an evidence-first evaluation harness:
 - **Trigger Evals (`eval/trigger_eval.py`)**: 80 queries testing skill activation routing.
 - **Schema-v1 Results Store (`eval/results_io.py`)**: atomic append-only JSON storage under `eval/results/` with microsecond UTC timestamps, UUID `run_id`, separate `model` metadata, and standardized failure taxonomies.
 - **Trend Reporting (`eval/trend.py`)**: summarizes newest runs by `(kind, model)`, reports baseline deltas, and produces structured Failure Evidence Packets with bounded trace tails for debugging.
+- **Telemetry (`eval/telemetry.py`)**: every result doc folds per-attempt wall-clock `duration_s` into `duration_s_total`/`duration_s_mean` across all three runners (trap/tasks/trigger). Optional `--usage-json` `{tokens_total, cost_usd}` records user-reported provider totals — the harness measures wall-clock only and never fabricates cost.
+- **Ablation (`eval/ablate.py`)**: experimental per-skill inlined-prompt contribution (pass-rate with vs. without the inlined skill body). Descriptive, not causal — ambient CLI skills are uncontrolled and small samples may be non-conclusive; it never deletes a skill. Requires a live `--executor`.
+- **Isolation**: executor subprocesses run from a neutral per-call temp `cwd`, which prevents automatic discovery of repo-local instruction/config files via the inherited `cwd`; ambient global skills and general filesystem access remain uncontrolled. HOME/auth environment is retained.
+
+Quick validation (no model, no live output):
+
+```bash
+python scripts/kitctl.py --help
+python eval/ablate.py --help                          # ablation flags/contract
+python eval/runner.py --inline-skills                 # dry-run: validate scenarios + skills manifest (no executor prompts sent)
+python eval/task_runner.py --dry-run                  # validate task layout
+python eval/trigger_eval.py --queries eval/trigger_queries.json   # validate queries
+```
 
 ## Where your data lives
 

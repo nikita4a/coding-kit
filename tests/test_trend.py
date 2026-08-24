@@ -9,6 +9,7 @@ sys.path.insert(0, str(ROOT / "eval"))
 
 import results_io
 import trend
+import ablation_report
 
 
 def test_render_empty_store(tmp_path):
@@ -32,7 +33,7 @@ def test_trend_groups_by_kind_and_model_without_hiding(tmp_path):
     results_io.save_result("trap", "claude-3-7", {"passed": 17, "total": 18, "scenarios": []}, results_dir=res_dir)
 
     out = trend.render(results_dir=res_dir, baselines_dir=base_dir)
-    assert "| kind | model | utc | score | baseline | delta | status |" in out
+    assert "| kind | model | utc | score | baseline | delta | status | duration | reported cost |" in out
     assert "| trap | gpt-4o |" in out
     assert "18/18" in out
     # Stale run 16/18 should not appear in the table
@@ -531,3 +532,155 @@ def test_trigger_summary_fallback_with_passed_less_than_total(tmp_path):
     out = trend.render(results_dir=res_dir, baselines_dir=base_dir)
     assert "- [trigger] target: `trigger misses` | model: `m1`" in out
     assert "error: passed 70/80" in out
+
+
+def test_render_duration_and_reported_cost_columns(tmp_path):
+    res_dir = tmp_path / "results"
+    base_dir = tmp_path / "baselines"
+    base_dir.mkdir(parents=True)
+
+    results_io.save_result("trap", "gpt-4o", {
+        "passed": 18,
+        "total": 18,
+        "scenarios": [],
+        "duration_s_mean": 12.345,
+        "reported_usage": {"tokens_total": 1000, "cost_usd": 0.42},
+    }, results_dir=res_dir)
+
+    out = trend.render(results_dir=res_dir, baselines_dir=base_dir)
+    assert "| duration | reported cost |" in out
+    assert "12.345s" in out
+    assert "$0.42" in out
+
+
+def test_render_old_docs_dash_new_columns(tmp_path):
+    res_dir = tmp_path / "results"
+    base_dir = tmp_path / "baselines"
+    base_dir.mkdir(parents=True)
+
+    results_io.save_result("trap", "gpt-4o", {
+        "passed": 18,
+        "total": 18,
+        "scenarios": [],
+    }, results_dir=res_dir)
+
+    out = trend.render(results_dir=res_dir, baselines_dir=base_dir)
+    row = [ln for ln in out.splitlines() if ln.startswith("| trap | gpt-4o |")]
+    assert row, "expected a table row for gpt-4o"
+    assert row[0].endswith("| - | - |")
+
+
+def test_ablate_excluded_from_main_table(tmp_path):
+    res_dir = tmp_path / "results"
+    base_dir = tmp_path / "baselines"
+    base_dir.mkdir(parents=True)
+
+    results_io.save_result("trap", "m1", {"passed": 18, "total": 18, "scenarios": []}, results_dir=res_dir)
+    results_io.save_result("ablate", "m1", {
+        "repeat": 2,
+        "metric": "inlined-prompt contribution",
+        "experimental": True,
+        "ambient_skills_controlled": False,
+        "passed": 1, "total": 1,
+        "per_skill": [],
+    }, results_dir=res_dir)
+
+    out = trend.render(results_dir=res_dir, baselines_dir=base_dir)
+    assert "| ablate |" not in out
+    assert "| trap | m1 |" in out
+
+
+def test_experimental_ablation_section_raw_only(tmp_path):
+    res_dir = tmp_path / "results"
+    base_dir = tmp_path / "baselines"
+    base_dir.mkdir(parents=True)
+
+    results_io.save_result("ablate", "m1", {
+        "repeat": 3,
+        "metric": "inlined-prompt contribution",
+        "experimental": True,
+        "ambient_skills_controlled": False,
+        "duration_s_total": 40.0,
+        "duration_s_mean": 10.0,
+        "reported_usage": {"tokens_total": 500, "cost_usd": 0.25},
+        "per_skill": [
+            {"skill": "yagni", "pass_rate_with": 0.8, "pass_rate_without": 0.2,
+             "delta": 0.6, "scenarios_affected": 5},
+        ],
+    }, results_dir=res_dir)
+
+    out = trend.render(results_dir=res_dir, baselines_dir=base_dir)
+    assert "## Experimental inlined-prompt contribution" in out
+    assert "uncontrolled" in out
+    assert "non-conclusive" in out
+    assert "yagni" in out
+    assert "10.000s" in out
+    assert "$0.25" in out
+    # raw only, no candidate/deletion/causal wording
+    lowered = out.lower()
+    assert "candidate" not in lowered
+    assert "delete" not in lowered
+    assert "remove" not in lowered
+    assert "causal" not in lowered
+
+
+def test_ablation_section_malformed_per_skill_never_crashes():
+    runs = [{
+        "model": "m1",
+        "utc": "2026-08-25T00:00:00Z",
+        "repeat": 2,
+        "duration_s_mean": 10.0,
+        "reported_usage": {"cost_usd": 0.25},
+        "per_skill": [
+            {"skill": "mixed-neg", "pass_rate_with": 0.8,
+             "pass_rate_without": 0.5, "delta": -0.25,
+             "scenarios_affected": 1},
+            {"skill": "str-delta", "pass_rate_with": "0.8",
+             "pass_rate_without": "0.2", "delta": "0.6",
+             "scenarios_affected": 2},
+            {"skill": "nan-num", "pass_rate_with": float("nan"),
+             "pass_rate_without": float("inf"), "delta": float("nan"),
+             "scenarios_affected": 3},
+            {"skill": "bool-num", "pass_rate_with": True,
+             "pass_rate_without": False, "delta": True,
+             "scenarios_affected": 4},
+            {"skill": "good", "pass_rate_with": 0.8,
+             "pass_rate_without": 0.2, "delta": 0.6,
+             "scenarios_affected": 5},
+        ],
+    }]
+
+    # must not raise on a mixed string/nonfinite/bool per_skill list
+    lines = ablation_report.render_ablation_section(runs, trend._duration_str, trend._reported_cost_str)
+    body = "\n".join(lines)
+
+    assert "## Experimental inlined-prompt contribution" in body
+    assert "uncontrolled" in body
+    assert "non-conclusive" in body
+    assert "causal" not in body.lower()
+
+    # exact valid numeric output preserved (rate repr + signed delta + n/repeat)
+    assert "| m1 | good | 0.8 | 0.2 | +0.600 | 5 | 2 | 10.000s | $0.25 |" in body
+    assert "| m1 | mixed-neg | 0.8 | 0.5 | -0.250 | 1 | 2 | 10.000s | $0.25 |" in body
+
+    # invalid numeric fields render '-' (string / NaN/Inf / bool)
+    assert "| m1 | str-delta | - | - | - | 2 | 2 | 10.000s | $0.25 |" in body
+    assert "| m1 | nan-num | - | - | - | 3 | 2 | 10.000s | $0.25 |" in body
+    assert "| m1 | bool-num | - | - | - | 4 | 2 | 10.000s | $0.25 |" in body
+
+    # type-safe ordering: valid numeric deltas ascending, malformed after
+    assert body.index("| m1 | mixed-neg |") < body.index("| m1 | good |")
+    assert body.index("| m1 | good |") < body.index("| m1 | str-delta |")
+
+
+def test_duration_and_cost_helpers_reject_malformed():
+    assert trend._duration_str({"duration_s_mean": float("nan")}) == "-"
+    assert trend._duration_str({"duration_s_mean": float("inf")}) == "-"
+    assert trend._duration_str({"duration_s_mean": -1.0}) == "-"
+    assert trend._duration_str({"duration_s_mean": True}) == "-"
+    assert trend._duration_str({"duration_s_mean": "12.3"}) == "-"
+    assert trend._reported_cost_str({"reported_usage": {"cost_usd": float("nan")}}) == "-"
+    assert trend._reported_cost_str({"reported_usage": {"cost_usd": float("inf")}}) == "-"
+    assert trend._reported_cost_str({"reported_usage": {"cost_usd": -0.5}}) == "-"
+    assert trend._reported_cost_str({"reported_usage": {"cost_usd": True}}) == "-"
+    assert trend._reported_cost_str({"reported_usage": {}}) == "-"

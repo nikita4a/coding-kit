@@ -1,5 +1,5 @@
 # Coding Agent OS — Operating Contract
-> **v3.2** | db-tools (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, task-smoke 3 (oracle verify), trigger-eval 80, schema-v1 results store, evidence trend, doctor 10 checks, 37 skills.
+> **v3.3** | db-tools (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, task-smoke 3 (oracle verify), trigger-eval 80, schema-v1 results store, evidence trend, eval telemetry (duration + reported usage), inlined-prompt ablation, doctor 10 checks, 37 skills.
 
 > **Product:** Coding Agent OS v2 | **CORE v2**
 > Profile root: this directory.
@@ -209,6 +209,32 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 ## 10. CHANGELOG
 
 > **Claim discipline (v2.7.4):** every "fixed"/"verified" claim below must cite the regression test (tests/test_*.py) or doctor check that re-verifies it. A claim without a check is not a claim — the v2.6 "githist 40-hex boundary" entry had neither code nor test (audit 2026-08-22). Sub-agent/cross-model verdicts are testimony: re-run fresh before reporting.
+
+- **v3.3.0 (eval telemetry & experimental inlined-prompt ablation)**:
+  `eval/telemetry.py` — `summarize_durations` folds finite, non-negative
+  per-attempt `duration_s` into `duration_s_total`/`duration_s_mean`
+  (skipping negatives, NaN/Inf, and booleans), and `load_reported_usage`
+  ingests a user-supplied `--usage-json` `{tokens_total, cost_usd}` object
+  only when strictly numeric and finite — measured wall-clock only, never
+  fabricated tokens/cost (`tests/test_telemetry.py`). All three runners
+  persist the duration aggregates, and attach `reported_usage` on live runs
+  only — dry-run never ingests it
+  (`tests/test_json_output.py`, `tests/test_task_runner.py`,
+  `tests/test_trigger_eval.py`). `eval/prompt_assembly.py` — controlled
+  inlined-prompt assembly (`skill_manifest`, `assemble_prompt`) plus
+  `runner.py --inline-skills/--disable-skill` wiring; the executor runs from
+  a neutral per-call temp `cwd` while `executor_env()` retains HOME/auth and
+  drops secrets (`tests/test_prompt_assembly.py`,
+  `tests/test_prompt_inline.py`, `tests/test_json_output.py`,
+  `tests/test_task_runner.py`). `eval/ablate.py` — experimental per-skill
+  inlined-prompt contribution (pass-rate with/without the inlined body),
+  persisted as `kind="ablate"` and dispatched via `kitctl ablate`
+  (`tests/test_ablate.py`, `tests/test_results_io.py`,
+  `tests/test_kitctl.py`); rendered raw by `trend.py` under an explicit
+  experimental caveat (`tests/test_trend.py`). Ablation is descriptive, not
+  causal: ambient global skills are NOT controlled, small samples may be
+  non-conclusive, and a treatment removes a skill from that experiment's
+  inlined prompt only — it never deletes the skill or claims deletion evidence.
 
 - **v3.2.0 (evidence-first evals & reliable trend loop)**: `eval/results_io.py` —
   schema_version 1 append-only store with atomic `os.link` temp-writes, unique UTC

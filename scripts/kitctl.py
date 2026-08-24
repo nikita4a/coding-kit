@@ -14,6 +14,7 @@ Usage:
     python scripts/kitctl.py triggers     # trigger queries validation
     python scripts/kitctl.py trend        # trend report & evidence
     python scripts/kitctl.py tests        # unit tests (pytest)
+    python scripts/kitctl.py ablate       # skill-ablation experiment
     python scripts/kitctl.py warmup       # cross-chat memory warmup
     python scripts/kitctl.py checkpoint   # markdown handoff block
     python scripts/kitctl.py context      # context overflow check
@@ -35,6 +36,7 @@ COMMANDS = {  # name -> (argv tail, help)
     "triggers": (["eval/trigger_eval.py", "--queries",
                   "eval/trigger_queries.json"], "trigger queries validation"),
     "trend": (["eval/trend.py"], "trend report (pass-rate history and evidence)"),
+    "ablate": (["eval/ablate.py"], "skill-ablation experiment (inlined-prompt contribution)"),
     "tests": (["-m", "pytest", "tests", "-q"],
               "unit tests (pytest)"),
     "warmup": (["memory/scripts/memory-warmup.py"],
