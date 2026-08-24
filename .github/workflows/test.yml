@@ -18,6 +18,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install test dependency
+        run: python -m pip install pytest
       - name: Bootstrap memory (engine self-test)
         run: python scripts/install.py
       - name: Doctor (manifest, versions, frontmatter, db integrity)

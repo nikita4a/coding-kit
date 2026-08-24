@@ -108,6 +108,19 @@ class TestCIWorkflow(unittest.TestCase):
             "evals.yml must emit exactly three dry JSON outputs (trap, tasks, trigger)",
         )
 
+
+    def test_installs_pytest_before_running_tests(self):
+        """Clean GitHub runners must install the declared test dependency."""
+        install = "python -m pip install pytest"
+        tests = "python -m pytest tests -q"
+        for name, content in self.workflows.items():
+            with self.subTest(workflow=name):
+                self.assertIn(install, content, f"{name} must install pytest")
+                self.assertLess(
+                    content.index(install),
+                    content.index(tests),
+                    f"{name} must install pytest before running tests",
+                )
     def test_uses_pytest_not_unittest(self):
         """Workflows must use pytest rather than unittest."""
         for name, content in self.workflows.items():
