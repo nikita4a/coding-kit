@@ -763,6 +763,61 @@ def test_verify_rejects_source_introspection_bypass(tmp_path):
         )
         assert r.returncode == 1, f"{task} must reject source-introspection bypass: {r.stdout} {r.stderr}"
 
+    # New vectors the shared guard must also reject: pathlib.Path.open() with
+    # a chained .read(), io.open().read(), and a chained stream read, plus a
+    # required regression test hidden under `if False` (never collectable).
+    read_bypass_tests = {
+        "001-fix-div-zero": (
+            'from calc import divide\n'
+            'from pathlib import Path\n\n\n'
+            'if False:\n'
+            '    def test_divide_by_zero():\n'
+            '        import pytest\n'
+            '        with pytest.raises(ValueError):\n'
+            '            divide(1, 0)\n\n\n'
+            'def test_source_branch():\n'
+            '    if "division by zero" in Path("calc.py").open().read():\n'
+            '        assert True\n'
+            '    else:\n'
+            '        assert False\n'
+        ),
+        "002-add-validation": (
+            'from calc import parse_int\n'
+            'import io\n\n\n'
+            'def test_parse_int_whitespace():\n'
+            '    if "strip" in io.open("calc.py").read():\n'
+            '        assert parse_int(" 42 ") == 42\n'
+            '    else:\n'
+            '        assert False\n'
+        ),
+        "003-regression-guard": (
+            'from calc import clamp\n\n\n'
+            'def test_clamp_bounds():\n'
+            '    if "return lo" in open("calc.py").readlines()[0]:\n'
+            '        assert clamp(-5, 0, 10) == 0\n'
+            '    else:\n'
+            '        assert False\n'
+        ),
+    }
+    nested_expected = {"001-fix-div-zero": "missing def test_divide_by_zero"}
+    for task, calc_code in fixed_calc.items():
+        sb = tmp_path / ("fileread_" + task)
+        shutil.copytree(ROOT / "eval" / "tasks" / "repo-fixture", sb)
+        (sb / "calc.py").write_text(calc_code, encoding="utf-8", newline="\n")
+        (sb / "test_calc.py").write_text(
+            read_bypass_tests[task], encoding="utf-8", newline="\n"
+        )
+        v = ROOT / "eval" / "tasks" / task / "verify.py"
+        r = subprocess.run(
+            [sys.executable, str(v), str(sb)],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        out = r.stdout + r.stderr
+        assert r.returncode == 1, f"{task} must reject file-read/nested bypass: {out}"
+        assert "forbidden" in out, f"{task} audit must flag the file read: {out}"
+        if task in nested_expected:
+            assert nested_expected[task] in out, f"{task} audit must reject nested test: {out}"
+
 
 def test_verify_rejects_partial_behavior_coverage(tmp_path):
     # Task 002 requires BOTH whitespace-success and non-numeric ValueError;

@@ -19,6 +19,7 @@ Usage:
 """
 import argparse
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -119,6 +120,25 @@ def judge_one(judge_cmd: list[str], expect: str, answer: str, timeout: int = 600
     return run_prompt(judge_cmd, prompt, timeout=timeout)
 
 
+_JUDGE_PASS_RE = re.compile(r"^PASS(?=$|[ \t:-])", re.IGNORECASE)
+
+
+def judge_passed(verdict_text: str) -> bool:
+    """Strict judge-verdict parse; PASS only as a standalone first token.
+
+    The first nonempty line must begin with exactly ``PASS`` (case-insensitive)
+    followed by end-of-line, whitespace, ':' or '-'; reasoning may follow.
+    PASSING/PASSENGER/PASSIVE, embedded 'passes', and empty/malformed output
+    are rejected. Anything else (including FAIL) is non-pass.
+    """
+    for line in (verdict_text or "").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        return _JUDGE_PASS_RE.match(stripped) is not None
+    return False
+
+
 def run_scenarios(
     executor: list[str] | None,
     judge: list[str] | None,
@@ -206,7 +226,7 @@ def run_scenarios(
                 continue
 
             duration_s = round(time.perf_counter() - t0, 4)
-            passed = verdict_text.strip().upper().startswith("PASS")
+            passed = judge_passed(verdict_text)
             if passed:
                 attempts.append({
                     "verdict": "PASS",

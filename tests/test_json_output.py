@@ -95,6 +95,60 @@ def test_runner_records_judge_fail_and_trace_tail(tmp_path, monkeypatch):
     assert att["trace_tail"] == "agent answer text here"
 
 
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("PASS", True),
+        ("PASS: reason", True),
+        ("PASS - reason", True),
+        ("pass: ok", True),
+        ("PASS\nreason continues", True),
+        ("PASSING", False),
+        ("PASSENGER", False),
+        ("PASSIVE", False),
+        ("the answer passes", False),
+        ("FAIL", False),
+        ("FAIL: wrong answer", False),
+        ("", False),
+        ("   ", False),
+        ("\n\n", False),
+        ("PASS. with period", False),
+    ],
+)
+def test_judge_passed_strict_parser(text, expected):
+    assert runner.judge_passed(text) is expected
+
+
+def test_runner_persists_malformed_judge_output_as_fail(tmp_path, monkeypatch):
+    out_json = tmp_path / "malformed_judge.json"
+    sc_file = tmp_path / "sc_malformed.md"
+    sc_file.write_text(
+        "name: sc_malformed\nskill: s\ntrap: t\nexpect: pass\n\nagent prompt body",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        runner, "run_prompt", lambda cmd, prompt, timeout=600: "agent answer text here"
+    )
+    monkeypatch.setattr(
+        runner, "judge_one", lambda cmd, exp, ans, timeout=600: "PASSING: looks right"
+    )
+
+    code = runner.run_scenarios(
+        executor=["mock_exe"],
+        judge=["mock_judge"],
+        scenario_files=[sc_file],
+        repeat=1,
+        json_out=out_json,
+        model="model-malformed",
+    )
+    assert code == 1
+    doc = json.loads(out_json.read_text(encoding="utf-8"))
+    assert doc["passed"] == 0
+    sc = doc["scenarios"][0]
+    assert sc["verdict"] == "FAIL"
+    assert sc["attempts"][0]["verdict"] == "FAIL"
+
+
 def test_runner_records_executor_exception_and_writes_json(tmp_path, monkeypatch):
     out_json = tmp_path / "exec_exc.json"
     sc_file = tmp_path / "sc2.md"

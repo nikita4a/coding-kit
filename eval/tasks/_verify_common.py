@@ -11,10 +11,11 @@ any behavior check:
 
 * reject implementation introspection (imports of ``inspect``/``ast``/
   ``dis``/``marshal`` and their aliases, ``inspect.getsource``/``getfile``/
-  ``signature``, ``open``/``read_text``/``read_bytes``, ``__file__``,
-  ``__code__``, and ``co_*`` bytecode attributes), and
-* require concrete behavioral assertions per task (direct calls to the target
-  function with the relevant boundary/error input).
+  ``signature``, ``open``/``io.open``/``pathlib.Path.open``, chained
+  ``read``/``readline``/``readlines``, ``read_text``/``read_bytes``,
+  ``__file__``, ``__code__``, and ``co_*`` bytecode attributes), and
+* require concrete behavioral assertions, credited only from top-level
+  pytest-collectable ``test_*`` functions (never from nested/helper defs).
 
 Nothing here inspects raw source text: acceptance is structural AST walking
 plus the downstream mutation runs.
@@ -29,8 +30,12 @@ from pathlib import Path
 # no reason to import.
 _FORBIDDEN_MODULES = frozenset({"inspect", "ast", "dis", "marshal"})
 
-# Filesystem/source-file reads a calc regression test has no reason to use.
-_FORBIDDEN_ATTRS = frozenset({"read_text", "read_bytes"})
+# Filesystem/source-file reads a calc regression test has no reason to use:
+# pathlib.Path.open()/io.open(), the builtin open(), and any chained stream
+# read (read/readline/readlines) or Path read_text/read_bytes.
+_FORBIDDEN_ATTRS = frozenset(
+    {"read_text", "read_bytes", "read", "readline", "readlines", "open"}
+)
 
 # Interpreter internals that expose source/bytecode rather than behavior.
 _METADATA_ATTRS = frozenset({"__file__", "__code__"})
@@ -78,6 +83,20 @@ def introspection_violations(tree: ast.Module) -> list[str]:
                 out.append(f"forbidden dynamic import of {node.args[0].value!r}")
             elif isinstance(func, ast.Attribute) and func.attr in _INTROSPECT_CALLS:
                 out.append(f"uses forbidden introspection call .{func.attr}")
+            elif (
+                isinstance(func, ast.Name)
+                and func.id == "getattr"
+                and len(node.args) >= 2
+                and isinstance(node.args[1], ast.Constant)
+                and isinstance(node.args[1].value, str)
+            ):
+                attr_name = node.args[1].value
+                if (
+                    attr_name in _FORBIDDEN_ATTRS
+                    or attr_name in _METADATA_ATTRS
+                    or attr_name.startswith("co_")
+                ):
+                    out.append(f"uses forbidden dynamic attribute .{attr_name}")
     return out
 
 
@@ -122,14 +141,33 @@ def _contains_zero_arg(call: ast.Call) -> bool:
     return False
 
 
+def credited_test_functions(
+    tree: ast.Module,
+) -> list[ast.FunctionDef | ast.AsyncFunctionDef]:
+    """Top-level pytest-collectable test functions, in module.body order.
+
+    Only ``def test_*`` / ``async def test_*`` directly in ``module.body``
+    count: a function nested under ``if`` (including ``if False``)/``try``/
+    ``class``/another function is not collectable by pytest and must not be
+    credited for behavioral coverage. Helper functions (non-``test_`` names)
+    are likewise ignored.
+    """
+    return [
+        node
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name.startswith("test_")
+    ]
+
+
 # --- Task 001: divide-by-zero regression ---------------------------------
 
 def has_divide_by_zero_test(tree: ast.Module) -> bool:
-    """A ``def test_divide_by_zero`` with ``divide(..., 0)`` inside raises(ValueError)."""
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.FunctionDef) or node.name != "test_divide_by_zero":
+    """A top-level ``def test_divide_by_zero`` with ``divide(..., 0)`` in raises(ValueError)."""
+    for fn in credited_test_functions(tree):
+        if fn.name != "test_divide_by_zero":
             continue
-        for sub in ast.walk(node):
+        for sub in ast.walk(fn):
             if _is_raises_block(sub):  # type: ignore[arg-type]
                 for call in ast.walk(sub):
                     if (
@@ -155,62 +193,63 @@ def _parse_int_str_arg(call: ast.Call) -> str | None:
 
 
 def has_whitespace_success(tree: ast.Module) -> bool:
-    """A ``parse_int(<whitespace-bearing literal>) == <int>`` assertion."""
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Compare):
-            continue
-        if not any(isinstance(op, ast.Eq) for op in node.ops):
-            continue
+    """A top-level ``test_*`` with ``parse_int(<whitespace-bearing literal>) == <int>``."""
+    for fn in credited_test_functions(tree):
+        for node in ast.walk(fn):
+            if not isinstance(node, ast.Compare):
+                continue
+            if not any(isinstance(op, ast.Eq) for op in node.ops):
+                continue
 
-        def _ws_call(nd: ast.AST) -> bool:
-            s = (
-                _parse_int_str_arg(nd)
-                if isinstance(nd, ast.Call)
-                else None
-            )
-            if s is None or s == s.strip():
-                return False
-            try:
-                int(s)
-            except (ValueError, TypeError):
-                return False
-            return True
+            def _ws_call(nd: ast.AST) -> bool:
+                s = (
+                    _parse_int_str_arg(nd)
+                    if isinstance(nd, ast.Call)
+                    else None
+                )
+                if s is None or s == s.strip():
+                    return False
+                try:
+                    int(s)
+                except (ValueError, TypeError):
+                    return False
+                return True
 
-        if _ws_call(node.left) and any(
-            isinstance(c, ast.Constant)
-            and isinstance(c.value, int)
-            and not isinstance(c.value, bool)
-            for c in node.comparators
-        ):
-            return True
-        if any(
-            isinstance(node.left, ast.Constant)
-            and isinstance(node.left.value, int)
-            and not isinstance(node.left.value, bool)
-            and _ws_call(c)
-            for c in node.comparators
-        ):
-            return True
+            if _ws_call(node.left) and any(
+                isinstance(c, ast.Constant)
+                and isinstance(c.value, int)
+                and not isinstance(c.value, bool)
+                for c in node.comparators
+            ):
+                return True
+            if any(
+                isinstance(node.left, ast.Constant)
+                and isinstance(node.left.value, int)
+                and not isinstance(node.left.value, bool)
+                and _ws_call(c)
+                for c in node.comparators
+            ):
+                return True
     return False
 
 
 def has_non_numeric_cover(tree: ast.Module) -> bool:
-    """A ``parse_int(<non-numeric literal>)`` inside ``raises(ValueError)``."""
-    for node in ast.walk(tree):
-        if not _is_raises_block(node):  # type: ignore[arg-type]
-            continue
-        for call in ast.walk(node):
-            if not isinstance(call, ast.Call):
+    """A top-level ``test_*`` with ``parse_int(<non-numeric literal>)`` in raises(ValueError)."""
+    for fn in credited_test_functions(tree):
+        for node in ast.walk(fn):
+            if not _is_raises_block(node):  # type: ignore[arg-type]
                 continue
-            s = _parse_int_str_arg(call)
-            if s is None:
-                continue
-            try:
-                int(s)
-            except (ValueError, TypeError):
-                return True
+            for call in ast.walk(node):
+                if not isinstance(call, ast.Call):
+                    continue
+                s = _parse_int_str_arg(call)
+                if s is None:
+                    continue
+                try:
+                    int(s)
+                except (ValueError, TypeError):
+                    return True
     return False
-
 
 # --- Task 003: clamp boundary assertions ----------------------------------
 
@@ -233,26 +272,27 @@ def clamp_boundary_assertions(tree: ast.Module) -> tuple[bool, bool]:
     """Return (v<lo -> lo asserted, v>hi -> hi asserted)."""
     boundary_lo = False
     boundary_hi = False
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Compare):
-            continue
-        if not any(isinstance(op, ast.Eq) for op in node.ops):
-            continue
-        if not isinstance(node.left, ast.Call) or not _is_call_to(node.left, "clamp"):
-            continue
-        if len(node.left.args) != 3 or node.left.keywords:
-            continue
-        va, vb, vc = (_number(a) for a in node.left.args)
-        if va is None or vb is None or vc is None:
-            continue
-        for c in node.comparators:
-            vx = _number(c)
-            if vx is None:
+    for fn in credited_test_functions(tree):
+        for node in ast.walk(fn):
+            if not isinstance(node, ast.Compare):
                 continue
-            if va < vb and vx == vb:
-                boundary_lo = True
-            if va > vc and vx == vc:
-                boundary_hi = True
+            if not any(isinstance(op, ast.Eq) for op in node.ops):
+                continue
+            if not isinstance(node.left, ast.Call) or not _is_call_to(node.left, "clamp"):
+                continue
+            if len(node.left.args) != 3 or node.left.keywords:
+                continue
+            va, vb, vc = (_number(a) for a in node.left.args)
+            if va is None or vb is None or vc is None:
+                continue
+            for c in node.comparators:
+                vx = _number(c)
+                if vx is None:
+                    continue
+                if va < vb and vx == vb:
+                    boundary_lo = True
+                if va > vc and vx == vc:
+                    boundary_hi = True
     return boundary_lo, boundary_hi
 
 
