@@ -10,6 +10,28 @@ import sys
 import tempfile
 
 
+def _isolated_suite(sandbox: Path, calc_source: str, tmp_dir: Path):
+    """Run the candidate's test_calc.py against one calc.py in an empty dir.
+
+    Only test_calc.py is copied from the sandbox; conftest.py and config files
+    are not copied and pytest plugin autoload is disabled, so a candidate cannot
+    manufacture a control outcome via conftest/plugin hooks or control files.
+    """
+    shutil.copy2(sandbox / "test_calc.py", tmp_dir / "test_calc.py")
+    (tmp_dir / "calc.py").write_text(calc_source, encoding="utf-8",
+                                     newline="\n")
+    return subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "--noconftest",
+         "-p", "no:cacheprovider", "test_calc.py"],
+        cwd=str(tmp_dir),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+    )
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("FAIL: missing sandbox path argument")
@@ -99,65 +121,47 @@ def main() -> int:
         print(f"FAIL: candidate pytest suite failed in sandbox:\n{r_cand.stdout}\n{r_cand.stderr}")
         return 1
 
-    # 3. Prove candidate regression tests catch the defect against pristine calc.py
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_path = Path(tmpdir)
-        for item in sandbox.iterdir():
-            if item.name in ("calc.py", "__pycache__"):
-                continue
-            if item.is_dir():
-                shutil.copytree(item, tmp_path / item.name)
-            else:
-                shutil.copy2(item, tmp_path / item.name)
-        shutil.copy2(pristine_calc, tmp_path / "calc.py")
+    # 3. Regression oracle: a real test must (a) pass with the fix, (b) fail
+    #    against the pristine fixture, and (c) fail when only `parse_int` is
+    #    reverted to pristine. Runs are isolated and plugin autoload is off, so
+    #    a conftest/plugin cannot manufacture failure. Only pytest rc==1 (tests
+    #    collected and at least one failed) counts as regression evidence: rc 0
+    #    (passed), 2/3/4 (collection/internal/usage error) and 5 (no tests
+    #    collected) all reject.
+    cand_code = calc_path.read_text(encoding="utf-8")
+    pristine_code = pristine_calc.read_text(encoding="utf-8")
+    revert_code = cand_code + "\n\n# Pristine parse_int override\ndef parse_int(s):\n    return int(s)\n"
 
+    with tempfile.TemporaryDirectory() as td:
         try:
-            r_pristine = subprocess.run(
-                [sys.executable, "-m", "pytest", "-q"],
-                cwd=tmp_path,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=30,
-            )
+            r_ok = _isolated_suite(sandbox, cand_code, Path(td))
         except subprocess.TimeoutExpired:
-            print("FAIL: pristine test run timed out")
+            print("FAIL: candidate isolated pytest timed out")
             return 1
-        if r_pristine.returncode == 0:
-            print("FAIL: candidate tests did not fail on pristine calc.py (missing regression test for custom ValueError)")
+        if r_ok.returncode != 0:
+            print(f"FAIL: candidate tests not green in isolation (rc={r_ok.returncode}):\n{r_ok.stdout}\n{r_ok.stderr}")
             return 1
 
-    # 4. Prove candidate regression tests specifically catch the parse_int defect
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_path = Path(tmpdir)
-        for item in sandbox.iterdir():
-            if item.name in ("calc.py", "__pycache__"):
-                continue
-            if item.is_dir():
-                shutil.copytree(item, tmp_path / item.name)
-            else:
-                shutil.copy2(item, tmp_path / item.name)
-        cand_code = calc_path.read_text(encoding="utf-8")
-        pristine_parse_int_override = "\n\n# Pristine parse_int override\ndef parse_int(s):\n    return int(s)\n"
-        (tmp_path / "calc.py").write_text(cand_code + pristine_parse_int_override, encoding="utf-8")
-
+    with tempfile.TemporaryDirectory() as td:
         try:
-            r_revert = subprocess.run(
-                [sys.executable, "-m", "pytest", "-q"],
-                cwd=tmp_path,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=30,
-            )
+            r_pris = _isolated_suite(sandbox, pristine_code, Path(td))
         except subprocess.TimeoutExpired:
-            print("FAIL: revert test run timed out")
+            print("FAIL: pristine fixture pytest timed out")
             return 1
-        if r_revert.returncode == 0:
-            print("FAIL: candidate tests did not fail when parse_int was reverted to pristine (regression test does not target parse_int custom error)")
+        if r_pris.returncode != 1:
+            print(f"FAIL: candidate tests did not fail on pristine calc.py (rc={r_pris.returncode}); missing regression test for the parse_int custom ValueError:\n{r_pris.stdout}\n{r_pris.stderr}")
             return 1
+
+    with tempfile.TemporaryDirectory() as td:
+        try:
+            r_rev = _isolated_suite(sandbox, revert_code, Path(td))
+        except subprocess.TimeoutExpired:
+            print("FAIL: revert pytest timed out")
+            return 1
+        if r_rev.returncode != 1:
+            print(f"FAIL: candidate tests did not fail when parse_int was reverted to pristine (rc={r_rev.returncode}); regression test does not target parse_int:\n{r_rev.stdout}\n{r_rev.stderr}")
+            return 1
+
     print("PASS")
     return 0
 

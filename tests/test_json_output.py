@@ -206,12 +206,12 @@ def test_runner_model_executor_separation(tmp_path, monkeypatch):
         scenario_files=[sc_file],
         repeat=1,
         json_out=out_json,
-        model=None,
+        model="gpt-4o",
         executor_spec="custom-cli --auth=TOKEN123",
     )
     assert code == 0
     doc = json.loads(out_json.read_text(encoding="utf-8"))
-    assert doc["model"] == "unspecified"
+    assert doc["model"] == "gpt-4o"
     assert doc["executor_name"] == "custom-cli"
     assert "TOKEN123" not in json.dumps(doc)
 
@@ -280,6 +280,7 @@ def test_runner_timeout_expired_records_trace_tail(tmp_path, monkeypatch):
         repeat=1,
         json_out=out_json,
         timeout=30,
+        model="timeout-model",
     )
     assert code == 1
     doc = json.loads(out_json.read_text(encoding="utf-8"))
@@ -373,3 +374,79 @@ def test_executor_env_keeps_runtime_paths_and_drops_secrets(monkeypatch):
     assert "GITHUB_TOKEN" not in env
     assert "OPENAI_API_KEY" not in env
     assert "ANTHROPIC_API_KEY" not in env
+
+
+def test_run_prompt_raises_on_nonzero_exit(monkeypatch):
+    class FakeCompleted:
+        returncode = 1
+        stdout = "partial answer text"
+        stderr = "executor trace tail"
+
+    monkeypatch.setattr(runner.subprocess, "run",
+                        lambda *a, **k: FakeCompleted())
+    with pytest.raises(runner.ExecutorError) as ei:
+        runner.run_prompt(["fake"], "prompt")
+    assert "code 1" in str(ei.value)
+    assert ei.value.stdout == "partial answer text"
+    assert ei.value.stderr == "executor trace tail"
+
+
+def test_runner_nonzero_executor_never_passes(tmp_path, monkeypatch):
+    out_json = tmp_path / "nonzero.json"
+    sc_file = tmp_path / "sc_nz.md"
+    sc_file.write_text(
+        "name: sc_nz\nskill: s_nz\ntrap: t_nz\nexpect: pass\n\nbody",
+        encoding="utf-8",
+    )
+
+    def _nonzero(*args, **kwargs):
+        raise runner.ExecutorError(
+            "subprocess exited with code 1", stdout="", stderr="executor trace tail")
+
+    monkeypatch.setattr(runner, "run_prompt", _nonzero)
+    code = runner.run_scenarios(
+        executor=["mock_exe"],
+        judge=["mock_judge"],
+        scenario_files=[sc_file],
+        repeat=3,
+        json_out=out_json,
+        model="model-nonzero",
+    )
+    assert code == 1
+    doc = json.loads(out_json.read_text(encoding="utf-8"))
+    sc = doc["scenarios"][0]
+    assert sc["verdict"] == "FAIL"
+    assert len(sc["attempts"]) == 3
+    assert all(a["verdict"] == "FAIL" for a in sc["attempts"])
+    assert sc["attempts"][0]["trace_tail"] == "executor trace tail"
+
+
+def test_run_scenarios_live_json_requires_model(tmp_path, monkeypatch):
+    sc_file = tmp_path / "sc_m.md"
+    sc_file.write_text(
+        "name: sc_m\nskill: s_m\ntrap: t_m\nexpect: pass\n\nbody",
+        encoding="utf-8",
+    )
+    calls = []
+    monkeypatch.setattr(runner, "run_prompt", lambda *a, **k: calls.append(a))
+    with pytest.raises(ValueError, match="explicit --model"):
+        runner.run_scenarios(
+            executor=["mock_exe"],
+            judge=["mock_judge"],
+            scenario_files=[sc_file],
+            repeat=1,
+            json_out=tmp_path / "m.json",
+            model=None,
+        )
+    assert calls == []
+
+
+def test_runner_live_json_requires_model_cli(tmp_path):
+    out = tmp_path / "live_no_model.json"
+    r = subprocess.run(
+        [sys.executable, str(ROOT / "eval" / "runner.py"),
+         "--executor", "python", "--json", str(out)],
+        capture_output=True, text=True, encoding="utf-8")
+    assert r.returncode == 2, r.stdout + r.stderr
+    assert "requires an explicit --model" in r.stderr
+    assert not out.exists()

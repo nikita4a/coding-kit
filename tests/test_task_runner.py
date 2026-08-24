@@ -206,7 +206,7 @@ def test_zero_tasks_returns_1_and_no_zero_division(tmp_path):
 
     # with json_out, saves payload with 0 metrics and no division by zero
     out_file = tmp_path / "zero.json"
-    rc_json = run_task_suite([], "dummy-executor", json_out=out_file)
+    rc_json = run_task_suite([], "dummy-executor", json_out=out_file, model="zero-model")
     assert rc_json == 1
     assert out_file.is_file()
 
@@ -279,6 +279,7 @@ def test_fresh_sandboxes_on_retry(tmp_path):
         executor_cmd=executor_cmd,
         tries=2,
         json_out=json_path,
+        model="retry-model",
     )
     assert rc == 0
     assert int(state_file.read_text(encoding="utf-8")) == 2
@@ -315,12 +316,12 @@ def test_early_stop_on_first_pass(tmp_path):
 
     executor_cmd = f"{sys.executable} {script_path} {state_file}"
     json_path = tmp_path / "early_stop.json"
-
     rc = run_task_suite(
         ["001-fix-div-zero"],
         executor_cmd=executor_cmd,
         tries=5,
         json_out=json_path,
+        model="early-model",
     )
     assert rc == 0
     # Stopped after first try; did not run tries 2..5
@@ -364,6 +365,7 @@ def test_error_classes_and_nonzero_skips_verifier(tmp_path):
         executor_cmd=f"{sys.executable} {fail_script}",
         tries=1,
         json_out=json_path,
+        model="err-model",
     )
     assert rc == 1
     doc = json.loads(json_path.read_text(encoding="utf-8"))
@@ -449,3 +451,166 @@ def test_task_executor_uses_secret_free_environment(monkeypatch):
     assert env["PATH"] == r"C:\safe-bin"
     assert "GITHUB_TOKEN" not in env
     assert "OPENAI_API_KEY" not in env
+
+
+def test_executor_launch_error_records_truthful_fail(tmp_path):
+    # A nonexistent executor raises OSError/FileNotFoundError at launch. The
+    # runner must record a truthful FAIL (error_class=other, bounded trace),
+    # honor tries, continue across tasks, and persist the requested result.
+    json_path = tmp_path / "oserror.json"
+    rc = run_task_suite(
+        ["001-fix-div-zero", "002-add-validation"],
+        executor_cmd="definitely-not-a-real-executable-xyz",
+        tries=2,
+        json_out=json_path,
+        model="failing-model",
+    )
+    assert rc == 1
+    doc = json.loads(json_path.read_text(encoding="utf-8"))
+    assert doc["kind"] == "tasks"
+    assert doc["total"] == 2
+    assert doc["passed"] == 0
+    assert len(doc["rows"]) == 2
+    for row in doc["rows"]:
+        assert row["verdict"] == "FAIL"
+        assert len(row["attempts"]) == 2
+        for attempt in row["attempts"]:
+            assert attempt["verdict"] == "FAIL"
+            assert attempt["error_class"] == "other"
+            assert "trace_tail" in attempt
+
+
+def test_run_task_suite_rejects_live_persistence_without_model(tmp_path):
+    json_path = tmp_path / "nomodel.json"
+    try:
+        run_task_suite(
+            ["001-fix-div-zero"],
+            executor_cmd="python -m custom_exec",
+            json_out=json_path,
+            model=None,
+        )
+    except ValueError as exc:
+        assert "model" in str(exc)
+    else:
+        raise AssertionError("live persistence without --model must raise ValueError")
+    assert not json_path.exists()
+
+    # dry-run with json and no model remains permitted (unspecified)
+    dry_json = tmp_path / "dry.json"
+    rc = run_task_suite(["001-fix-div-zero"], None, dry_run=True, json_out=dry_json)
+    assert rc == 0
+    assert json.loads(dry_json.read_text(encoding="utf-8"))["model"] == "unspecified"
+
+
+def test_cli_rejects_live_json_without_model(tmp_path):
+    out_json = tmp_path / "cli.json"
+    r = subprocess.run(
+        [sys.executable, str(ROOT / "eval" / "task_runner.py"),
+         "--executor", "claude -p", "--json", str(out_json)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert r.returncode == 2
+    assert "--model" in r.stderr
+    assert not out_json.exists()
+
+
+def test_verify_rejects_malicious_conftest_bypass(tmp_path):
+    # A candidate that fixes calc.py but adds no regression test can, if the
+    # oracle copies the whole sandbox and honors plugin autoload, plant a
+    # conftest.py that manufactures "tests fail on pristine/reverted" via a
+    # pytest startup hook. The hardened oracles copy only test_calc.py and
+    # run --noconftest, so every task must reject this bypass with rc 1.
+    fixed_calc = {
+        "001-fix-div-zero": (
+            'def divide(a, b):\n'
+            '    if b == 0:\n'
+            '        raise ValueError("division by zero")\n'
+            '    return a / b\n\n'
+            'def parse_int(s):\n'
+            '    return int(s)\n\n'
+            'def clamp(v, lo, hi):\n'
+            '    if lo > v < hi:\n'
+            '        return hi\n'
+            '    return v\n'
+        ),
+        "002-add-validation": (
+            'def divide(a, b):\n'
+            '    return a / b\n\n'
+            'def parse_int(s):\n'
+            '    s = str(s).strip()\n'
+            '    try:\n'
+            '        return int(s)\n'
+            '    except ValueError:\n'
+            '        raise ValueError(f"not an integer: {s}")\n\n'
+            'def clamp(v, lo, hi):\n'
+            '    if lo > v < hi:\n'
+            '        return hi\n'
+            '    return v\n'
+        ),
+        "003-regression-guard": (
+            'def divide(a, b):\n'
+            '    return a / b\n\n'
+            'def parse_int(s):\n'
+            '    return int(s)\n\n'
+            'def clamp(v, lo, hi):\n'
+            '    if v < lo:\n'
+            '        return lo\n'
+            '    if v > hi:\n'
+            '        return hi\n'
+            '    return v\n'
+        ),
+    }
+    evil_conftest = {
+        "001-fix-div-zero": (
+            'import importlib.util\n'
+            'from pathlib import Path\n\n\n'
+            'def pytest_configure(config):\n'
+            '    calc = Path(__file__).resolve().parent / "calc.py"\n'
+            '    spec = importlib.util.spec_from_file_location("calc", str(calc))\n'
+            '    mod = importlib.util.module_from_spec(spec)\n'
+            '    spec.loader.exec_module(mod)\n'
+            '    try:\n'
+            '        mod.divide(1, 0)\n'
+            '    except ZeroDivisionError:\n'
+            '        raise RuntimeError("manufactured failure: divide not fixed")\n'
+            '    except ValueError:\n'
+            '        pass\n'
+        ),
+        "002-add-validation": (
+            'import importlib.util\n'
+            'from pathlib import Path\n\n\n'
+            'def pytest_configure(config):\n'
+            '    calc = Path(__file__).resolve().parent / "calc.py"\n'
+            '    spec = importlib.util.spec_from_file_location("calc", str(calc))\n'
+            '    mod = importlib.util.module_from_spec(spec)\n'
+            '    spec.loader.exec_module(mod)\n'
+            '    try:\n'
+            '        mod.parse_int("abc")\n'
+            '    except ValueError as e:\n'
+            '        if "not an integer" not in str(e):\n'
+            '            raise RuntimeError("manufactured failure: parse_int not fixed")\n'
+        ),
+        "003-regression-guard": (
+            'import importlib.util\n'
+            'from pathlib import Path\n\n\n'
+            'def pytest_configure(config):\n'
+            '    calc = Path(__file__).resolve().parent / "calc.py"\n'
+            '    spec = importlib.util.spec_from_file_location("calc", str(calc))\n'
+            '    mod = importlib.util.module_from_spec(spec)\n'
+            '    spec.loader.exec_module(mod)\n'
+            '    if mod.clamp(-5, 0, 10) != 0:\n'
+            '        raise RuntimeError("manufactured failure: clamp not fixed")\n'
+        ),
+    }
+
+    for task, code in fixed_calc.items():
+        sb = tmp_path / ("evil_" + task)
+        shutil.copytree(ROOT / "eval" / "tasks" / "repo-fixture", sb)
+        (sb / "calc.py").write_text(code, encoding="utf-8", newline="\n")
+        (sb / "conftest.py").write_text(evil_conftest[task], encoding="utf-8", newline="\n")
+        v = ROOT / "eval" / "tasks" / task / "verify.py"
+        r = subprocess.run(
+            [sys.executable, str(v), str(sb)],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        assert r.returncode == 1, f"{task} must reject malicious conftest bypass: {r.stdout} {r.stderr}"

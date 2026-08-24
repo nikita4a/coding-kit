@@ -27,7 +27,7 @@ user input; parsed with shlex, run WITHOUT shell=True.
 Usage:
     python eval/trigger_eval.py --queries eval/trigger_queries.json        # validate
     python eval/trigger_eval.py --queries eval/trigger_queries.json        \\
-        --executor "gemini -p -" --runs 3 --parallel 4 --out trig.jsonl
+        --executor "gemini -p -" --model gemini-2.5-pro --runs 3 --parallel 4 --json auto
     python eval/trigger_eval.py --queries q.json --only yagni              # one skill
 """
 import argparse
@@ -114,9 +114,15 @@ def prompt_for(query: str) -> str:
 
 def run_query_detailed(cmd: list[str], q: dict, runs: int,
                        timeout: int = TIMEOUT_DEFAULT) -> dict:
-    """Runs one query `runs` times; records per-attempt timings and errors."""
+    """Runs one query `runs` times; records per-attempt timings and errors.
+
+    Any execution error on an attempt fails the whole row, regardless of
+    `should`; the first error and trace tail are promoted to row level.
+    """
     hits = 0
     attempts: list[dict] = []
+    errors: list[str] = []
+    first_trace: "str | None" = None
     for _ in range(runs):
         t0 = time.perf_counter()
         err_msg = None
@@ -148,17 +154,20 @@ def run_query_detailed(cmd: list[str], q: dict, runs: int,
         }
         if err_msg:
             att["error"] = err_msg
+            errors.append(err_msg)
+            if first_trace is None:
+                first_trace = trace_tail
         if trace_tail:
             att["trace_tail"] = trace_tail
         attempts.append(att)
 
     fired_aggregate = hits * 2 > runs
     expected = bool(q.get("should", False))
-    is_pass = (fired_aggregate == expected)
+    is_pass = (not errors) and (fired_aggregate == expected)
     verdict = "PASS" if is_pass else "FAIL"
     total_dur = round(sum(a["duration_s"] for a in attempts), 4)
 
-    return {
+    row: dict = {
         "query": q.get("query", ""),
         "skill": q.get("skill", ""),
         "expected": expected,
@@ -167,6 +176,11 @@ def run_query_detailed(cmd: list[str], q: dict, runs: int,
         "duration_s": total_dur,
         "attempts": attempts,
     }
+    if errors:
+        row["error"] = "; ".join(errors)
+    if first_trace:
+        row["trace_tail"] = first_trace
+    return row
 
 
 def run_query(cmd: list[str], q: dict, runs: int,
@@ -201,18 +215,23 @@ def main() -> int:
     ap.add_argument("--executor", help='CLI reading prompt from stdin, '
                      'printing answer to stdout (e.g. "gemini -p -")')
     ap.add_argument("--model", default=None,
-                    help="model identifier (e.g. gpt-4o, claude-3-5-sonnet)")
+                    help="model identifier (e.g. gpt-4o, claude-3-5-sonnet); "
+                         "required for a live --json run (dry --json may omit)")
     ap.add_argument("--runs", type=int, default=RUNS_DEFAULT,
                     help=f"runs per query (default {RUNS_DEFAULT})")
     ap.add_argument("--parallel", type=int, default=1, help="parallel workers")
     ap.add_argument("--only", help="run a single skill (slug)")
     ap.add_argument("--timeout", type=int, default=TIMEOUT_DEFAULT,
                     help="per-call timeout seconds")
-    ap.add_argument("--out", help="append results as JSONL")
     ap.add_argument("--json", default=None, metavar="PATH|auto",
                     help="write a JSON result doc: explicit path or 'auto' "
                          "for the shared timestamped store (eval/results/)")
     args = ap.parse_args()
+
+    if args.executor and args.json and not args.model:
+        print("error: a live --json run requires an explicit --model",
+              file=sys.stderr)
+        return 2
 
     try:
         queries = json.loads(Path(args.queries).read_text(encoding="utf-8"))
@@ -256,6 +275,7 @@ def main() -> int:
                     "fired": False,
                     "verdict": "FAIL",
                     "duration_s": 0.0,
+                    "error": f"{type(e).__name__}: {e}",
                     "attempts": [{"fired": False, "duration_s": 0.0,
                                   "error": f"{type(e).__name__}: {e}"}],
                 }
@@ -266,12 +286,6 @@ def main() -> int:
             print(f"[{tag}] {q['skill']:30s} should={str(q['should']):5s} "
                   f"'{query_text[:60]}'")
             results.setdefault(q["skill"], []).append((query_text, q["should"], passed_should))
-            if args.out:
-                with open(args.out, "a", encoding="utf-8") as f:
-                    f.write(json.dumps(
-                        {"skill": q["skill"], "should": q["should"],
-                         "query": query_text, "result": tag},
-                        ensure_ascii=False) + "\n")
 
     problems, stats = summarize(results)
     print("\nper-skill summary (trigger = should-passed rate, false = should-not-passed):")
@@ -309,7 +323,10 @@ def _emit_json(args, mode: str, total: int, passed: int, fired: int,
     sys.path.insert(0, str(HERE))
     from results_io import save_result
     override = None if str(args.json) == "auto" else Path(args.json)
-    model = args.model if getattr(args, "model", None) else "unspecified"
+    model = getattr(args, "model", None)
+    if mode == "live" and not model:
+        raise ValueError("a live trigger result requires an explicit --model")
+    model = model or "unspecified"
     payload = {
         "mode": mode,
         "passed": passed,

@@ -73,11 +73,29 @@ def resolve_cmd(spec: str) -> list[str]:
     return [exe, *parts[1:]]
 
 
+_EXEC_OUTPUT_BOUND = 4000
+
+
+class ExecutorError(RuntimeError):
+    """A model subprocess failed: nonzero exit code, with bounded output."""
+
+    def __init__(self, message: str, *, stdout: str = "", stderr: str = ""):
+        super().__init__(message)
+        self.stdout = stdout
+        self.stderr = stderr
+
+
 def run_prompt(cmd: list[str], prompt: str, timeout: int = 600) -> str:
     r = subprocess.run(
         cmd, input=prompt, capture_output=True, text=True, timeout=timeout,
         encoding="utf-8", errors="replace", env=executor_env(),
     )
+    if r.returncode != 0:
+        raise ExecutorError(
+            f"subprocess exited with code {r.returncode}",
+            stdout=(r.stdout or "")[-_EXEC_OUTPUT_BOUND:],
+            stderr=(r.stderr or "")[-_EXEC_OUTPUT_BOUND:],
+        )
     return (r.stdout or r.stderr).strip()
 
 
@@ -114,6 +132,8 @@ def run_scenarios(
     fails = 0
     rows = []
     repeat = max(1, repeat)
+    if json_out and executor and not model:
+        raise ValueError("a live run with --json requires an explicit --model")
 
     for f in scenario_files:
         sc = parse(f.read_text(encoding="utf-8"))
@@ -251,7 +271,7 @@ def main() -> int:
     ap.add_argument("--executor", help="model CLI (prompt on stdin)")
     ap.add_argument("--model", default=None,
                     help="model identifier (e.g. gpt-4o, claude-3-5-sonnet); "
-                         "defaults to 'unspecified' if omitted")
+                         "required for a live --json run (dry --json may omit)")
     ap.add_argument("--judge", default=None,
                     help="judge CLI (default = --executor)")
     ap.add_argument("--scenario", help="single scenario name (no .md)")
@@ -263,6 +283,11 @@ def main() -> int:
                     help="write a JSON result doc: explicit path or 'auto' "
                          "for the shared timestamped store (eval/results/)")
     args = ap.parse_args()
+
+    if args.executor and args.json and not args.model:
+        print("error: a live --json run requires an explicit --model",
+              file=sys.stderr)
+        return 2
 
     executor = resolve_cmd(args.executor) if args.executor else None
     judge = resolve_cmd(args.judge) if args.judge else executor

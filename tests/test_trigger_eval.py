@@ -1,6 +1,7 @@
 """Contract tests for eval/trigger_eval.py — query validation, signal
 detection, and threshold summary. No model calls."""
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -12,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "eval"))
 from trigger_eval import detect, summarize, validate
 import trigger_eval
+import runner
 
 
 class ValidateTest(unittest.TestCase):
@@ -157,10 +159,10 @@ class ModelExecutorSeparationTest(unittest.TestCase):
         self.assertEqual(calls[0]["payload"]["passed"], 10)
         self.assertEqual(calls[0]["payload"]["fired"], 10)
 
-    def test_missing_model_defaults_to_unspecified(self):
+    def test_live_emit_without_model_is_rejected(self):
         calls = []
         def fake_save_result(kind, model, payload, path=None, *, executor_spec=None, results_dir=None):
-            calls.append({"kind": kind, "model": model, "payload": payload, "path": path, "executor_spec": executor_spec})
+            calls.append((kind, model, payload, path, executor_spec))
             return Path("mock_path.json")
 
         class Args:
@@ -169,13 +171,10 @@ class ModelExecutorSeparationTest(unittest.TestCase):
             model = None
 
         with unittest.mock.patch("results_io.save_result", fake_save_result):
-            trigger_eval._emit_json(Args(), mode="live", total=10, passed=10, fired=10, misses=[], rows=[])
+            with self.assertRaises(ValueError):
+                trigger_eval._emit_json(Args(), mode="live", total=10, passed=10, fired=10, misses=[], rows=[])
 
-        self.assertEqual(len(calls), 1)
-        self.assertEqual(calls[0]["model"], "unspecified")
-        self.assertEqual(calls[0]["executor_spec"], "my-cli")
-        self.assertEqual(calls[0]["payload"]["passed"], 10)
-        self.assertEqual(calls[0]["payload"]["fired"], 10)
+        self.assertEqual(len(calls), 0)
 
 
 class RowAttemptEvidenceTest(unittest.TestCase):
@@ -293,6 +292,7 @@ class TopLevelFiredVsPassedSemanticsTest(unittest.TestCase):
                 "trigger_eval.py",
                 "--queries", str(queries_file),
                 "--executor", "mock_cli",
+                "--model", "mock-model",
                 "--json", "auto",
             ]
             orig_argv = sys.argv
@@ -335,6 +335,7 @@ class TopLevelFiredVsPassedSemanticsTest(unittest.TestCase):
                 "trigger_eval.py",
                 "--queries", str(queries_file),
                 "--executor", "mock_cli",
+                "--model", "mock-model",
                 "--json", "auto",
             ]
             orig_argv = sys.argv
@@ -376,6 +377,7 @@ class TopLevelFiredVsPassedSemanticsTest(unittest.TestCase):
                 "trigger_eval.py",
                 "--queries", str(queries_file),
                 "--executor", "mock_cli",
+                "--model", "mock-model",
                 "--json", "auto",
             ]
             orig_argv = sys.argv
@@ -393,5 +395,115 @@ class TopLevelFiredVsPassedSemanticsTest(unittest.TestCase):
         self.assertEqual(saved[0]["total"], 4)
         self.assertEqual(saved[0]["passed"], 4)
         self.assertEqual(saved[0]["fired"], 2)
+
+
+class ShouldNotErrorFailsRowTest(unittest.TestCase):
+    def test_execution_error_on_should_not_is_fail(self):
+        def failing_prompt(cmd, prompt, timeout=None):
+            raise RuntimeError("network down or model crashed")
+
+        orig = trigger_eval.run_prompt
+        trigger_eval.run_prompt = failing_prompt
+        try:
+            row = trigger_eval.run_query_detailed(
+                ["mock"], {"skill": "yagni", "should": False, "query": "query"}, runs=2
+            )
+        finally:
+            trigger_eval.run_prompt = orig
+
+        self.assertFalse(row["fired"])
+        self.assertEqual(row["verdict"], "FAIL")
+        self.assertEqual(len(row["attempts"]), 2)
+        self.assertIn("RuntimeError", row["error"])
+        for att in row["attempts"]:
+            self.assertFalse(att["fired"])
+            self.assertIn("RuntimeError", att.get("error", ""))
+
+    def test_nonzero_exit_on_should_not_is_fail_with_trace(self):
+        def nonzero_prompt(cmd, prompt, timeout=None):
+            raise runner.ExecutorError(
+                "subprocess exited with code 1", stdout="", stderr="executor trace tail")
+
+        orig = trigger_eval.run_prompt
+        trigger_eval.run_prompt = nonzero_prompt
+        try:
+            row = trigger_eval.run_query_detailed(
+                ["mock"], {"skill": "yagni", "should": False, "query": "query"}, runs=1
+            )
+        finally:
+            trigger_eval.run_prompt = orig
+
+        self.assertFalse(row["fired"])
+        self.assertEqual(row["verdict"], "FAIL")
+        self.assertIn("ExecutorError", row["error"])
+        self.assertEqual(row["trace_tail"], "executor trace tail")
+
+
+class LiveJsonModelGateTest(unittest.TestCase):
+    def test_main_rejects_live_json_without_model_before_calls(self):
+        calls = []
+        saved = []
+
+        def fake_run_prompt(cmd, prompt, timeout=None):
+            calls.append(1)
+            return "SKILLS LOADED: none"
+
+        def fake_save_result(*args, **kwargs):
+            saved.append(1)
+            return Path("mock.json")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            queries_file = Path(tmp) / "q.json"
+            queries_file.write_text(json.dumps([
+                {"skill": "yagni", "should": True, "query": "add a cache?"},
+                {"skill": "yagni", "should": False, "query": "two plus two"},
+            ]), encoding="utf-8")
+            test_argv = [
+                "trigger_eval.py",
+                "--queries", str(queries_file),
+                "--executor", "mock_cli",
+                "--json", "auto",
+            ]
+            orig_argv = sys.argv
+            orig_run = trigger_eval.run_prompt
+            trigger_eval.run_prompt = fake_run_prompt
+            try:
+                sys.argv = test_argv
+                with unittest.mock.patch("results_io.save_result", fake_save_result):
+                    rc = trigger_eval.main()
+            finally:
+                sys.argv = orig_argv
+                trigger_eval.run_prompt = orig_run
+
+        self.assertEqual(rc, 2)
+        self.assertEqual(calls, [])
+        self.assertEqual(saved, [])
+
+
+class OutOptionRemovedTest(unittest.TestCase):
+    def test_out_flag_no_longer_accepted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            queries_file = Path(tmp) / "q.json"
+            queries_file.write_text(json.dumps([
+                {"skill": "yagni", "should": True, "query": "add a cache?"},
+                {"skill": "yagni", "should": False, "query": "two plus two"},
+            ]), encoding="utf-8")
+            out_file = Path(tmp) / "o.jsonl"
+            r = subprocess.run(
+                [sys.executable, str(ROOT / "eval" / "trigger_eval.py"),
+                 "--queries", str(queries_file), "--out", str(out_file)],
+                capture_output=True, text=True, encoding="utf-8")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("--out", r.stderr)
+        self.assertFalse(out_file.exists())
+
+    def test_out_flag_not_documented(self):
+        r = subprocess.run(
+            [sys.executable, str(ROOT / "eval" / "trigger_eval.py"), "--help"],
+            capture_output=True, text=True, encoding="utf-8")
+        self.assertEqual(r.returncode, 0)
+        self.assertNotIn("--out", r.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -163,6 +163,13 @@ def _run_attempt(name: str, cmd: list[str], *, timeout: int) -> dict:
                 if isinstance(e.stderr, bytes) else (e.stderr or "")
             return _fail_attempt(duration, classify_error(
                 timed_out=True, stdout=stdout, stderr=stderr), stdout, stderr)
+        except (OSError, ValueError) as e:
+            # Executor could not launch or failed to start (missing path,
+            # permission denied, empty argv). Record a truthful FAIL instead
+            # of crashing the whole run; the trace tail is bounded.
+            duration = round(time.monotonic() - started, 3)
+            return _fail_attempt(duration, "other", "",
+                                 f"{type(e).__name__}: {e}")
 
         duration = round(time.monotonic() - started, 3)
         stdout = (proc.stdout or b"").decode("utf-8", "replace")
@@ -188,6 +195,9 @@ def _run_attempt(name: str, cmd: list[str], *, timeout: int) -> dict:
             return _fail_attempt(duration, classify_error(
                 timed_out=True, stdout=v_stdout, stderr=v_stderr),
                 v_stdout, v_stderr)
+        except (OSError, ValueError) as e:
+            return _fail_attempt(duration, "other", "",
+                                 f"{type(e).__name__}: {e}")
         if v.returncode == 0:
             return {"verdict": "PASS", "duration_s": duration}
 
@@ -217,6 +227,12 @@ def run_task_suite(names: list[str], executor_cmd: str | None,
     (the shared timestamped store). dry_run never spawns the executor and
     persists only when json_out is explicitly requested.
     """
+    if json_out is not None and not dry_run and not model:
+        raise ValueError(
+            "live persistence requires an explicit model label; a live run "
+            "with --json but no --model would record row evidence under the "
+            "'unspecified' model and corrupt trend grouping")
+
     total = len(names)
     print(f"{total} tasks discovered: {', '.join(names)}")
 
@@ -302,6 +318,11 @@ def main() -> int:
 
     if not args.dry_run and not args.executor:
         ap.error("--executor required without --dry-run")
+
+    if (not args.dry_run and args.executor and args.json is not None
+            and not args.model):
+        ap.error("--model is required for live --json persistence")
+
 
     json_out = None
     if args.json is not None:
