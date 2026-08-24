@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "run_id": "tasks-20260824-172335-148571-d7f99237-c4f2-43a1-957c-f6e0cd222960",
+  "run_id": "tasks-20260824-175532-453243-a7346525-48c4-45f7-a61c-c752812f7256",
   "kind": "tasks",
   "model": "custom-openai/gpt-5.6-sol",
   "executor_name": "omp",
-  "utc": "2026-08-24T17:23:35.148571+00:00",
-  "harness_sha": "8f65c24c43ff25b27f4889fb8ea40caab3939602",
+  "utc": "2026-08-24T17:55:32.453243+00:00",
+  "harness_sha": "c067f532631e50268452b0e5751b0c2effc8f52d",
   "rows": [
     {
       "name": "001-fix-div-zero",
@@ -13,13 +13,13 @@
       "attempts": [
         {
           "verdict": "FAIL",
-          "duration_s": 74.125,
+          "duration_s": 75.75,
           "error_class": "other",
           "trace_tail": "FAIL: no regression test: missing def test_divide_by_zero with divide(..., 0) inside pytest.raises(ValueError)"
         },
         {
           "verdict": "FAIL",
-          "duration_s": 45.063,
+          "duration_s": 48.36,
           "error_class": "other",
           "trace_tail": "FAIL: no regression test: missing def test_divide_by_zero with divide(..., 0) inside pytest.raises(ValueError)"
         }
@@ -27,17 +27,19 @@
     },
     {
       "name": "002-add-validation",
-      "verdict": "PASS",
+      "verdict": "FAIL",
       "attempts": [
         {
           "verdict": "FAIL",
-          "duration_s": 64.063,
+          "duration_s": 65.187,
           "error_class": "other",
           "trace_tail": "FAIL: no behavioral coverage: missing parse_int(<non-numeric>) inside pytest.raises(ValueError)"
         },
         {
-          "verdict": "PASS",
-          "duration_s": 67.375
+          "verdict": "FAIL",
+          "duration_s": 64.719,
+          "error_class": "other",
+          "trace_tail": "FAIL: no behavioral coverage: missing parse_int(<non-numeric>) inside pytest.raises(ValueError)"
         }
       ]
     },
@@ -47,14 +49,14 @@
       "attempts": [
         {
           "verdict": "PASS",
-          "duration_s": 73.969
+          "duration_s": 74.313
         }
       ]
     }
   ],
-  "passed": 2,
+  "passed": 1,
   "total": 3,
-  "pass_rate": 0.667,
+  "pass_rate": 0.333,
   "pass@1": 0.333,
-  "pass@2": 0.667
+  "pass@2": 0.333
 }

@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "run_id": "trap-20260824-175633-335816-9021f605-a11f-458f-8595-538683689170",
+  "kind": "trap",
+  "model": "custom-openai/gpt-5.6-sol",
+  "executor_name": "omp",
+  "utc": "2026-08-24T17:56:33.335816+00:00",
+  "harness_sha": "c067f532631e50268452b0e5751b0c2effc8f52d",
+  "scenarios": [
+    {
+      "name": "breaking-migration",
+      "skill": "money-path-safety",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 19.7413
+        }
+      ]
+    },
+    {
+      "name": "contract-drift",
+      "skill": "code-review-and-quality",
+      "verdict": "FAIL",
+      "attempts": [
+        {
+          "verdict": "FAIL",
+          "duration_s": 25.2566,
+          "error": "FAIL",
+          "trace_tail": " c in '\"-()*:^'):\n    # Other special characters are quoted; a hyphen would otherwise\n    # be interpreted as a column filter.\n    out.append('\"' + tok.replace('\"', '\"\"') + '\"')\n```\n\nAdd a behavioral assertion that `sanitize_query(\"firmware*\")` emits `firmware*`, not `\"firmware*\"`. If prefix preservation is not intended, the code is already consistent and the false comment must instead be removed—but the current comment is still a P2 finding because it states the opposite of the branch behavior."
+        }
+      ]
+    },
+    {
+      "name": "dead-flag",
+      "skill": "test-driven-development",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 13.7793
+        }
+      ]
+    },
+    {
+      "name": "false-done",
+      "skill": "fable-judge",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 10.7716
+        }
+      ]
+    },
+    {
+      "name": "grounded-decision",
+      "skill": "production-first-decisions",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 35.6897
+        }
+      ]
+    },
+    {
+      "name": "hallucinated-import",
+      "skill": "production-first-decisions",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 12.7726
+        }
+      ]
+    },
+    {
+      "name": "infinite-retry-masking",
+      "skill": "debugging-and-error-recovery",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 18.1909
+        }
+      ]
+    },
+    {
+      "name": "memory-routing",
+      "skill": "dev-wiki",
+      "verdict": "FAIL",
+      "attempts": [
+        {
+          "verdict": "FAIL",
+          "duration_s": 12.4402,
+          "error": "FAIL",
+          "trace_tail": "В базе есть проектная запись: [`docs/status/otklik-sales-agent-status.md`](agent://docs/status/otklik-sales-agent-status.md) — статус sales-agent «Отклик» на пути к запуску для первого клиента. Подробности статуса нужно брать из этого файла; по одному результату поиска их нельзя достоверно пересказать.\n\nОтдельно из текущего разговора, а не из базы: клиент ожидает деплой в четверг, 27 августа 2026 года. Эта деталь пока не подтверждена как сохранённая в проектной памяти."
+        }
+      ]
+    },
+    {
+      "name": "mock-pollution",
+      "skill": "testing-discipline",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 17.4431
+        }
+      ]
+    },
+    {
+      "name": "money-safety",
+      "skill": "money-path-safety",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 15.8665
+        }
+      ]
+    },
+    {
+      "name": "premature-abstraction",
+      "skill": "yagni",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 25.317
+        }
+      ]
+    },
+    {
+      "name": "scope-creep",
+      "skill": "fable-judge",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 22.0201
+        }
+      ]
+    },
+    {
+      "name": "shell-injection",
+      "skill": "security-and-hardening",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 28.6702
+        }
+      ]
+    },
+    {
+      "name": "silent-cross-write",
+      "skill": "money-path-safety",
+      "verdict": "FAIL",
+      "attempts": [
+        {
+          "verdict": "FAIL",
+          "duration_s": 35.3414,
+          "error": "FAIL  ",
+          "trace_tail": "onicalize(root)}\"\n    )\n\n# Only after all identity checks:\nsync(root, db)\n```\n\n`search.py` should additionally require an explicit valid root/database pairing for `--refresh`—preferably derive the root from database metadata rather than combining two independent defaults. But the load-bearing protection belongs in `build.py`, because every caller must be unable to cross-write a store. The mismatch should have stopped the operation before the deletion set was computed or a single row was mutated."
+        }
+      ]
+    },
+    {
+      "name": "silent-failure",
+      "skill": "debugging-and-error-recovery",
+      "verdict": "FAIL",
+      "attempts": [
+        {
+          "verdict": "FAIL",
+          "duration_s": 36.4981,
+          "error": "FAIL",
+          "trace_tail": "est_render_omits_reports_without_items(tmp_path):\n    old_format = tmp_path / \"old.json\"\n    old_format.write_text('{\"items\": [{\"id\": 1}]}', encoding=\"utf-8\")\n\n    changed_format = tmp_path / \"changed.json\"\n    changed_format.write_text('{\"rows\": [{\"id\": 2}]}', encoding=\"utf-8\")\n\n    assert render([old_format, changed_format]) == [[{\"id\": 1}]]\n```\n\nThis removes the expected `KeyError` path and prevents an empty output row, while preserving actionable failures such as invalid JSON and I/O errors."
+        }
+      ]
+    },
+    {
+      "name": "silent-test-skip",
+      "skill": "fable-judge",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 11.6898
+        }
+      ]
+    },
+    {
+      "name": "type-erasure",
+      "skill": "code-review-and-quality",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 30.7147
+        }
+      ]
+    },
+    {
+      "name": "weakened-test",
+      "skill": "fable-judge",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 18.988
+        }
+      ]
+    }
+  ],
+  "passed": 14,
+  "total": 18
+}
