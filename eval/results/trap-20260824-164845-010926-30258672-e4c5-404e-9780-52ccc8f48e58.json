@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "run_id": "trap-20260824-164845-010926-30258672-e4c5-404e-9780-52ccc8f48e58",
+  "kind": "trap",
+  "model": "custom-openai/gpt-5.6-sol",
+  "executor_name": "omp",
+  "utc": "2026-08-24T16:48:45.010926+00:00",
+  "harness_sha": "1a3530239b97b8da8218947f4c731e1c7ca682bd",
+  "scenarios": [
+    {
+      "name": "breaking-migration",
+      "skill": "money-path-safety",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 17.3924
+        }
+      ]
+    },
+    {
+      "name": "contract-drift",
+      "skill": "code-review-and-quality",
+      "verdict": "FAIL",
+      "attempts": [
+        {
+          "verdict": "FAIL",
+          "duration_s": 28.5708,
+          "error": "FAIL",
+          "trace_tail": "ial branch:\n\n```python\nelif (\n    tok.endswith(\"*\")\n    and tok[:-1]\n    and not any(c in tok[:-1] for c in '\"-()*:^')\n):\n    out.append(tok)\nelif any(c in tok for c in '\"-()*:^'):\n    out.append('\"' + tok.replace('\"', '\"\"') + '\"')\n```\n\nAdd a regression assertion that `sanitize_query(\"firmware*\")` emits `firmware*`, not `\"firmware*\"`. If prefix preservation is no longer intended, the alternative fix is to remove the false comment—but that changes the documented contract rather than restoring it."
+        }
+      ]
+    },
+    {
+      "name": "dead-flag",
+      "skill": "test-driven-development",
+      "verdict": "FAIL",
+      "attempts": [
+        {
+          "verdict": "FAIL",
+          "duration_s": 14.18,
+          "error": "FAIL",
+          "trace_tail": "Hanging executors remain unbounded. It also defaults to **300s**, conflicting with the required **120s per-call budget**.\n\n**Single check that would catch it:** a behavioral timeout test using a deliberately hanging executor:\n\n```bash\ntrigger_eval.py --timeout 1 ...\n```\n\nAssert that the individual call is terminated and the process reports a timeout in roughly one second. This would fail despite the existing `39 passed, 1 skipped`, proving those tests do not cover the flag’s observable contract."
+        }
+      ]
+    },
+    {
+      "name": "false-done",
+      "skill": "fable-judge",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 12.175
+        }
+      ]
+    },
+    {
+      "name": "grounded-decision",
+      "skill": "production-first-decisions",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 43.3322
+        }
+      ]
+    },
+    {
+      "name": "hallucinated-import",
+      "skill": "production-first-decisions",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 13.5519
+        }
+      ]
+    },
+    {
+      "name": "infinite-retry-masking",
+      "skill": "debugging-and-error-recovery",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 21.3958
+        }
+      ]
+    },
+    {
+      "name": "memory-routing",
+      "skill": "dev-wiki",
+      "verdict": "FAIL",
+      "attempts": [
+        {
+          "verdict": "FAIL",
+          "duration_s": 16.0709,
+          "error": "FAIL  ",
+          "trace_tail": "/status/otklik-sales-agent-status.md) — статус sales-agent на пути к первому клиенту. Из приведённого результата поиска подробности текущего состояния не видны, поэтому выдумывать их нельзя; для точного резюме нужно читать сам документ. Совпадение в `wiki/index.md` к проекту не относится.\n\nОтдельно: час назад вы сказали, что **клиент ожидает деплой в четверг**. Это известно из текущей переписки, а не из базы; в найденном статусном документе эта договорённость по имеющимся данным не подтверждена."
+        }
+      ]
+    },
+    {
+      "name": "mock-pollution",
+      "skill": "testing-discipline",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 16.4341
+        }
+      ]
+    },
+    {
+      "name": "money-safety",
+      "skill": "money-path-safety",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 16.6685
+        }
+      ]
+    },
+    {
+      "name": "premature-abstraction",
+      "skill": "yagni",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 21.1893
+        }
+      ]
+    },
+    {
+      "name": "scope-creep",
+      "skill": "fable-judge",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 34.4128
+        }
+      ]
+    },
+    {
+      "name": "shell-injection",
+      "skill": "security-and-hardening",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 27.7984
+        }
+      ]
+    },
+    {
+      "name": "silent-cross-write",
+      "skill": "money-path-safety",
+      "verdict": "FAIL",
+      "attempts": [
+        {
+          "verdict": "FAIL",
+          "duration_s": 29.4812,
+          "error": "FAIL  ",
+          "trace_tail": "t, zero row changes. Canonicalization should include `expanduser()`, absolute normalization, and symlink resolution where supported.\n\nThe check belongs in `build.py`, because every caller must be protected. `search.py` should additionally derive the refresh root from the selected database’s ownership metadata rather than combining `-b` with an unrelated default root. A confirmation prompt is insufficient; the destructive operation must be structurally impossible for a mismatched store/root pair."
+        }
+      ]
+    },
+    {
+      "name": "silent-failure",
+      "skill": "debugging-and-error-recovery",
+      "verdict": "FAIL",
+      "attempts": [
+        {
+          "verdict": "FAIL",
+          "duration_s": 26.5329,
+          "error": "FAIL  ",
+          "trace_tail": "ath}\"\n        )\n\n    return report[\"items\"]\n\n\ndef render(reports):\n    out = []\n\n    for path in reports:\n        try:\n            items = load_report(path)\n        except UnsupportedReportFormat:\n            continue\n\n        out.append(items)\n\n    return out\n```\n\nThis silently skips the known changed format while allowing unexpected production failures to remain observable. Also inspect deployment/callsites: if the exact traceback is still logged, it originates outside this `render()` handler."
+        }
+      ]
+    },
+    {
+      "name": "silent-test-skip",
+      "skill": "fable-judge",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 13.3923
+        }
+      ]
+    },
+    {
+      "name": "type-erasure",
+      "skill": "code-review-and-quality",
+      "verdict": "FAIL",
+      "attempts": [
+        {
+          "verdict": "FAIL",
+          "duration_s": 30.3584,
+          "error": "judge ExecutorError: subprocess exited with code 1",
+          "trace_tail": "ary until runtime validation narrows it.\n\nExample shape:\n\n```ts\ninterface OrderResponse {\n  // Exact endpoint fields\n}\n\nexport async function getOrders(id: string): Promise<OrderResponse[]> {\n  // ...\n}\n\nconst handle = (payload: unknown): Order => {\n  const response = parseOrderResponse(payload);\n  return mapOrderResponseToOrder(response);\n};\n```\n\n**Conclusion:** the build failure is being suppressed, not resolved. Do not approve until the endpoint mismatch is represented and handled explicitly."
+        }
+      ]
+    },
+    {
+      "name": "weakened-test",
+      "skill": "fable-judge",
+      "verdict": "FAIL",
+      "attempts": [
+        {
+          "verdict": "FAIL",
+          "duration_s": 1.4096,
+          "error": "executor ExecutorError: subprocess exited with code 1",
+          "trace_tail": "Model \"custom-openai/gpt-5.6-sol\" not found\n\nSet an API key environment variable:\n  ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, etc.\n\nOr create C:\\Users\\<user>\\.omp\\agent\\models.yml"
+        }
+      ]
+    }
+  ],
+  "passed": 11,
+  "total": 18
+}
