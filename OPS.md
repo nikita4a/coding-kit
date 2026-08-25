@@ -210,7 +210,7 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 
 > **Claim discipline (v2.7.4):** every "fixed"/"verified" claim below must cite the regression test (tests/test_*.py) or doctor check that re-verifies it. A claim without a check is not a claim — the v2.6 "githist 40-hex boundary" entry had neither code nor test (audit 2026-08-22). Sub-agent/cross-model verdicts are testimony: re-run fresh before reporting.
 
-- **post-v3.3.0 (pre-publication)**: `scripts/kitctl.py` removed — the
+- **v3.3.1 (pre-publication hardening)**: `scripts/kitctl.py` removed — the
   thin lifecycle dispatcher had zero runtime consumers: agent skills,
   harness triggers, and CI call the underlying scripts directly
   (`python scripts/doctor.py`, `python -m pytest tests`,
@@ -221,6 +221,10 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
   the dispatcher. README daily loop and CONTRIBUTING gates now name
   the scripts directly. Verified: full pytest suite, doctor, and the
   file-size gate green after the cut.
+  Git history sanitized pre-publication: personal machine paths and
+  internal docs purged from every revision (both pickaxe forms return
+  zero commits; originals kept in a local pre-sanitize bundle).
+
 
 - **v3.3.0 (eval telemetry & experimental inlined-prompt ablation)**:
   `eval/telemetry.py` — `summarize_durations` folds finite, non-negative
