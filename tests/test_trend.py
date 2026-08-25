@@ -1,4 +1,5 @@
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -684,3 +685,23 @@ def test_duration_and_cost_helpers_reject_malformed():
     assert trend._reported_cost_str({"reported_usage": {"cost_usd": -0.5}}) == "-"
     assert trend._reported_cost_str({"reported_usage": {"cost_usd": True}}) == "-"
     assert trend._reported_cost_str({"reported_usage": {}}) == "-"
+
+def test_trend_cli_handles_unicode_evidence_on_ascii_stdout():
+    code = (
+        "import io, sys; "
+        "path = sys.argv[1]; sys.argv = [path]; "
+        "sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='ascii', errors='strict'); "
+        "exec(compile(open(path, encoding='utf-8').read(), path, 'exec'), "
+        "{'__name__': '__main__', '__file__': path})"
+    )
+    r = subprocess.run(
+        [sys.executable, "-c", code, str(ROOT / "eval" / "trend.py")],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=180,
+    )
+    assert r.returncode == 0, r.stdout
+    assert "Eval trends" in r.stdout
+

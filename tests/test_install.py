@@ -3,10 +3,13 @@
 
 Covers the silent-failure class that bit the kit three times:
 layout creation, idempotent re-run, engine link re-pointing,
-real-dir preservation, smoke exit-code propagation.
+real-dir preservation, smoke exit-code propagation, and the CLI
+argv guard ("--help" prints usage instead of installing, unknown
+argv refused).
 
 Run: python -m unittest discover -s tests -v
 """
+
 import importlib.util
 import os
 import shutil
@@ -100,6 +103,25 @@ class InstallTest(unittest.TestCase):
 
         with mock.patch.object(install.subprocess, "run", side_effect=fake_run):
             self.assertEqual(install.main(), 1)
+
+
+class InstallCliGuardTest(unittest.TestCase):
+    def _run(self, args):
+        return subprocess.run(
+            [sys.executable, str(KIT / "scripts" / "install.py")] + args,
+            capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=180)
+
+    def test_help_prints_usage_and_does_not_install(self):
+        r = self._run(["--help"])
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("usage", r.stdout.lower())
+        self.assertNotIn("Install done", r.stdout)
+
+    def test_unknown_arg_refused(self):
+        r = self._run(["--frobnicate"])
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertNotIn("Install done", r.stdout)
 
 
 if __name__ == "__main__":

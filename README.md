@@ -40,20 +40,17 @@ Pick your agent from `adapters/`:
 ## Daily loop
 
 ```bash
-python scripts/kitctl.py context               # every ~10 turns (0=ok 1=warn 2=critical)
+python scripts/context-monitor.py --check    # every ~10 turns (0=ok 1=warn 2=critical)
 python ~/.memory/db-tools/search_all.py "X"    # before "what do we know about X"
 ```
 
-`scripts/kitctl.py` — one command for the kit's lifecycle:
-- `doctor` — 10 self-diagnostic health checks.
-- `tests` — run unit test suite via pytest.
-- `gate` — file-size limits enforcement (`--ci`).
-- `eval` — trap-suite (18 adversarial scenarios, dry-run validate by default).
-- `tasks` — task smoke canary on 3 oracle-verified coding tasks (dry-run validate by default).
-- `triggers` — 80-query trigger evaluation.
-- `trend` — pass-rate history and failure evidence packets across runs.
-- `ablate` — experimental per-skill inlined-prompt contribution (requires a live `--executor`).
-- `warmup`, `checkpoint`, `context` — memory and session monitoring tools.
+Gates and checks (the kit's own lifecycle, run directly):
+- `python scripts/doctor.py` — 10 self-diagnostic health checks.
+- `python -m pytest tests -q` — unit test suite.
+- `python scripts/tools/check_file_sizes.py --ci` — file-size gate (hard limits).
+- `python memory/scripts/memory-warmup.py` — cross-chat memory warmup.
+- `python scripts/context-monitor.py --checkpoint` — markdown handoff block for a fresh chat.
+
 
 ## Evals & Trend Loop
 
@@ -70,7 +67,6 @@ The kit includes an evidence-first evaluation harness:
 Quick validation (no model, no live output):
 
 ```bash
-python scripts/kitctl.py --help
 python eval/ablate.py --help                          # ablation flags/contract
 python eval/runner.py --inline-skills                 # dry-run: validate scenarios + skills manifest (no executor prompts sent)
 python eval/task_runner.py --dry-run                  # validate task layout

@@ -6,9 +6,9 @@ Short version: issues and PRs are welcome. Keep the kit thin.
 
 1. **Run the gates before proposing a change**
    ```bash
-   python scripts/kitctl.py doctor    # 10 checks
-   python scripts/kitctl.py tests     # unit suite must be green
-   python scripts/kitctl.py gate      # file-size gate (hard limits)
+   python scripts/doctor.py                     # 10 checks
+   python -m pytest tests -q                    # unit suite must be green
+   python scripts/tools/check_file_sizes.py --ci # file-size gate (hard limits)
    ```
 2. **Skills are Hermes-compatible**: `SKILL.md` + YAML frontmatter
    (`name`, `description` ≤1024 chars), body <500 lines, progressive disclosure.
