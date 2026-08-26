@@ -1,5 +1,5 @@
 # Coding Agent OS — Operating Contract
-> **v3.3** | db-tools (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, task-smoke 3 (oracle verify), trigger-eval 80, schema-v1 results store, evidence trend, eval telemetry (duration + reported usage), inlined-prompt ablation, doctor 10 checks, 37 skills.
+> **v3.4** | db-tools (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, task-smoke 3 (oracle verify), trigger-eval 80 (+ behavior oracles for always-on skills), schema-v1 results store, evidence trend, eval telemetry (duration + reported usage), inlined-prompt ablation, doctor 10 checks, 37 skills.
 
 > **Product:** Coding Agent OS v2 | **CORE v2**
 > Profile root: this directory.
@@ -210,6 +210,20 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 
 > **Claim discipline (v2.7.4):** every "fixed"/"verified" claim below must cite the regression test (tests/test_*.py) or doctor check that re-verifies it. A claim without a check is not a claim — the v2.6 "githist 40-hex boundary" entry had neither code nor test (audit 2026-08-22). Sub-agent/cross-model verdicts are testimony: re-run fresh before reporting.
 
+- **v3.4.0 (focused release — behavior oracle & accidental-scope removal)**:
+  only the valid behavior-oracle feature from the reverted mixed commit
+  e7449f6 is kept: `eval/behavior_oracles.py` plus `signal_fired()` /
+  `has_oracle` and per-row/per-attempt `mode=oracle|name` in
+  `eval/trigger_eval.py` (`tests/test_trigger_eval.py`, BehaviorOracleTest).
+  The accidental screenpipe scope (`skills/screenpipe-api`,
+  `skills/screenpipe-cli`, profile.yml declarations — never had consumers)
+  and the four stale pre-oracle live result JSONs from e7449f6 (one leaked
+  the personal path) are excluded from this release. Version 3.4.0 across
+  VERSION and profile.yml; OPS.md and SKILL_RUNTIME.md headers v3.4.
+  Release-contract regression test `tests/test_release_contract.py` asserts
+  the release invariants (version, skill manifest 37 in sync, screenpipe
+  absent, no personal path in the public release text, stale results absent).
+  Verified: full pytest suite, doctor, and the file-size gate green.
 - **v3.3.1 (pre-publication hardening)**: `scripts/kitctl.py` removed — the
   thin lifecycle dispatcher had zero runtime consumers: agent skills,
   harness triggers, and CI call the underlying scripts directly
