@@ -17,6 +17,10 @@ Method (ported as ideas from the agentskills.io methodology):
   (should-not queries passed). Thresholds: trigger >= 0.5 and false <= 0.3.
 - anti-overfitting: do NOT paste words from failed queries into the
   description; find the real trigger gap and reword (see skills/learn).
+- always-on skills (ambient, never "loaded" on request) are measured by a
+  behavior oracle instead of the slug-name signal — the answer must invoke
+  the skill's mandated reflex commands/paths (see behavior_oracles.py), not
+  merely acknowledge the request.
 
 The model backend plugs in exactly like eval/runner.py: `--executor CMD`
 reads the prompt from stdin, prints the answer to stdout (e.g.
@@ -44,6 +48,7 @@ ROOT = HERE.parent                              # kit root
 sys.path.insert(0, str(HERE))
 from runner import resolve_cmd, run_prompt      # same executor contract
 from telemetry import load_reported_usage, summarize_durations
+from behavior_oracles import behavior_fired, has_oracle
 
 TRIGGER_RATE_MIN = 0.5
 FALSE_RATE_MAX = 0.3
@@ -56,6 +61,13 @@ def detect(slug: str, answer: str) -> bool:
     slug = re.escape(slug)
     return re.search(rf"(?<![a-z0-9_-]){slug}(?![a-z0-9_-])",
                      answer, re.IGNORECASE) is not None
+
+
+def signal_fired(skill: str, answer: str) -> bool:
+    """Behavior oracle for always-on skills; name detection otherwise."""
+    if has_oracle(skill):
+        return behavior_fired(skill, answer)
+    return detect(skill, answer)
 
 
 def validate(queries: list[dict]) -> list[str]:
@@ -123,6 +135,7 @@ def run_query_detailed(cmd: list[str], q: dict, runs: int,
     hits = 0
     attempts: list[dict] = []
     errors: list[str] = []
+    mode = "oracle" if has_oracle(q["skill"]) else "name"
     first_trace: "str | None" = None
     for _ in range(runs):
         t0 = time.perf_counter()
@@ -131,7 +144,7 @@ def run_query_detailed(cmd: list[str], q: dict, runs: int,
         trace_tail = None
         try:
             answer = run_prompt(cmd, prompt_for(q["query"]), timeout=timeout)
-            is_fired = detect(q["skill"], answer)
+            is_fired = signal_fired(q["skill"], answer)
         except subprocess.TimeoutExpired as e:
             err_msg = f"TimeoutExpired: command timed out after {timeout}s"
             out = getattr(e, "stderr", None) or getattr(e, "stdout", None)
@@ -152,6 +165,7 @@ def run_query_detailed(cmd: list[str], q: dict, runs: int,
         att: dict = {
             "fired": is_fired,
             "duration_s": dur,
+            "mode": mode,
         }
         if err_msg:
             att["error"] = err_msg
@@ -175,6 +189,7 @@ def run_query_detailed(cmd: list[str], q: dict, runs: int,
         "fired": fired_aggregate,
         "verdict": verdict,
         "duration_s": total_dur,
+        "mode": mode,
         "attempts": attempts,
     }
     if errors:

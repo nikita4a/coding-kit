@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT / "eval"))
 from trigger_eval import detect, summarize, validate
 import trigger_eval
 import runner
+import behavior_oracles
 
 
 class ValidateTest(unittest.TestCase):
@@ -557,6 +558,67 @@ class OutOptionRemovedTest(unittest.TestCase):
         self.assertEqual(r.returncode, 0)
         self.assertNotIn("--out", r.stdout)
 
+class BehaviorOracleTest(unittest.TestCase):
+    def test_fired_matches_machinery_not_slug(self):
+        # The oracle must measure doctrine application (the memory reflex
+        # commands), never the skill's own name — naming is exactly the
+        # signal that fails for ambient always-on skills.
+        self.assertTrue(behavior_oracles.behavior_fired(
+            "dev-wiki", 'python ~/.memory/db-tools/search_all.py "x"'))
+        self.assertTrue(behavior_oracles.behavior_fired(
+            "dev-wiki", 'python ~/.memory/db-tools/findings.py add "t"'))
+        self.assertFalse(behavior_oracles.behavior_fired(
+            "dev-wiki", "the dev-wiki skill handles memory"))
+
+    def test_has_oracle_only_for_always_on(self):
+        self.assertTrue(behavior_oracles.has_oracle("dev-wiki"))
+        self.assertFalse(behavior_oracles.has_oracle("yagni"))
+
+    def test_signal_fired_falls_back_to_name_detection(self):
+        # Non-oracle skills keep the slug-name signal.
+        self.assertTrue(trigger_eval.signal_fired("yagni", "SKILLS LOADED: yagni"))
+        self.assertFalse(trigger_eval.signal_fired("yagni", "no skill named"))
+        # Oracle skills ignore the name and check doctrine machinery.
+        self.assertTrue(trigger_eval.signal_fired(
+            "dev-wiki", "run search_all.py first"))
+        self.assertFalse(trigger_eval.signal_fired(
+            "dev-wiki", "I'll save that to memory for later"))
+
+    def test_run_query_detailed_records_oracle_mode(self):
+        def fake_run_prompt(cmd, prompt, timeout=None):
+            return "I'd run search_all.py to look that up"
+
+        orig = trigger_eval.run_prompt
+        trigger_eval.run_prompt = fake_run_prompt
+        try:
+            row = trigger_eval.run_query_detailed(
+                ["mock"],
+                {"skill": "dev-wiki", "should": True, "query": "what do we know"},
+                runs=1)
+        finally:
+            trigger_eval.run_prompt = orig
+
+        self.assertEqual(row["mode"], "oracle")
+        self.assertTrue(row["fired"])
+        self.assertEqual(row["verdict"], "PASS")
+        self.assertTrue(row["attempts"][0]["fired"])
+
+    def test_name_skills_record_name_mode(self):
+        def fake_run_prompt(cmd, prompt, timeout=None):
+            return "SKILLS LOADED: yagni"
+
+        orig = trigger_eval.run_prompt
+        trigger_eval.run_prompt = fake_run_prompt
+        try:
+            row = trigger_eval.run_query_detailed(
+                ["mock"],
+                {"skill": "yagni", "should": True, "query": "add a cache?"},
+                runs=1)
+        finally:
+            trigger_eval.run_prompt = orig
+
+        self.assertEqual(row["mode"], "name")
+        self.assertTrue(row["fired"])
 
 if __name__ == "__main__":
     unittest.main()
