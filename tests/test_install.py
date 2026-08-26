@@ -143,5 +143,63 @@ class InstallMemoryRootValidationTest(unittest.TestCase):
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
+class LinkEngineHardeningTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="kit-link-test-"))
+        self.root = self.tmp / "mem"
+        self.root.mkdir(parents=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_missing_powershell_preflight_on_nt_raises(self):
+        with mock.patch("os.name", "nt"), \
+             mock.patch.object(install.shutil, "which", return_value=None):
+            with self.assertRaises(RuntimeError) as ctx:
+                install.link_engine(self.root)
+            self.assertIn("PowerShell executable", str(ctx.exception))
+            self.assertIn("not found", str(ctx.exception))
+
+    def test_link_creation_failure_rolls_back_previous_link(self):
+        target = self.root / "db-tools"
+        other_engine = self.tmp / "other-engine"
+        other_engine.mkdir()
+        _make_foreign_link(target, other_engine)
+        self.assertTrue(install._is_link(target))
+
+        if os.name == "nt":
+            real_run = subprocess.run
+            call_count = 0
+            def failing_run(*args, **kwargs):
+                nonlocal call_count
+                call_count += 1
+                if call_count == 1:
+                    raise subprocess.CalledProcessError(1, "powershell", output="boom")
+                return real_run(*args, **kwargs)
+
+            with mock.patch.object(install.subprocess, "run", side_effect=failing_run):
+                with self.assertRaises(RuntimeError) as ctx:
+                    install.link_engine(self.root)
+                self.assertIn("Failed to link engine", str(ctx.exception))
+                self.assertIn("Restored previous link", str(ctx.exception))
+                self.assertTrue(install._is_link(target))
+                self.assertEqual(target.resolve(), other_engine.resolve())
+        else:
+            original_symlink = Path.symlink_to
+            call_count = 0
+            def failing_symlink(p, dest, **kwargs):
+                nonlocal call_count
+                call_count += 1
+                if call_count == 1:
+                    raise OSError("symlink failed")
+                return original_symlink(p, dest, **kwargs)
+
+            with mock.patch.object(Path, "symlink_to", side_effect=failing_symlink):
+                with self.assertRaises(RuntimeError) as ctx:
+                    install.link_engine(self.root)
+                self.assertIn("Failed to link engine", str(ctx.exception))
+                self.assertIn("Restored previous link", str(ctx.exception))
+                self.assertTrue(install._is_link(target))
+                self.assertEqual(target.resolve(), other_engine.resolve())
 if __name__ == "__main__":
     unittest.main()

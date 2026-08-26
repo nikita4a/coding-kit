@@ -67,27 +67,76 @@ def link_engine(root: Path) -> None:
         if target.resolve() == ENGINE.resolve():
             print("  db-tools already linked to this kit")
             return
-        if os.name == "nt":
-            os.rmdir(target)  # junctions are directories on NT
-        else:
-            target.unlink()  # POSIX symlinks are not
     elif target.exists():
         print(f"  NOTE: {target} is a real directory; replace it manually "
               f"to use this kit's engine.")
         return
-    if os.name == "nt":
-        # paths travel via env, not -Command text: no injection, and
-        # $args is unavailable in -Command mode (script-only)
-        env = dict(os.environ, KIT_LINK_PATH=str(target),
-                   KIT_LINK_TARGET=str(ENGINE))
-        subprocess.run(
-            ["powershell", "-NoProfile", "-Command",
-             "New-Item -ItemType Junction -Path $env:KIT_LINK_PATH "
-             "-Target $env:KIT_LINK_TARGET | Out-Null"],
-            check=True, env=env,
+
+    if os.name == "nt" and not shutil.which("powershell"):
+        raise RuntimeError(
+            "PowerShell executable ('powershell') not found in PATH; "
+            "PowerShell is required on Windows to create directory junctions. "
+            "Please install/enable PowerShell or create the junction manually: "
+            f"New-Item -ItemType Junction -Path '{target}' -Target '{ENGINE}'"
         )
-    else:
-        target.symlink_to(ENGINE, target_is_directory=True)
+
+    prev_target = None
+    was_link = _is_link(target)
+    if was_link:
+        try:
+            prev_target = target.resolve()
+        except OSError:
+            try:
+                raw = os.readlink(target)
+                if isinstance(raw, str) and raw.startswith("\\\\?\\"):
+                    raw = raw[4:]
+                prev_target = Path(raw)
+            except OSError:
+                prev_target = None
+        if os.name == "nt":
+            os.rmdir(target)  # junctions are directories on NT
+        else:
+            target.unlink()  # POSIX symlinks are not
+    try:
+        if os.name == "nt":
+            # paths travel via env, not -Command text: no injection, and
+            # $args is unavailable in -Command mode (script-only)
+            env = dict(os.environ, KIT_LINK_PATH=str(target),
+                       KIT_LINK_TARGET=str(ENGINE))
+            subprocess.run(
+                ["powershell", "-NoProfile", "-Command",
+                 "New-Item -ItemType Junction -Path $env:KIT_LINK_PATH "
+                 "-Target $env:KIT_LINK_TARGET | Out-Null"],
+                check=True, env=env, capture_output=True, text=True,
+                encoding="utf-8", errors="replace",
+            )
+        else:
+            target.symlink_to(ENGINE, target_is_directory=True)
+    except Exception as exc:
+        restored = False
+        if was_link and prev_target:
+            try:
+                if os.name == "nt":
+                    env = dict(os.environ, KIT_LINK_PATH=str(target),
+                               KIT_LINK_TARGET=str(prev_target))
+                    subprocess.run(
+                        ["powershell", "-NoProfile", "-Command",
+                         "New-Item -ItemType Junction -Path $env:KIT_LINK_PATH "
+                         "-Target $env:KIT_LINK_TARGET | Out-Null"],
+                        check=True, env=env, capture_output=True, text=True,
+                        encoding="utf-8", errors="replace",
+                    )
+                    restored = True
+                else:
+                    target.symlink_to(Path(prev_target), target_is_directory=True)
+                    restored = True
+            except Exception:
+                pass
+        msg = f"Failed to link engine ({target} -> {ENGINE}): {exc}."
+        if restored:
+            msg += f" Restored previous link to {prev_target}."
+        msg += " Please re-run install or create the link manually."
+        raise RuntimeError(msg) from None
     print(f"  linked {target} -> {ENGINE}")
 
 
@@ -137,7 +186,11 @@ def main(argv: list = None) -> int:
         print(f"  NOTE: legacy data found at {legacy}. Move its Wiki posts "
               f"into {root / 'Wiki'}/<type>/ or set MEMORY_ROOT={legacy}.")
 
-    link_engine(root)
+    try:
+        link_engine(root)
+    except RuntimeError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
     build_indexes(root)
 
     smoke = subprocess.run(
