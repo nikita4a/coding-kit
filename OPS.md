@@ -1,5 +1,5 @@
 # Coding Agent OS — Operating Contract
-> **v3.4.1** | db-tools (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, task-smoke 3 (oracle verify), trigger-eval 80 (+ behavior oracles for always-on skills), schema-v1 results store, evidence trend, eval telemetry (duration + reported usage), inlined-prompt ablation, ponytail skill, doctor 10 checks, 38 skills.
+> **v3.4.2** | db-tools (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, task-smoke 3 (oracle verify), trigger-eval 80 (+ behavior oracles for always-on skills), schema-v1 results store, evidence trend, eval telemetry (duration + reported usage), inlined-prompt ablation, ponytail skill, doctor 9 checks, 38 skills.
 
 > **Product:** Coding Agent OS v2 | **CORE v2**
 > Profile root: this directory.
@@ -179,25 +179,13 @@ python scripts/install.py   # NEVER delete research.db
 
 ---
 
-## 7. CONTEXT MONITOR
-
-Every ~10 turns: `python scripts/context-monitor.py --check`
-- WARN (100+ turns / 80%): remind — "context is filling up"
-- CRITICAL (150+ turns / 90%): STOP — "start a new chat"
-- Context >50% (sharp zone): checkpoint delta to findings — handoff survives
-  even if the session dies before Session End:
-  `python ~/.memory/db-tools/findings.py add "checkpoint <date>" --text "DONE: / DECISIONS: / NEXT: / FILES: (<=200 words, delta since last checkpoint, non-obvious only)" --tags checkpoint`
-- `python scripts/context-monitor.py --dump-checkpoint` — markdown handoff block for the new chat
-
----
-
-## 8. DRIFT KILLER
+## 7. DRIFT KILLER
 
 Every ~10 turns: followed the method? Checked memory? Every claim backed by fresh evidence? 2+ NO → reread OPS.md.
 
 ---
 
-## 9. FILE-SIZE GATE (god-files forbidden)
+## 8. FILE-SIZE GATE (god-files forbidden)
 
 Code — 500/1000 lines (soft/hard), docs — 300/500. File at the limit → CUT, don't grow:
 per-concern modules + thin barrel. Check:
@@ -206,9 +194,44 @@ python scripts/tools/check_file_sizes.py            # report
 python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 ```
 
-## 10. CHANGELOG
+## 9. CHANGELOG
 
 > **Claim discipline (v2.7.4):** every "fixed"/"verified" claim below must cite the regression test (tests/test_*.py) or doctor check that re-verifies it. A claim without a check is not a claim — the v2.6 "githist 40-hex boundary" entry had neither code nor test (audit 2026-08-22). Sub-agent/cross-model verdicts are testimony: re-run fresh before reporting.
+
+- **v3.4.2 (persona → behavioral rules + context-monitor removal)**:
+  identity/persona declarations replaced with behavioral rules per 2026
+  persona-prompting research (expert personas add no accuracy for code tasks
+  and hurt clarity). OPS §1 and AGENTS §1 drop the persona role
+  declarations, keep the Three pillars, language rule, and stop-word, and
+  open with the one-line method: plan → TDD → implement → verify → report;
+  evidence over claims. The AGENTS self-check and the OPS drift-killer
+  self-check now ask "do I follow the method / check memory / back every
+  claim with fresh evidence?" instead of a persona identity check.
+  engineering-persona SKILL.md description clarified as response-format
+  rules (not a persona). Adapter Verify sections (UNIVERSAL, gemini,
+  antigravity, zcode) and the eval/trigger_eval.py prelude converted from
+  "who are you" identity checks to behavioral checks (show the method, search
+  memory through db-tools).
+  `scripts/context-monitor.py` and `tests/test_context_monitor.py` are
+  removed (YAGNI — no consumer; the context-reflex was unclaimed dead
+  weight, and keeping an unused script is exactly the accidental scope the
+  release removes). doctor drops the reflex-command check it guarded and is
+  now 9 checks; the OPS CONTEXT MONITOR section and the AGENTS reflex block
+  are stripped, README/SKILL_RUNTIME/adapters no longer command it. Version 3.4.2
+  across VERSION and profile.yml; OPS.md and SKILL_RUNTIME.md headers
+  v3.4.2; skill count stays 38. Release-contract test
+  `tests/test_release_contract.py` extended to assert no identity-declaration
+  phrase in the public release text, the 3.4.2 version, and the
+  context-monitor script/test absent plus no ACTIVE doc reference. Sources:
+  Wharton GAIL "Playing Pretend: Expert Personas Don't Improve Factual
+  Accuracy" (2025-12-07, Basil et al., SSRN 5879722,
+  gail.wharton.upenn.edu/research-and-insights/playing-pretend-expert-
+  personas/); PRISM arXiv 2603.18507 (2026-03, expert personas improve
+  alignment/safety but damage knowledge retrieval); arXiv 2605.29420
+  (2026-05, roles raise expertise depth, reduce clarity; baseline wins in
+  tech/science/finance/legal); arXiv 2311.10054 (EMNLP 2024 Findings,
+  personas in system prompts do not improve factual performance). Verified:
+  full pytest suite, doctor, and the file-size gate green.
 
 - **v3.4.1 (ponytail skill)**: `skills/ponytail/SKILL.md` — lazy senior-dev
   mode adapted from DietrichGebert/ponytail (MIT, credits note preserved) into

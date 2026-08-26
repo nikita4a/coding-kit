@@ -12,17 +12,19 @@ historical changelog wording that was accurate at the time:
   "not a polite assistant") — the v3.4.2 persona-to-behavior conversion must
   hold across README/OPS/AGENTS/SKILL_RUNTIME/CONTRIBUTING/SECURITY/
   profile.yml + adapters.
-- The accidental-scope skill family (two skills that never had a consumer,
+- the accidental-scope skill family (two skills that never had a consumer,
   added only in the reverted mixed commit) is absent from the skill dirs and
   the manifest. The slugs are built from parts so this meta-test's own source
   stays free of the very strings it asserts are gone; public docs may name
   the feature only to document its removal.
-- The current public release text (README/OPS/AGENTS/SKILL_RUNTIME/
+- the current public release text (README/OPS/AGENTS/SKILL_RUNTIME/
   CONTRIBUTING/SECURITY/profile.yml + adapters) contains no literal personal
   machine path in any separator form (slash, single backslash, or
   JSON-escaped double backslash) — the v3.3.1 sanitization must hold.
-- The four stale pre-oracle result basenames (from the reverted mixed
+- the four stale pre-oracle result basenames (from the reverted mixed
   commit) are absent from eval/results/.
+- the context-monitor script and its tests are removed (YAGNI), and no ACTIVE
+  doc/code references it — the OPS.md CHANGELOG may name it historically.
 
 Run: python -m pytest tests/test_release_contract.py -v
 """
@@ -110,6 +112,25 @@ def _release_text() -> str:
     return "\n".join(parts)
 
 
+def _active_release_text() -> str:
+    """Current public release text, EXCLUDING the OPS.md CHANGELOG section.
+
+    The changelog is a historical record and may legitimately name tools
+    (e.g. context-monitor) that a later release removed. The ACTIVE release
+    text must not, so the two consumers separate.
+    """
+    parts = []
+    for p in _public_release_files():
+        try:
+            t = p.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        if p.name == "OPS.md":
+            t = re.split(r"^##\s+\d+\.\s+CHANGELOG", t, 1, flags=re.M)[0]
+        parts.append(t)
+    return "\n".join(parts)
+
+
 class VersionContractTest(unittest.TestCase):
     def test_version_equals_3_4_2(self):
         self.assertEqual(
@@ -182,6 +203,25 @@ class StaleResultsAbsentTest(unittest.TestCase):
         self.assertEqual(
             present, [],
             "stale pre-oracle results must be absent from eval/results")
+
+
+class ContextMonitorAbsentTest(unittest.TestCase):
+    def test_context_monitor_script_absent(self):
+        self.assertFalse(
+            (ROOT / "scripts" / "context-monitor.py").exists(),
+            "context-monitor script must be removed (YAGNI: no consumer)")
+
+    def test_context_monitor_tests_absent(self):
+        self.assertFalse(
+            (ROOT / "tests" / "test_context_monitor.py").exists(),
+            "context-monitor tests must be removed with the script")
+
+    def test_no_active_doc_references_context_monitor(self):
+        text = _active_release_text()
+        self.assertNotIn(
+            "context-monitor", text,
+            "active docs must not reference the removed context-monitor "
+            "script (historical changelog excepted)")
 
 
 if __name__ == "__main__":
