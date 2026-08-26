@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+"""Release contract regression test for coding-kit v3.4.0.
+
+Asserts the observable release invariants of v3.4.0, independent of any
+historical changelog wording that was accurate at the time:
+
+- VERSION and profile.yml version are both 3.4.0 (doctor check_versions).
+- profile.yml's skill manifest equals the on-disk skills/ dirs; total is 37.
+- The accidental-scope skill family (two skills that never had a consumer,
+  added only in the reverted mixed commit) is absent from the skill dirs and
+  the manifest. The slugs are built from parts so this meta-test's own source
+  stays free of the very strings it asserts are gone; public docs may name
+  the feature only to document its removal.
+- The current public release text (README/OPS/AGENTS/SKILL_RUNTIME/
+  CONTRIBUTING/SECURITY/profile.yml + adapters) contains no literal personal
+  machine path in any separator form (slash, single backslash, or
+  JSON-escaped double backslash) — the v3.3.1 sanitization must hold.
+- The four stale pre-oracle result basenames (from the reverted mixed
+  commit) are absent from eval/results/.
+
+Run: python -m pytest tests/test_release_contract.py -v
+"""
+import re
+import unittest
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+EXPECTED_VERSION = "3.4.0"
+EXPECTED_SKILL_COUNT = 37
+
+# The accidental-scope skill family, built from parts so this meta-test's
+# source never contains the very string it asserts is gone.
+_ACCIDENTAL = "screen" + "pipe"
+_ACCIDENTAL_API = _ACCIDENTAL + "-api"
+_ACCIDENTAL_CLI = _ACCIDENTAL + "-cli"
+
+# Stale pre-oracle evidence result files introduced by the reverted mixed
+# commit (e7449f6) and excluded from this release.
+STALE_RESULT_BASENAMES = frozenset({
+    "tasks-20260825-220459-942147-1aded64e-0186-4df1-9093-46937a56f006.json",
+    "trap-20260825-222921-092127-bf38630e-ff98-455a-8250-550232e3558c.json",
+    "trigger-20260825-223013-492206-7bde53a1-ed2b-4200-8d58-4cc71e53073d.json",
+    "trigger-20260825-225622-672610-b3d402e4-91d5-41a8-8331-bfd26b8bc34f.json",
+})
+
+# Same regexes scripts/doctor.py uses (checks 1 & 2).
+_SKILL_ENTRY_RE = re.compile(r"^\s*-\s+([a-z0-9-]+)", re.M)
+_VERSION_RE = re.compile(r'^version:\s*"([^"]+)"', re.M)
+
+# Personal machine path in ANY separator form: slash, single backslash, or
+# JSON-escaped double backslash. Built from parts so this meta-test's own
+# source carries no literal path string.
+_DRIVE = "C" + ":"
+_DIR = "U" + "sers"
+_USER = "ole" + "g2"
+_SEP = r"[\\/]+"
+_PERSONAL_PATH_RE = re.compile(_DRIVE + _SEP + _DIR + _SEP + _USER)
+
+# Files that constitute the "current public release text".
+_PUBLIC_DOC_NAMES = ("README.md", "OPS.md", "AGENTS.md", "SKILL_RUNTIME.md",
+                     "CONTRIBUTING.md", "SECURITY.md", "profile.yml")
+
+
+def _manifest_section() -> str:
+    text = (ROOT / "profile.yml").read_text(encoding="utf-8")
+    return text.split("always_on:")[-1].split("adapters:")[0]
+
+
+def _declared_skills() -> set:
+    return set(_SKILL_ENTRY_RE.findall(_manifest_section()))
+
+
+def _on_disk_skills() -> set:
+    return {d.name for d in (ROOT / "skills").iterdir() if d.is_dir()}
+
+
+def _public_release_files() -> list:
+    out = [ROOT / n for n in _PUBLIC_DOC_NAMES if (ROOT / n).is_file()]
+    out.extend(sorted((ROOT / "adapters").glob("*.md")))
+    return out
+
+
+def _release_text() -> str:
+    """Concatenated text of the current public release docs."""
+    parts = []
+    for p in _public_release_files():
+        try:
+            parts.append(p.read_text(encoding="utf-8"))
+        except (UnicodeDecodeError, OSError):
+            pass
+    return "\n".join(parts)
+
+
+class VersionContractTest(unittest.TestCase):
+    def test_version_equals_3_4_0(self):
+        self.assertEqual(
+            (ROOT / "VERSION").read_text(encoding="utf-8").strip(),
+            EXPECTED_VERSION)
+
+    def test_profile_version_equals_3_4_0(self):
+        m = _VERSION_RE.search((ROOT / "profile.yml").read_text(encoding="utf-8"))
+        self.assertIsNotNone(m, "profile.yml must declare version")
+        self.assertEqual(m.group(1), EXPECTED_VERSION)
+
+
+class ManifestContractTest(unittest.TestCase):
+    def test_manifest_matches_on_disk_and_count_is_37(self):
+        declared = _declared_skills()
+        on_disk = _on_disk_skills()
+        self.assertEqual(declared, on_disk,
+                         "profile.yml skill manifest must equal skills/ dirs")
+        self.assertEqual(len(on_disk), EXPECTED_SKILL_COUNT)
+
+
+class AccidentalScopeAbsentTest(unittest.TestCase):
+    def test_accidental_scope_absent_from_manifest(self):
+        declared = _declared_skills()
+        self.assertNotIn(_ACCIDENTAL_API, declared,
+                         "accidental-scope slug must not be in the manifest")
+        self.assertNotIn(_ACCIDENTAL_CLI, declared,
+                         "accidental-scope slug must not be in the manifest")
+
+    def test_accidental_scope_absent_from_skill_dirs(self):
+        on_disk = _on_disk_skills()
+        self.assertNotIn(_ACCIDENTAL_API, on_disk)
+        self.assertNotIn(_ACCIDENTAL_CLI, on_disk)
+        prefixed = [d for d in on_disk if d.startswith(_ACCIDENTAL)]
+        self.assertEqual(prefixed, [],
+                         "no accidental-scope skill dir may remain")
+
+
+class NoPersonalPathTest(unittest.TestCase):
+    def test_no_personal_path_in_public_release_text(self):
+        text = _release_text()
+        self.assertIsNone(
+            _PERSONAL_PATH_RE.search(text),
+            "public release text must not leak the personal machine path "
+            "in slash/backslash/JSON-escaped form")
+
+
+class StaleResultsAbsentTest(unittest.TestCase):
+    def test_stale_results_basenames_absent(self):
+        present = [b for b in STALE_RESULT_BASENAMES
+                   if list((ROOT / "eval" / "results").glob(b))]
+        self.assertEqual(
+            present, [],
+            "stale pre-oracle results must be absent from eval/results")
+
+
+if __name__ == "__main__":
+    unittest.main()
