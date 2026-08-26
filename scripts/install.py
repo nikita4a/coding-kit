@@ -37,7 +37,13 @@ ENGINE_VERSION = "2.9"
 
 def memory_root() -> Path:
     env = os.environ.get("MEMORY_ROOT")
-    return Path(env).expanduser() if env else Path.home() / ".memory"
+    if env:
+        root = Path(env).expanduser()
+        if not root.is_absolute():
+            raise RuntimeError(
+                f"MEMORY_ROOT must be an absolute path: {env!r}")
+        return root
+    return Path.home() / ".memory"
 
 
 def _is_link(p: Path) -> bool:
@@ -108,7 +114,11 @@ def main(argv: list = None) -> int:
               "MEMORY_ROOT environment variable.\n"
               "Usage: python scripts/install.py [--help]", file=sys.stderr)
         return 2
-    root = memory_root()
+    try:
+        root = memory_root()
+    except RuntimeError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
     print(f"coding-kit install -> {root}")
     for d in [root / "db", root / "scripts"] + [
             root / "Wiki" / t for t in WIKI_TYPES]:

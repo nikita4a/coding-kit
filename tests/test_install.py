@@ -124,5 +124,24 @@ class InstallCliGuardTest(unittest.TestCase):
         self.assertNotIn("Install done", r.stdout)
 
 
+class InstallMemoryRootValidationTest(unittest.TestCase):
+    def test_relative_memory_root_rejected_by_memory_root_helper(self):
+        with mock.patch.dict(os.environ, {"MEMORY_ROOT": "relative/path"}):
+            with self.assertRaises(RuntimeError) as ctx:
+                install.memory_root()
+            self.assertIn("MEMORY_ROOT must be an absolute path", str(ctx.exception))
+
+    def test_relative_memory_root_rejected_by_main_without_creating_anything(self):
+        tmp = Path(tempfile.mkdtemp(prefix="kit-rel-test-"))
+        try:
+            rel_target = tmp / "relative_mem_root"
+            with mock.patch.dict(os.environ, {"MEMORY_ROOT": "relative_mem_root"}), \
+                 mock.patch("os.getcwd", return_value=str(tmp)):
+                ret = install.main()
+                self.assertNotEqual(ret, 0)
+                self.assertFalse(rel_target.exists())
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
 if __name__ == "__main__":
     unittest.main()
