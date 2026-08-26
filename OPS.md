@@ -1,5 +1,5 @@
 # Coding Agent OS — Operating Contract
-> **v3.4.2** | db-tools (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, task-smoke 3 (oracle verify), trigger-eval 80 (+ behavior oracles for always-on skills), schema-v1 results store, evidence trend, eval telemetry (duration + reported usage), inlined-prompt ablation, ponytail skill, doctor 9 checks, 38 skills.
+> **v3.4.3** | db-tools (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, task-smoke 3 (oracle verify), trigger-eval 80 (+ behavior oracles for always-on skills), schema-v1 results store, evidence trend, eval telemetry (duration + reported usage), inlined-prompt ablation, ponytail skill, doctor 9 checks, 38 skills.
 
 > **Product:** Coding Agent OS v2 | **CORE v2**
 > Profile root: this directory.
@@ -197,6 +197,30 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 ## 9. CHANGELOG
 
 > **Claim discipline (v2.7.4):** every "fixed"/"verified" claim below must cite the regression test (tests/test_*.py) or doctor check that re-verifies it. A claim without a check is not a claim — the v2.6 "githist 40-hex boundary" entry had neither code nor test (audit 2026-08-22). Sub-agent/cross-model verdicts are testimony: re-run fresh before reporting.
+
+- **v3.4.3 (installer resilience, eval hardening & contract alignment)**:
+  installer (`scripts/install.py`) hardened with strict absolute-path validation
+  for `MEMORY_ROOT` (S-L1, `tests/test_install.py:InstallMemoryRootValidationTest`),
+  PowerShell preflight check and automated rollback on junction/symlink creation
+  failure (S-M1, `tests/test_install.py:LinkEngineHardeningTest`), early detection
+  and rejection of unsupported isolated/embedded Python environments (S-M2,
+  `tests/test_install.py:PythonEnvironmentCheckTest`), and engine schema version
+  aligned to 2.9 (S-L4, `scripts/doctor.py:check_engine_sync`, `tests/test_doctor.py`).
+  Eval harness hardened with bounded prefix and untrusted candidate delimiters in
+  trap-suite judge prompts (E-2, `eval/runner.py:judge_one`, `tests/test_json_output.py`),
+  explicit top-level `mode` discriminator (`"dry-run"` vs `"live"`) in task runner
+  and safe legacy zero-result filtering in trend reporting (E-3, `eval/task_runner.py`,
+  `eval/trend.py`, `tests/test_task_runner.py`, `tests/test_trend.py`). Asset counts
+  explicitly asserted by release contract: 38 skills, 18 trap scenarios, 80 trigger queries,
+  3 task smokes, 9 doctor checks (E-1, `tests/test_release_contract.py:AssetCountsContractTest`).
+  Stale instruction paths (`scripts/task-brief`, `eval/workflow.js`, `skills/fable-method/eval/`)
+  cleared from `fable-judge` and SDD skills (A-R1/A-R2, `tests/test_release_contract.py:StaleDocReferencesTest`).
+  Ponytail skill MIT license added (`skills/ponytail/LICENSE`), supported versions table
+  in `SECURITY.md` updated with `3.4.x`, and OPS.md §6 table formatting repaired.
+  Deferred per review scope: H-F1 deletion, ME-1 migration, ME-4 peripheral tests,
+  D-R5/D-R6, S-L2/S-L3, I6, and threat-model redesign. Version 3.4.3 across VERSION,
+  profile.yml, OPS.md, SKILL_RUNTIME.md, and test_release_contract.py. Verified: full
+  pytest suite, doctor, and file-size gate green.
 
 - **v3.4.2 (persona → behavioral rules + context-monitor removal)**:
   identity/persona declarations replaced with behavioral rules per 2026

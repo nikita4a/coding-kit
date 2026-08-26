@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Release contract regression test for coding-kit v3.4.2.
+"""Release contract regression test for coding-kit v3.4.3.
 
 Asserts the observable release invariants of v3.4.2, independent of any
 historical changelog wording that was accurate at the time:
 
-- VERSION and profile.yml version are both 3.4.2 (doctor check_versions).
+- VERSION and profile.yml version are both 3.4.3 (doctor check_versions).
 - profile.yml's skill manifest equals the on-disk skills/ dirs; total is 38.
 - the ponytail skill is present in both the manifest and the skill dirs.
 - the current public release text no longer contains any identity-declaration
@@ -35,7 +35,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-EXPECTED_VERSION = "3.4.2"
+EXPECTED_VERSION = "3.4.3"
 EXPECTED_SKILL_COUNT = 38
 EXPECTED_SCENARIO_COUNT = 18
 EXPECTED_TRIGGER_QUERY_COUNT = 80
@@ -135,12 +135,12 @@ def _active_release_text() -> str:
 
 
 class VersionContractTest(unittest.TestCase):
-    def test_version_equals_3_4_2(self):
+    def test_version_equals_3_4_3(self):
         self.assertEqual(
             (ROOT / "VERSION").read_text(encoding="utf-8").strip(),
             EXPECTED_VERSION)
 
-    def test_profile_version_equals_3_4_2(self):
+    def test_profile_version_equals_3_4_3(self):
         m = _VERSION_RE.search((ROOT / "profile.yml").read_text(encoding="utf-8"))
         self.assertIsNotNone(m, "profile.yml must declare version")
         self.assertEqual(m.group(1), EXPECTED_VERSION)
@@ -252,12 +252,12 @@ class AssetCountsContractTest(unittest.TestCase):
 
 class StaleDocReferencesTest(unittest.TestCase):
     def test_no_active_doc_references_stale_eval_paths(self):
-        doc_files = list(_public_release_files())
-        doc_files.extend(sorted((ROOT / "skills").glob("**/*.md")))
-        all_text = "\n".join(
+        text = _active_release_text()
+        skills_text = "\n".join(
             p.read_text(encoding="utf-8", errors="replace")
-            for p in doc_files if p.is_file()
+            for p in (ROOT / "skills").glob("**/*.md") if p.is_file()
         )
+        all_text = text + "\n" + skills_text
         for stale in ("scripts/task-brief", "eval/workflow.js", "fable-method/eval", "eval/README.md"):
             self.assertNotIn(
                 stale, all_text,
