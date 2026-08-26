@@ -36,6 +36,6 @@ Standing rules: judging changes nothing (read and run only; fixes happen only if
 
 ## suite mode: judge a skill or a model
 
-`/fable-judge suite <target>` runs the fable-method trap suite against a target configuration: a newly installed skill, a different model, a modified prompt. It needs the `eval/` directory. In this workspace it lives in the canon skill: `skills/fable-method/eval/` (relative to this SKILL.md: `../fable-method/eval/`; moved from the vendor repo 12.08.2026).
+`/fable-judge suite <target>` runs the trap suite against a target configuration: a newly installed skill, a different model, a modified prompt. The suite lives in `eval/scenarios/` with execution and validation managed via `python eval/runner.py --inline-skills`.
 
-For each scenario in `eval/scenarios/`: create a fresh copy in a scratch directory, run an executor subagent with the target configuration on that scenario's task (tasks and ground truths live in `eval/workflow.js` and `eval/README.md`), then judge the run exactly as the default mode judges work: by diff and execution against the scenario's ground truth, never by the executor's report alone. Deliver per-scenario scores and which traps triggered. One seed per scenario is a smoke test, not a benchmark; multiply seeds for confidence, and say which was done.
+For each scenario in `eval/scenarios/*.md` (defining scenario prompt, trap, and expected behavior), run the harness via `python eval/runner.py --inline-skills --executor "<cli>"` (with `--judge "<cli>"` when gating). The harness evaluates execution against the scenario's expected ground truth, delivering per-scenario scores, attempt durations, and failure traces. One seed per scenario is a smoke test; multiply repeats (`--repeat N`) for confidence.

@@ -125,9 +125,9 @@ child is noticed in minutes, not at session end.
 Record BASE (`git rev-parse HEAD`) before dispatching — the review package
 and fix-round diffs need it.
 
-- **Task brief:** before dispatching, run this skill's
-  `scripts/task-brief PLAN_FILE N` — it extracts the task's full text to a
-  uniquely named file and prints the path. The dispatch contains: (1) one
+- **Task brief:** before dispatching, extract the task's full requirements
+  from the plan file to a brief file in the workspace (e.g.
+  `<workspace>/task-N-brief.md`). The dispatch contains: (1) one
   line on where the task fits; (2) the brief path — "read this first, it is
   your requirements, use exact values verbatim"; (3) interfaces/decisions
   from earlier tasks the brief cannot know; (4) your resolution of

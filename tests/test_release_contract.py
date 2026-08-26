@@ -250,5 +250,19 @@ class AssetCountsContractTest(unittest.TestCase):
         self.assertEqual(len(tasks), EXPECTED_TASK_COUNT,
                          f"eval/tasks discoverable count must be {EXPECTED_TASK_COUNT}, found {len(tasks)}")
 
+class StaleDocReferencesTest(unittest.TestCase):
+    def test_no_active_doc_references_stale_eval_paths(self):
+        doc_files = list(_public_release_files())
+        doc_files.extend(sorted((ROOT / "skills").glob("**/*.md")))
+        all_text = "\n".join(
+            p.read_text(encoding="utf-8", errors="replace")
+            for p in doc_files if p.is_file()
+        )
+        for stale in ("scripts/task-brief", "eval/workflow.js", "fable-method/eval", "eval/README.md"):
+            self.assertNotIn(
+                stale, all_text,
+                f"active docs/skills must not reference stale path: {stale}"
+            )
+
 if __name__ == "__main__":
     unittest.main()

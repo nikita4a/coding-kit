@@ -10,7 +10,7 @@ You: I'm using Subagent-Driven Development to execute this plan.
 
 Task 1: Hook installation script
 
-[Run task-brief for Task 1; dispatch implementer with brief + report paths + context]
+[Write task brief for Task 1 to workspace; dispatch implementer with brief + report paths + context]
 
 Implementer: "Before I begin - should the hook be installed at user or system level?"
 
@@ -30,7 +30,7 @@ Task reviewer: Spec ✅ - all requirements met, nothing extra.
 
 Task 2: Recovery modes
 
-[Run task-brief for Task 2; dispatch implementer with brief + report paths + context]
+[Write task brief for Task 2 to workspace; dispatch implementer with brief + report paths + context]
 
 Implementer: [No questions]
   - Added verify/repair modes
