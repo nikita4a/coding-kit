@@ -157,10 +157,6 @@ python scripts/install.py   # NEVER delete research.db
 | `code-graph-review` | Blast radius, impact analysis |
 | `money-path-safety` | Money, payments, balance |
 | `learn` | "Learn this", "/learn", "make a skill" — agent writes a SKILL.md |
-
-**Skill diagnostics:**
-- `python scripts/tools/skills_search.py "<symptom words>"` — find the fitting skill without a model (token ranking over descriptions)
-- `python eval/trigger_eval.py --queries eval/trigger_queries.json [--executor "<cli>"]` — measure description trigger rate (should-trigger queries must fire, near-misses must not; thresholds 0.5 / 0.3)
 | `web-research` | Web search, fact-checking |
 | `skill-authoring` | Creating skills |
 | `reasoning-engine` | Multi-step thinking before non-trivial actions |
@@ -176,6 +172,10 @@ python scripts/install.py   # NEVER delete research.db
 | `receiving-code-review` | Handle review feedback |
 | `using-git-worktrees` | Isolated worktrees per branch |
 | `finishing-a-development-branch` | Branch integration into main |
+
+**Skill diagnostics:**
+- `python scripts/tools/skills_search.py "<symptom words>"` — find the fitting skill without a model (token ranking over descriptions)
+- `python eval/trigger_eval.py --queries eval/trigger_queries.json [--executor "<cli>"]` — measure description trigger rate (should-trigger queries must fire, near-misses must not; thresholds 0.5 / 0.3)
 
 ---
 
