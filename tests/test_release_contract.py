@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Release contract regression test for coding-kit v3.4.3.
 
-Asserts the observable release invariants of v3.4.2, independent of any
+Asserts the observable release invariants of v3.4.3, independent of any
 historical changelog wording that was accurate at the time:
 
 - VERSION and profile.yml version are both 3.4.3 (doctor check_versions).
