@@ -37,6 +37,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 EXPECTED_VERSION = "3.4.2"
 EXPECTED_SKILL_COUNT = 38
+EXPECTED_SCENARIO_COUNT = 18
+EXPECTED_TRIGGER_QUERY_COUNT = 80
+EXPECTED_TASK_COUNT = 3
 
 # Identity-declaration phrases the v3.4.2 release removed from the public
 # release text. Built from parts so this meta-test's own source never
@@ -223,6 +226,29 @@ class ContextMonitorAbsentTest(unittest.TestCase):
             "active docs must not reference the removed context-monitor "
             "script (historical changelog excepted)")
 
+
+class AssetCountsContractTest(unittest.TestCase):
+    def test_scenario_count_is_18(self):
+        scenarios = list((ROOT / "eval" / "scenarios").glob("*.md"))
+        self.assertEqual(len(scenarios), EXPECTED_SCENARIO_COUNT,
+                         f"eval/scenarios/*.md count must be {EXPECTED_SCENARIO_COUNT}, found {len(scenarios)}")
+
+    def test_trigger_queries_count_is_80(self):
+        query_file = ROOT / "eval" / "trigger_queries.json"
+        self.assertTrue(query_file.is_file(), "eval/trigger_queries.json must exist")
+        import json
+        data = json.loads(query_file.read_text(encoding="utf-8"))
+        self.assertEqual(len(data), EXPECTED_TRIGGER_QUERY_COUNT,
+                         f"eval/trigger_queries.json entry count must be {EXPECTED_TRIGGER_QUERY_COUNT}, found {len(data)}")
+
+    def test_task_count_is_3(self):
+        import sys
+        if str(ROOT / "eval") not in sys.path:
+            sys.path.insert(0, str(ROOT / "eval"))
+        import task_runner
+        tasks = task_runner.discover()
+        self.assertEqual(len(tasks), EXPECTED_TASK_COUNT,
+                         f"eval/tasks discoverable count must be {EXPECTED_TASK_COUNT}, found {len(tasks)}")
 
 if __name__ == "__main__":
     unittest.main()
