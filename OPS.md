@@ -1,5 +1,5 @@
 # Coding Agent OS — Operating Contract
-> **v3.4** | db-tools (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, task-smoke 3 (oracle verify), trigger-eval 80 (+ behavior oracles for always-on skills), schema-v1 results store, evidence trend, eval telemetry (duration + reported usage), inlined-prompt ablation, doctor 10 checks, 37 skills.
+> **v3.4.1** | db-tools (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, task-smoke 3 (oracle verify), trigger-eval 80 (+ behavior oracles for always-on skills), schema-v1 results store, evidence trend, eval telemetry (duration + reported usage), inlined-prompt ablation, ponytail skill, doctor 10 checks, 38 skills.
 
 > **Product:** Coding Agent OS v2 | **CORE v2**
 > Profile root: this directory.
@@ -209,6 +209,15 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 ## 10. CHANGELOG
 
 > **Claim discipline (v2.7.4):** every "fixed"/"verified" claim below must cite the regression test (tests/test_*.py) or doctor check that re-verifies it. A claim without a check is not a claim — the v2.6 "githist 40-hex boundary" entry had neither code nor test (audit 2026-08-22). Sub-agent/cross-model verdicts are testimony: re-run fresh before reporting.
+
+- **v3.4.1 (ponytail skill)**: `skills/ponytail/SKILL.md` — lazy senior-dev
+  mode adapted from DietrichGebert/ponytail (MIT, credits note preserved) into
+  coding-kit Hermes conventions; registered in the profile.yml domain list.
+  Public skill counts 37 -> 38 across README/OPS/UNIVERSAL. Version 3.4.1
+  across VERSION and profile.yml; OPS.md and SKILL_RUNTIME.md headers v3.4.1.
+  Release-contract test `tests/test_release_contract.py` extended to assert
+  ponytail presence and a 38-skill manifest in sync. Verified: full pytest
+  suite, doctor, and the file-size gate green.
 
 - **v3.4.0 (focused release — behavior oracle & accidental-scope removal)**:
   only the valid behavior-oracle feature from the reverted mixed commit

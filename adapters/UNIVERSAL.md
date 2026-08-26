@@ -7,7 +7,7 @@
 Terminology: agents have a "skills dir" (progressive disclosure) and a "rules dir" (always loaded, e.g. ~/.claude/CLAUDE.md, AGENTS.md).
 
 1. Rules: point the agent's rules file at `AGENTS.md` (or copy its content). Memory paths use the `~/.memory` convention — env `MEMORY_ROOT` overrides.
-2. Skills: copy/link `skills/` into the agent's skills dir. Hermes-format SKILL.md, 37 skills.
+2. Skills: copy/link `skills/` into the agent's skills dir. Hermes-format SKILL.md, 38 skills.
 3. Memory (external): `~/.memory/` — Wiki + db-tools engine + research.db. Kit and memory are separate: the kit is pure methodology, knowledge lives in the memory root.
 4. Context monitor: `python scripts/context-monitor.py --check` every ~10 turns.
 

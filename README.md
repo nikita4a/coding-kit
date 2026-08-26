@@ -1,6 +1,6 @@
 # coding-kit — Coding Agent OS
 
-A portable agent-brain kit: methodology (superpowers), minimalism (YAGNI), cross-chat memory (SQLite FTS5), adversarial evals (trap-suite). 37 Hermes-compatible skills, English instructions, one command install.
+A portable agent-brain kit: methodology (superpowers), minimalism (YAGNI), cross-chat memory (SQLite FTS5), adversarial evals (trap-suite). 38 Hermes-compatible skills, English instructions, one command install.
 
 Works in any environment that reads an agent rules file and SKILL.md skills: Claude Code, OMP, Gemini CLI, Antigravity, Hermes.
 
@@ -12,7 +12,7 @@ Works in any environment that reads an agent rules file and SKILL.md skills: Cla
 | Contract | `OPS.md` | phases, memory hierarchy, gates, changelog |
 | Runtime | `SKILL_RUNTIME.md` | context-size modes |
 | Manifest | `profile.yml` | single source of truth: paths, skills |
-| Skills | `skills/` | 37: always-on core + obra phase skills + domain |
+| Skills | `skills/` | 38: always-on core + obra phase skills + domain |
 | Memory engine | `memory/db-tools/` | build, search_all, findings, repomap (FTS5) |
 | Evals | `eval/` | trap-suite (18 scenarios), task smoke (3 oracle-verified tasks), trigger-eval (80 queries), ablation, schema-v1 store + trend + telemetry |
 | Adapters | `adapters/` | per-environment setup guides |
