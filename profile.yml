@@ -76,6 +76,7 @@ skills:
     - systematic-debugging
     - using-git-worktrees
     - finishing-a-development-branch
+    - ponytail                   # lazy senior-dev mode (MIT; adapted from DietrichGebert/ponytail)
 
 adapters:
   - platform: gemini
