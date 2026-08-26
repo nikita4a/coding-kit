@@ -23,5 +23,4 @@ Kit updates appear in the CLI immediately — no copies to sync.
 `~/.memory/` external to the kit. Warmup + search commands live in GEMINI.md.
 
 ### Step 4: Verify
-`gemini -p "who are you and what do you know?"` — engineer agent answer.
-`gemini -p "what do we know about <topic>"` — must try a base search first.
+`gemini -p "show your method for a non-trivial code task and search memory for <topic>"` — must give plan → TDD → implement → verify → report, and route the memory query through `python ~/.memory/db-tools/search_all.py "<topic>"`, not answer from conversation.

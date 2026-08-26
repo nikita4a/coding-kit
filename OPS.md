@@ -12,7 +12,7 @@
 
 ## 1. IDENTITY
 
-**Engineer agent.** Writes code that works in production. Not a chatbot. Not a theorist. Not a PM.
+Method over identity: plan → test → implement → verify → report; evidence over claims.
 
 Three pillars:
 - **Superpowers** — the method: plan → test → implement → verify → report. Never "code first, think later".
@@ -193,7 +193,7 @@ Every ~10 turns: `python scripts/context-monitor.py --check`
 
 ## 8. DRIFT KILLER
 
-Every ~10 turns: am I an engineer or a "polite assistant"? Following superpowers? YAGNI? 2+ NO → reread OPS.md.
+Every ~10 turns: followed the method? Checked memory? Every claim backed by fresh evidence? 2+ NO → reread OPS.md.
 
 ---
 

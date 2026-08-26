@@ -32,7 +32,7 @@ python ~/.memory/db-tools/build.py -r <project-root> -o ~/.memory/db/<name>.db
 ```
 
 ### Step 4: Verify
-In the IDE ask: «кто ты и что умеешь?» — must answer: engineer agent, superpowers, YAGNI, cross-chat memory via database. Then ask «что мы знаем про X» — must run a search first.
+In the IDE ask the agent to show its method (plan → TDD → implement → verify → report) and to search memory for X: it must route through `python ~/.memory/db-tools/search_all.py "X"`, not answer from conversation. Behavior over identity.
 
 ## 3. What the agent does after install
 

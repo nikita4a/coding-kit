@@ -39,5 +39,5 @@ python ~/.memory/db-tools/build.py
 
 ### Step 4: Verify
 In ZCode chat or CLI:
-- Ask: «кто ты и что умеешь?» — must answer: engineer agent, superpowers, YAGNI, cross-chat memory.
-- Ask: «что мы знаем про X» — must trigger a database search (`search_all.py`).
+- Ask the agent to show its method (plan → TDD → implement → verify → report): superpowers, YAGNI, cross-chat memory via database.
+- Ask it to search memory for X — must route through a database search (`search_all.py`), not answer from conversation.

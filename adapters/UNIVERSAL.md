@@ -48,4 +48,4 @@ cp -r skills/. ~/.claude/skills/   # contents; safe when the dir exists
 
 ## Verify
 
-Ask the agent: "who are you and what do you know?" — it must answer: engineer agent, superpowers method, memory from the base. And "what do we know about X" must trigger a search, not memory.
+Ask the agent to show its method (plan → TDD → implement → verify → report) and to search memory for a topic: it must route through `python ~/.memory/db-tools/search_all.py "X"` (or `findings.py search`), not answer from conversation. Behavior over identity.
