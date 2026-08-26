@@ -10,8 +10,7 @@ Checks:
   6.  adapters           every adapter file named in profile.yml exists
   7.  override           .override.md mode validity
   8.  engine sync        the two shipped _compat.py copies are identical
-  9.  reflex commands    documented reflex commands actually produce output
- 10.  encoding discipline no bare text=True subprocess calls (cp1251 class)
+  9.  encoding discipline no bare text=True subprocess calls (cp1251 class)
 
 Usage:
     python scripts/doctor.py          # table + exit 1 on any failure
@@ -200,27 +199,6 @@ def check_encoding_discipline() -> tuple[bool, str]:
     return (not bad, "no bare text=True" if not bad else "; ".join(bad[:5]))
 
 
-def check_reflex_commands() -> tuple[bool, str]:
-    """A documented reflex command must actually speak: run
-    context-monitor --check with a clean CONTEXT_* env and require exit 0
-    + non-empty stdout (before v2.7.4 it was a silent no-op — the OPS §7
-    reflex could never fire; audit 2026-08-22 M2)."""
-    env = {k: v for k, v in os.environ.items()
-           if not k.startswith("CONTEXT_")}
-    try:
-        r = subprocess.run(
-            [sys.executable,
-             str(KIT / "scripts" / "context-monitor.py"), "--check"],
-            capture_output=True, text=True, encoding="utf-8",
-            errors="replace", env=env, timeout=30)
-    except (OSError, subprocess.SubprocessError) as e:
-        return (False, f"context-monitor --check failed to run: {e}")
-    if r.returncode != 0 or not r.stdout.strip():
-        return (False, f"context-monitor --check: rc={r.returncode}, "
-                       "stdout empty (reflex commands must print status)")
-    return (True, "context-monitor --check speaks (exit 0 + status line)")
-
-
 def main() -> int:
     checks = [
         ("manifest", check_manifest()),
@@ -231,7 +209,6 @@ def main() -> int:
         ("adapters", check_adapters()),
         ("override", check_override()),
         ("engine sync", check_engine_sync()),
-        ("reflex commands", check_reflex_commands()),
         ("encoding discipline", check_encoding_discipline()),
     ]
     fails = 0

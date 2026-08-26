@@ -37,7 +37,7 @@ In the IDE ask the agent to show its method (plan → TDD → implement → veri
 ## 3. What the agent does after install
 
 ```
-STARTUP   read OPS.md → memory-warmup → context-monitor --check
+STARTUP   read OPS.md → memory-warmup
 QUESTION  known → search_all.py "X" → answer with file link
 TASK      superpowers: plan → TDD → implement → verify → report
 "write"   hierarchy: portable → ~/.memory/Wiki/; project → WORK/<proj>/docs/

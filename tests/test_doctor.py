@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""doctor.py contract tests for the v2.8 self-verifying checks.
+"""doctor.py contract tests.
 
-The audit (2026-08-22) showed doctor was 8/8 GREEN while 4 MAJOR defects
-existed. The two new checks encode the missed classes:
-- reflex commands that cannot fire (silent no-op --check)
-- bare text=True subprocess calls (cp1251 mojibake class)
+The v2.8 self-verifying checks encoded the classes the 2026-08-22 audit
+missed; the bare text=True subprocess-call check (the cp1251 mojibake class)
+remains. The reflex-command check was removed in v3.4.2 with the
+context-monitor script it guarded (YAGNI: no consumer).
 """
 import importlib.util
 import sys
@@ -39,10 +39,6 @@ class FindBareTextTrueTest(unittest.TestCase):
 class DoctorChecksTest(unittest.TestCase):
     def test_encoding_discipline_green_on_tree(self):
         ok, detail = doctor.check_encoding_discipline()
-        self.assertTrue(ok, detail)
-
-    def test_reflex_commands_green_on_tree(self):
-        ok, detail = doctor.check_reflex_commands()
         self.assertTrue(ok, detail)
 
 

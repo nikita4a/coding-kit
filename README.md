@@ -40,16 +40,14 @@ Pick your agent from `adapters/`:
 ## Daily loop
 
 ```bash
-python scripts/context-monitor.py --check    # every ~10 turns (0=ok 1=warn 2=critical)
 python ~/.memory/db-tools/search_all.py "X"    # before "what do we know about X"
 ```
 
 Gates and checks (the kit's own lifecycle, run directly):
-- `python scripts/doctor.py` — 10 self-diagnostic health checks.
+- `python scripts/doctor.py` — 9 self-diagnostic health checks.
 - `python -m pytest tests -q` — unit test suite.
 - `python scripts/tools/check_file_sizes.py --ci` — file-size gate (hard limits).
 - `python memory/scripts/memory-warmup.py` — cross-chat memory warmup.
-- `python scripts/context-monitor.py --checkpoint` — markdown handoff block for a fresh chat.
 
 
 ## Evals & Trend Loop

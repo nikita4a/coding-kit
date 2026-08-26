@@ -1,6 +1,6 @@
 # Coding Agent OS — Skill Runtime
 
-> **v3.4.1** | For platforms with ≥16K context.
+> **v3.4.2** | For platforms with ≥16K context.
 > Superpowers: plan → TDD → implement → verify → report.
 > 8–16K context → core mode: OPS.md §1-5 + skill routing table only.
 > <8K context → compact mode: OPS.md §1-5 only.
@@ -59,12 +59,6 @@ python ~/.memory/db-tools/findings.py add "topic" --text "conclusion" --source p
 ```
 
 Boundary rule: portable → `~/.memory/Wiki/`; project-specific → `WORK/<project>/docs/` + `build.py -r`.
-
-## Context monitor
-
-```bash
-python scripts/context-monitor.py --check
-```
 
 ## Never
 - Write code without a plan and a test
