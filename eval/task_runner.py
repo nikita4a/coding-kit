@@ -248,6 +248,7 @@ def run_task_suite(names: list[str], executor_cmd: str | None,
     if total == 0:
         if json_out is not None:
             _save(model, executor_cmd, {
+                "mode": "dry-run" if dry_run else "live",
                 "rows": [], "passed": 0, "total": 0,
                 "pass_rate": 0.0, "pass@1": 0.0, "pass@2": 0.0,
                 "duration_s_total": 0.0, "duration_s_mean": 0.0,
@@ -259,6 +260,7 @@ def run_task_suite(names: list[str], executor_cmd: str | None,
                 for n in names]
         if json_out is not None:
             _save(model, executor_cmd, {
+                "mode": "dry-run",
                 "rows": rows, "passed": 0, "total": total,
                 "pass_rate": 0.0, "pass@1": 0.0, "pass@2": 0.0,
                 "duration_s_total": 0.0, "duration_s_mean": 0.0,
@@ -294,6 +296,7 @@ def run_task_suite(names: list[str], executor_cmd: str | None,
         print(f"{verdict} {name}")
     total_s, mean_s = summarize_durations(rows)
     payload = {
+        "mode": "live",
         "rows": rows,
         "passed": passed,
         "total": total,

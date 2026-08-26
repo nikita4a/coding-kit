@@ -344,8 +344,10 @@ def run_scenarios(
         }
         if not executor:
             payload["mode"] = "dry-run"
-        elif reported_usage is not None:
-            payload["reported_usage"] = reported_usage
+        else:
+            payload["mode"] = "live"
+            if reported_usage is not None:
+                payload["reported_usage"] = reported_usage
         save_result(
             "trap",
             model or "unspecified",

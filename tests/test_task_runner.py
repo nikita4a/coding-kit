@@ -242,6 +242,7 @@ def test_dry_run_no_subprocess_and_persistence(tmp_path):
     assert rc == 0
     assert explicit_json.is_file()
     doc = json.loads(explicit_json.read_text(encoding="utf-8"))
+    assert doc["mode"] == "dry-run"
     assert doc["kind"] == "tasks"
     assert doc["total"] == 1
     assert doc["passed"] == 0

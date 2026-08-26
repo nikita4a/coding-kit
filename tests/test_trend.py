@@ -458,6 +458,66 @@ def test_dry_run_records_excluded_from_render_and_baselines(tmp_path):
     assert not (base_dir / "tasks.json").exists()
 
 
+def test_explicit_mode_and_legacy_zero_result_dry_run_filtering(tmp_path):
+    res_dir = tmp_path / "results"
+    base_dir = tmp_path / "baselines"
+    base_dir.mkdir(parents=True)
+
+    # 1. Explicit mode="dry-run" with non-DRY_RUN row verdict
+    results_io.save_result("tasks", "m_dry_explicit", {
+        "mode": "dry-run",
+        "passed": 3,
+        "total": 3,
+        "rows": [{"name": "task-1", "verdict": "PASS", "attempts": []}],
+    }, results_dir=res_dir)
+
+    # 2. Legacy run without mode and renamed/non-DRY_RUN row verdict with empty attempts
+    results_io.save_result("tasks", "m_legacy_renamed_dry", {
+        "passed": 0,
+        "total": 1,
+        "rows": [{"name": "task-renamed", "verdict": "SKIPPED", "attempts": []}],
+    }, results_dir=res_dir)
+
+    # 3. Legacy zero-result artifact without mode
+    results_io.save_result("tasks", "m_legacy_zero", {
+        "passed": 0,
+        "total": 0,
+        "rows": [],
+    }, results_dir=res_dir)
+
+    # 4. Explicit mode="live" with DRY_RUN text in row (explicit mode discriminator takes precedence)
+    results_io.save_result("tasks", "m_live_explicit", {
+        "mode": "live",
+        "passed": 1,
+        "total": 1,
+        "rows": [{"name": "task-1", "verdict": "PASS", "attempts": [{"verdict": "PASS", "phase": "verifier"}]}],
+    }, results_dir=res_dir)
+
+    # 5. Legacy live run without mode but with real attempts
+    results_io.save_result("trap", "m_legacy_live", {
+        "passed": 18,
+        "total": 18,
+        "scenarios": [{"name": "sc1", "verdict": "PASS", "attempts": [{"verdict": "PASS", "phase": "verdict"}]}],
+    }, results_dir=res_dir)
+
+    out = trend.render(results_dir=res_dir, baselines_dir=base_dir)
+    assert "m_dry_explicit" not in out
+    assert "m_legacy_renamed_dry" not in out
+    assert "m_legacy_zero" not in out
+    assert "m_live_explicit" in out
+    assert "m_legacy_live" in out
+
+    trend.update_baselines(results_dir=res_dir, baselines_dir=base_dir, n=5)
+    tasks_data = json.loads((base_dir / "tasks.json").read_text(encoding="utf-8"))
+    assert "m_dry_explicit" not in tasks_data
+    assert "m_legacy_renamed_dry" not in tasks_data
+    assert "m_legacy_zero" not in tasks_data
+    assert tasks_data["m_live_explicit"] == 1.0
+
+    trap_data = json.loads((base_dir / "trap.json").read_text(encoding="utf-8"))
+    assert trap_data["m_legacy_live"] == 1.0
+
+
 def test_trigger_perfect_mixed_corpus_all_green(tmp_path):
     res_dir = tmp_path / "results"
     base_dir = tmp_path / "baselines"

@@ -31,18 +31,58 @@ KIND_ORDER = {"trap": 0, "tasks": 1, "trigger": 2}
 def _is_dry_run(r: dict) -> bool:
     if not isinstance(r, dict):
         return False
-    if r.get("mode") in ("dry-run", "dry_run", "dry"):
-        return True
+
+    mode = r.get("mode")
+    if mode is not None:
+        return str(mode).lower() in ("dry-run", "dry_run", "dry")
+
+    # Legacy fallback when "mode" is absent:
     if r.get("dry_run") is True or r.get("dry") is True:
         return True
-    if r.get("verdict") == "DRY_RUN":
+    if str(r.get("verdict", "")).upper() in ("DRY_RUN", "DRY-RUN", "DRY"):
         return True
+
+    # Zero-result artifact (total == 0)
+    if r.get("total") == 0:
+        return True
+
+    # Check rows or scenarios for DRY_RUN verdicts
     rows = r.get("rows")
-    if isinstance(rows, list) and any(isinstance(x, dict) and x.get("verdict") == "DRY_RUN" for x in rows):
+    if isinstance(rows, list) and any(
+        isinstance(x, dict) and str(x.get("verdict", "")).upper() in ("DRY_RUN", "DRY-RUN", "DRY")
+        for x in rows
+    ):
         return True
+
     scenarios = r.get("scenarios")
-    if isinstance(scenarios, list) and any(isinstance(x, dict) and x.get("verdict") == "DRY_RUN" for x in scenarios):
+    if isinstance(scenarios, list) and any(
+        isinstance(x, dict) and str(x.get("verdict", "")).upper() in ("DRY_RUN", "DRY-RUN", "DRY")
+        for x in scenarios
+    ):
         return True
+
+    # Unmarked zero-pass artifact with no live execution evidence
+    has_pass = r.get("passed", 0) > 0
+    if not has_pass:
+        if isinstance(rows, list) and any(isinstance(x, dict) and x.get("verdict") == "PASS" for x in rows):
+            has_pass = True
+        elif isinstance(scenarios, list) and any(isinstance(x, dict) and x.get("verdict") == "PASS" for x in scenarios):
+            has_pass = True
+
+    if not has_pass:
+        items = rows if isinstance(rows, list) else (scenarios if isinstance(scenarios, list) else None)
+        if items is not None:
+            has_evidence = any(
+                isinstance(x, dict) and (
+                    bool(x.get("attempts")) or
+                    bool(x.get("error")) or
+                    bool(x.get("error_class")) or
+                    bool(x.get("trace_tail"))
+                )
+                for x in items
+            )
+            if not has_evidence:
+                return True
     return False
 
 
