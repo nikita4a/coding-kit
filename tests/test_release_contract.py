@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-"""Release contract regression test for coding-kit v3.4.1.
+"""Release contract regression test for coding-kit v3.4.2.
 
-Asserts the observable release invariants of v3.4.1, independent of any
+Asserts the observable release invariants of v3.4.2, independent of any
 historical changelog wording that was accurate at the time:
 
-- VERSION and profile.yml version are both 3.4.1 (doctor check_versions).
+- VERSION and profile.yml version are both 3.4.2 (doctor check_versions).
 - profile.yml's skill manifest equals the on-disk skills/ dirs; total is 38.
 - the ponytail skill is present in both the manifest and the skill dirs.
+- the current public release text no longer contains any identity-declaration
+  phrase ("Engineer agent", "Not a chatbot", "Not a theorist", "Not a PM",
+  "not a polite assistant") — the v3.4.2 persona-to-behavior conversion must
+  hold across README/OPS/AGENTS/SKILL_RUNTIME/CONTRIBUTING/SECURITY/
+  profile.yml + adapters.
 - The accidental-scope skill family (two skills that never had a consumer,
   added only in the reverted mixed commit) is absent from the skill dirs and
   the manifest. The slugs are built from parts so this meta-test's own source
@@ -28,8 +33,19 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-EXPECTED_VERSION = "3.4.1"
+EXPECTED_VERSION = "3.4.2"
 EXPECTED_SKILL_COUNT = 38
+
+# Identity-declaration phrases the v3.4.2 release removed from the public
+# release text. Built from parts so this meta-test's own source never
+# contains the very strings it asserts are gone.
+_ENGINEER_AGENT = "Engineer" + " agent"
+_NOT_A_CHATBOT = "Not a" + " chatbot"
+_NOT_A_THEORIST = "Not a" + " theorist"
+_NOT_A_PM = "Not a" + " PM"
+_NOT_A_POLITE_ASSISTANT = "not a polite" + " assistant"
+_IDENTITY_PHRASES = (_ENGINEER_AGENT, _NOT_A_CHATBOT, _NOT_A_THEORIST,
+                     _NOT_A_PM, _NOT_A_POLITE_ASSISTANT)
 
 # The accidental-scope skill family, built from parts so this meta-test's
 # source never contains the very string it asserts is gone.
@@ -95,15 +111,25 @@ def _release_text() -> str:
 
 
 class VersionContractTest(unittest.TestCase):
-    def test_version_equals_3_4_1(self):
+    def test_version_equals_3_4_2(self):
         self.assertEqual(
             (ROOT / "VERSION").read_text(encoding="utf-8").strip(),
             EXPECTED_VERSION)
 
-    def test_profile_version_equals_3_4_1(self):
+    def test_profile_version_equals_3_4_2(self):
         m = _VERSION_RE.search((ROOT / "profile.yml").read_text(encoding="utf-8"))
         self.assertIsNotNone(m, "profile.yml must declare version")
         self.assertEqual(m.group(1), EXPECTED_VERSION)
+
+
+class NoIdentityDeclarationTest(unittest.TestCase):
+    def test_no_identity_declarations_in_public_release_text(self):
+        text = _release_text()
+        for phrase in _IDENTITY_PHRASES:
+            self.assertNotIn(
+                phrase, text,
+                "identity-declaration phrase must be gone from the "
+                "public release text: %r" % phrase)
 
 
 class ManifestContractTest(unittest.TestCase):
