@@ -46,6 +46,34 @@ def memory_root() -> Path:
     return Path.home() / ".memory"
 
 
+def check_python_environment(flags=None, executable=None) -> tuple[bool, str]:
+    """Detect isolated or embedded Python environments early.
+
+    Returns (True, "standard Python environment") if supported, or
+    (False, remediation_message) if running under isolated mode or
+    embedded ._pth distribution where site-packages / PYTHONPATH are disabled.
+    """
+    f = flags if flags is not None else sys.flags
+    exe = Path(executable) if executable is not None else Path(sys.executable)
+
+    if getattr(f, "isolated", 0):
+        return (False, "isolated Python mode (sys.flags.isolated) is enabled; "
+                       "isolated environments ignore PYTHONPATH and site-packages. "
+                       "Please run install.py with a standard CPython interpreter or virtualenv.")
+    if getattr(f, "no_site", 0):
+        return (False, "no_site mode (sys.flags.no_site) is enabled; "
+                       "site-packages are disabled. "
+                       "Please run install.py with a standard CPython interpreter or virtualenv.")
+    if exe.parent.is_dir():
+        pth_files = sorted(exe.parent.glob("*._pth"))
+        if pth_files:
+            return (False, f"embedded Python distribution detected ({pth_files[0].name} "
+                           f"present next to {exe.name}); embedded distributions restrict "
+                           "module resolution and disable standard site-packages. "
+                           "Please run install.py with a standard CPython interpreter or virtualenv.")
+
+    return (True, "standard Python environment")
+
 def _is_link(p: Path) -> bool:
     """True for symlinks and Windows junctions (is_symlink() misses the
     latter; Path.is_junction() needs py3.12, the kit supports 3.8+)."""
@@ -167,6 +195,10 @@ def main(argv: list = None) -> int:
         root = memory_root()
     except RuntimeError as e:
         print(f"error: {e}", file=sys.stderr)
+        return 1
+    supported, env_msg = check_python_environment()
+    if not supported:
+        print(f"error: unsupported Python environment: {env_msg}", file=sys.stderr)
         return 1
     print(f"coding-kit install -> {root}")
     for d in [root / "db", root / "scripts"] + [

@@ -201,5 +201,64 @@ class LinkEngineHardeningTest(unittest.TestCase):
                 self.assertIn("Restored previous link", str(ctx.exception))
                 self.assertTrue(install._is_link(target))
                 self.assertEqual(target.resolve(), other_engine.resolve())
+
+
+class PythonEnvironmentCheckTest(unittest.TestCase):
+    def test_default_environment_passes(self):
+        ok, msg = install.check_python_environment()
+        self.assertTrue(ok, msg)
+
+    def test_isolated_flag_rejected(self):
+        flags = mock.Mock(isolated=1, no_site=0)
+        ok, msg = install.check_python_environment(flags=flags, executable=sys.executable)
+        self.assertFalse(ok)
+        self.assertIn("isolated", msg.lower())
+        self.assertIn("standard", msg.lower())
+
+    def test_no_site_flag_rejected(self):
+        flags = mock.Mock(isolated=0, no_site=1)
+        ok, msg = install.check_python_environment(flags=flags, executable=sys.executable)
+        self.assertFalse(ok)
+        self.assertIn("no_site", msg.lower())
+        self.assertIn("standard", msg.lower())
+
+    def test_embedded_pth_file_rejected(self):
+        tmp = Path(tempfile.mkdtemp(prefix="kit-pth-test-"))
+        try:
+            fake_exe = tmp / "python.exe"
+            fake_exe.touch()
+            pth = tmp / "python311._pth"
+            pth.write_text("import site\n", encoding="utf-8")
+            flags = mock.Mock(isolated=0, no_site=0)
+            ok, msg = install.check_python_environment(flags=flags, executable=fake_exe)
+            self.assertFalse(ok)
+            self.assertIn("embedded", msg.lower())
+            self.assertIn("python311._pth", msg)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_venv_like_environment_passes(self):
+        tmp = Path(tempfile.mkdtemp(prefix="kit-venv-test-"))
+        try:
+            fake_exe = tmp / "Scripts" / "python.exe"
+            fake_exe.parent.mkdir(parents=True)
+            fake_exe.touch()
+            (tmp / "pyvenv.cfg").write_text("home = /usr/bin\n", encoding="utf-8")
+            flags = mock.Mock(isolated=0, no_site=0)
+            ok, msg = install.check_python_environment(flags=flags, executable=fake_exe)
+            self.assertTrue(ok, msg)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_main_rejects_unsupported_python_environment(self):
+        tmp = Path(tempfile.mkdtemp(prefix="kit-unsup-test-"))
+        try:
+            with mock.patch.dict(os.environ, {"MEMORY_ROOT": str(tmp / "mem")}), \
+                 mock.patch.object(install, "check_python_environment",
+                                   return_value=(False, "isolated Python detected")):
+                self.assertEqual(install.main(), 1)
+                self.assertFalse((tmp / "mem").exists())
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 if __name__ == "__main__":
     unittest.main()
