@@ -114,7 +114,7 @@ def validate(queries: list[dict]) -> list[str]:
 # --- prompt construction ---
 
 PRELUDE = (
-    "You have a skills directory available "
+    "You are an agent. You have a skills directory available "
     "(Hermes-format SKILL.md skills). Load any skill that fits the user "
     "request. End your answer with a line: SKILLS LOADED: <comma-separated "
     "skill names you actually loaded, or 'none'>.\n\n"
