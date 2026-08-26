@@ -64,6 +64,11 @@ class InstallTest(unittest.TestCase):
     def test_fresh_install_creates_layout(self):
         self.assertEqual(install.main(), 0)
         self.assertTrue((self.root / "VERSION").is_file())
+        self.assertEqual(
+            (self.root / "VERSION").read_text(encoding="utf-8").strip(),
+            install.ENGINE_VERSION,
+        )
+        self.assertEqual(install.ENGINE_VERSION, "2.9")
         for t in install.WIKI_TYPES:
             self.assertTrue((self.root / "Wiki" / t).is_dir(), t)
         self.assertTrue((self.root / "db").is_dir())

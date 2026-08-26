@@ -41,6 +41,10 @@ class DoctorChecksTest(unittest.TestCase):
         ok, detail = doctor.check_encoding_discipline()
         self.assertTrue(ok, detail)
 
+    def test_engine_sync_green_on_tree(self):
+        ok, detail = doctor.check_engine_sync()
+        self.assertTrue(ok, detail)
+        self.assertEqual(detail, "_compat copies identical")
 
 if __name__ == "__main__":
     unittest.main()

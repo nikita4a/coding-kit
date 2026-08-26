@@ -7,7 +7,7 @@ Creates (idempotent, nothing personal is ever written by this script):
     ~/.memory/Wiki/<reference|howto|errors|decisions|ideas>/
     ~/.memory/db/                      (empty indexed DBs)
     ~/.memory/scripts/                 (memory-warmup.py + _compat.py)
-    ~/.memory/VERSION                  (engine marker, schema 2.7)
+    ~/.memory/VERSION                  (engine marker, schema 2.9)
     ~/.memory/db-tools  ->  <kit>/memory/db-tools   (junction on Windows,
                                                       symlink elsewhere)
 

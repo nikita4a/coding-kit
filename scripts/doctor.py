@@ -147,8 +147,9 @@ def check_override() -> tuple[bool, str]:
 
 
 def check_engine_sync() -> tuple[bool, str]:
-    """The kit ships _compat.py twice (db-tools/ imports it, scripts/ is
-    copied to ~/.memory); drift between the copies bit the v2.5 review."""
+    """Check that the two shipped _compat.py copies in the repository
+    (memory/db-tools/ and memory/scripts/) are identical to prevent drift
+    between the engine and the bootstrap script."""
     a = KIT / "memory" / "db-tools" / "_compat.py"
     b = KIT / "memory" / "scripts" / "_compat.py"
     if a.read_bytes() == b.read_bytes():
