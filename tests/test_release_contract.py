@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Release contract regression test for coding-kit v3.4.0.
+"""Release contract regression test for coding-kit v3.4.1.
 
-Asserts the observable release invariants of v3.4.0, independent of any
+Asserts the observable release invariants of v3.4.1, independent of any
 historical changelog wording that was accurate at the time:
 
-- VERSION and profile.yml version are both 3.4.0 (doctor check_versions).
-- profile.yml's skill manifest equals the on-disk skills/ dirs; total is 37.
+- VERSION and profile.yml version are both 3.4.1 (doctor check_versions).
+- profile.yml's skill manifest equals the on-disk skills/ dirs; total is 38.
+- the ponytail skill is present in both the manifest and the skill dirs.
 - The accidental-scope skill family (two skills that never had a consumer,
   added only in the reverted mixed commit) is absent from the skill dirs and
   the manifest. The slugs are built from parts so this meta-test's own source
@@ -27,8 +28,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-EXPECTED_VERSION = "3.4.0"
-EXPECTED_SKILL_COUNT = 37
+EXPECTED_VERSION = "3.4.1"
+EXPECTED_SKILL_COUNT = 38
 
 # The accidental-scope skill family, built from parts so this meta-test's
 # source never contains the very string it asserts is gone.
@@ -94,24 +95,32 @@ def _release_text() -> str:
 
 
 class VersionContractTest(unittest.TestCase):
-    def test_version_equals_3_4_0(self):
+    def test_version_equals_3_4_1(self):
         self.assertEqual(
             (ROOT / "VERSION").read_text(encoding="utf-8").strip(),
             EXPECTED_VERSION)
 
-    def test_profile_version_equals_3_4_0(self):
+    def test_profile_version_equals_3_4_1(self):
         m = _VERSION_RE.search((ROOT / "profile.yml").read_text(encoding="utf-8"))
         self.assertIsNotNone(m, "profile.yml must declare version")
         self.assertEqual(m.group(1), EXPECTED_VERSION)
 
 
 class ManifestContractTest(unittest.TestCase):
-    def test_manifest_matches_on_disk_and_count_is_37(self):
+    def test_manifest_matches_on_disk_and_count_is_38(self):
         declared = _declared_skills()
         on_disk = _on_disk_skills()
         self.assertEqual(declared, on_disk,
                          "profile.yml skill manifest must equal skills/ dirs")
         self.assertEqual(len(on_disk), EXPECTED_SKILL_COUNT)
+
+
+class PonytailPresentTest(unittest.TestCase):
+    def test_ponytail_in_manifest_and_on_disk(self):
+        self.assertIn("ponytail", _declared_skills(),
+                      "ponytail must be declared in the manifest")
+        self.assertIn("ponytail", _on_disk_skills(),
+                      "ponytail skill dir must exist")
 
 
 class AccidentalScopeAbsentTest(unittest.TestCase):
