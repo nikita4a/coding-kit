@@ -2,9 +2,10 @@
 """eval/runner.py — trap-suite scenario runner for coding-kit.
 
 Scenario eval/scenarios/*.md: frontmatter (name, skill, trap, expect) + body.
-The body is fed to a model as a task; the model's answer plus the `expect`
-line is fed to a judge (a second model call), which returns PASS/FAIL with
-reasoning.
+The candidate answer is bounded and framed as untrusted evidence before
+being fed to a judge model along with the `expect` line. When `--judge` is omitted,
+the executor self-judges, which carries self-evaluation bias; a distinct judge is
+recommended for gating. The judge returns PASS/FAIL with reasoning.
 
 The model backend plugs in via `--executor CMD` (reads prompt from stdin,
 prints answer to stdout — e.g. `gemini -p -`). Without `--executor`, scenarios
@@ -365,7 +366,7 @@ def main() -> int:
                     help="model identifier (e.g. gpt-4o, claude-3-5-sonnet); "
                          "required for a live --json run (dry --json may omit)")
     ap.add_argument("--judge", default=None,
-                    help="judge CLI (default = --executor)")
+                    help="judge CLI (default = --executor; self-judging is biased — recommend a distinct judge for gating)")
     ap.add_argument("--scenario", help="single scenario name (no .md)")
     ap.add_argument("--repeat", type=int, default=1,
                     help="flake gate: scenario must PASS N times in a row")

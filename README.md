@@ -53,11 +53,11 @@ Gates and checks (the kit's own lifecycle, run directly):
 ## Evals & Trend Loop
 
 The kit includes an evidence-first evaluation harness:
-- **Trap-suite (`eval/runner.py`)**: 18 adversarial scenarios testing adherence to superpowers, YAGNI, and security invariants.
+- **Trap-suite (`eval/runner.py`)**: 18 adversarial scenarios testing adherence to superpowers, YAGNI, and security invariants. Candidate answers are bounded and delimited as untrusted evidence. Omitted `--judge` defaults to the executor (self-judging carries inherent bias; recommend configuring a distinct `--judge` for gating).
 - **Task Smoke (`eval/task_runner.py`)**: 3 real coding tasks verified by deterministic `verify.py` test oracles (no LLM judge). Each attempt runs in an isolated sandbox cloned fresh from `eval/tasks/repo-fixture` (default `--tries 2`). This serves as a smoke canary, not a statistical benchmark.
 - **Trigger Evals (`eval/trigger_eval.py`)**: 80 queries testing skill activation routing.
-- **Schema-v1 Results Store (`eval/results_io.py`)**: atomic append-only JSON storage under `eval/results/` with microsecond UTC timestamps, UUID `run_id`, separate `model` metadata, and standardized failure taxonomies.
-- **Trend Reporting (`eval/trend.py`)**: summarizes newest runs by `(kind, model)`, reports baseline deltas, and produces structured Failure Evidence Packets with bounded trace tails for debugging.
+- **Schema-v1 Results Store (`eval/results_io.py`)**: atomic append-only JSON storage under `eval/results/` with microsecond UTC timestamps, UUID `run_id`, separate `model` metadata, explicit `mode` (`"dry-run"` vs `"live"`), and standardized failure taxonomies.
+- **Trend Reporting (`eval/trend.py`)**: summarizes newest runs by `(kind, model)`, filters dry-runs and zero-result artifacts via explicit mode discriminators, reports baseline deltas, and produces structured Failure Evidence Packets with bounded trace tails for debugging.
 - **Telemetry (`eval/telemetry.py`)**: every result doc folds per-attempt wall-clock `duration_s` into `duration_s_total`/`duration_s_mean` across all three runners (trap/tasks/trigger). Optional `--usage-json` `{tokens_total, cost_usd}` records user-reported provider totals — the harness measures wall-clock only and never fabricates cost.
 - **Ablation (`eval/ablate.py`)**: experimental per-skill inlined-prompt contribution (pass-rate with vs. without the inlined skill body). Descriptive, not causal — ambient CLI skills are uncontrolled and small samples may be non-conclusive; it never deletes a skill. Requires a live `--executor`.
 - **Isolation**: executor subprocesses run from a neutral per-call temp `cwd`, which prevents automatic discovery of repo-local instruction/config files via the inherited `cwd`; ambient global skills and general filesystem access remain uncontrolled. HOME/auth environment is retained.
