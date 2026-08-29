@@ -4,6 +4,33 @@
 > re-read by the model every session; OPS keeps only the living contract).
 
 > **Claim discipline (v2.7.4):** every "fixed"/"verified" claim below must cite the regression test (tests/test_*.py) or doctor check that re-verifies it. A claim without a check is not a claim — the v2.6 "githist 40-hex boundary" entry had neither code nor test (audit 2026-08-22). Sub-agent/cross-model verdicts are testimony: re-run fresh before reporting.
+- **v3.4.5 (eval truth-fixes)**: three root causes found by the first live
+  v3.4.4 matrix run, closed with regression tests. (1) `eval/trigger_eval.py`
+  `<skills listing>` placeholder was NEVER replaced — the measured listing
+  never entered the prompt, so runs measured the executor's ambient global
+  skills; `prompt_for` now interpolates a real listing read live from
+  skills/ frontmatter (`listing_entries()`,
+  `tests/test_trigger_eval_prelude.py` red-first: placeholder must be gone,
+  >=10 entries, named slugs present). (2) Judge verdict parser rejected
+  `PASS.` (sentence period) — live judge wrote "PASS. The candidate..." and
+  grounded-decision recorded FAIL; `_JUDGE_PASS_RE` now accepts sentence
+  punctuation `,` `;` `.` after the token
+  (`tests/test_json_output.py::test_judge_passed_strict_parser`, 3 new rows).
+  (3) Task 003 brief under-specified the regression contract the verifier
+  enforces (boundary calls both below and above the range); TASK.md now
+  states it. Skills: `debugging-and-error-recovery` merged into
+  `systematic-debugging` (duplicate root-cause debugging skills; models
+  systematically chose systematic-debugging; unique Test/Build Failure
+  Triage trees grafted across) — 43 -> 42 skills; `learn` description
+  reworded (skill-authoring intercepted "make a skill from X"; live probe
+  now answers SKILLS LOADED: learn). Post-fix live matrix
+  (dashscope-glm-5.2-fast-preview, 80 queries): 8/10 skills at/above
+  threshold, learn 0.25 -> 1.00, false-fire ~0; superpowers 0.25 remains
+  (always-on skill, behavior-oracle measured, description triggers are
+  method-phrases that overlap other skills — accepted). Release contract:
+  version 3.4.5, 42 skills. Verified: full pytest suite (308 passed),
+  doctor 9/9, file-size gate hard 0.
+
 
 - **v3.4.4 (audit-driven optimization)**: OPS.md diet — the 22-entry
   CHANGELOG section (64% of the file by tokens, 4230 of 6593 approx tokens,

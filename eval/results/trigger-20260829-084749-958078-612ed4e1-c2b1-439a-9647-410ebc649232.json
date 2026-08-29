@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "run_id": "trigger-20260829-084749-958078-612ed4e1-c2b1-439a-9647-410ebc649232",
+  "kind": "trigger",
+  "model": "dashscope-glm-5.2-fast-preview",
+  "executor_name": "claude",
+  "utc": "2026-08-29T08:47:49.958078+00:00",
+  "harness_sha": "1f0d7ae326e3a3cf6b036658f01df845d8c09e95",
+  "mode": "live",
+  "passed": 4,
+  "fired": 4,
+  "total": 8,
+  "misses": [
+    "learn: false rate 0.50 > 0.3 (false-triggered: ['запиши в память что мы выбрали', 'what do we know about skill formats'])"
+  ],
+  "rows": [
+    {
+      "query": "запиши в память что мы выбрали",
+      "skill": "learn",
+      "expected": false,
+      "fired": true,
+      "verdict": "FAIL",
+      "duration_s": 23.3611,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 23.3611,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "save this decision into memory",
+      "skill": "learn",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 31.363,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 31.363,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "explain this procedure to me",
+      "skill": "learn",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 8.1741,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 8.1741,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "make a skill from this workflow",
+      "skill": "learn",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 32.3236,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 32.3236,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "сделай скилл из этой процедуры",
+      "skill": "learn",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 34.9585,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 34.9585,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "teach yourself this procedure so you never redo the research",
+      "skill": "learn",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 47.3725,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 47.3725,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "turn this session into a reusable skill",
+      "skill": "learn",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 68.5166,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 68.5166,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "what do we know about skill formats",
+      "skill": "learn",
+      "expected": false,
+      "fired": true,
+      "verdict": "FAIL",
+      "duration_s": 72.6572,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 72.6572,
+          "mode": "name"
+        }
+      ]
+    }
+  ],
+  "duration_s_total": 318.727,
+  "duration_s_mean": 39.841
+}

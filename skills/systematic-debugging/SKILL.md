@@ -263,6 +263,26 @@ If you catch yourself thinking:
 | **3. Hypothesis** | Form theory, test minimally | Confirmed or new hypothesis |
 | **4. Implementation** | Create test, fix, verify | Bug resolved, tests pass |
 
+## Quick Triage Trees
+
+### Test Failure Triage
+```
+Test fails after code change:
+├── Did you change code the test covers? → Check if test or code is wrong
+├── Did you change unrelated code? → Check shared state, imports, globals
+└── Test was already flaky? → Check timing issues, order dependence
+```
+
+### Build Failure Triage
+```
+Build fails:
+├── Type error → Read error, check types at cited location
+├── Import error → Check module exists, exports match, paths correct
+├── Config error → Check build config files
+├── Dependency error → Check package.json, run install
+└── Environment error → Check version, OS compatibility
+```
+
 ## When Process Reveals "No Root Cause"
 
 If systematic investigation reveals issue is truly environmental, timing-dependent, or external:

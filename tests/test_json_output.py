@@ -164,7 +164,11 @@ def test_runner_records_judge_fail_and_trace_tail(tmp_path, monkeypatch):
         ("", False),
         ("   ", False),
         ("\n\n", False),
-        ("PASS. with period", False),
+        ("PASS. with period", True),
+        ("PASS, comma-separated reasoning", True),
+        ("PASS.", True),
+        # Live incident 2026-08-29: judge wrote "PASS. The candidate..."
+        # and the strict parser recorded FAIL (grounded-decision trap).
     ],
 )
 def test_judge_passed_strict_parser(text, expected):

@@ -1,91 +1,402 @@
 [
-  {"skill": "superpowers", "should": true, "query": "add a feature that touches three files, make sure nothing breaks"},
-  {"skill": "superpowers", "should": true, "query": "refactor this module — I want tests around the behavior first"},
-  {"skill": "superpowers", "should": true, "query": "build a retry mechanism for failed uploads, prove it works"},
-  {"skill": "superpowers", "should": true, "query": "fix this bug and show me evidence it is really fixed"},
-  {"skill": "superpowers", "should": false, "query": "just change this one line, no ceremony"},
-  {"skill": "superpowers", "should": false, "query": "translate this doc to Russian"},
-  {"skill": "superpowers", "should": false, "query": "what do we know about retries"},
-  {"skill": "superpowers", "should": false, "query": "summarize this file for me"},
-
-  {"skill": "yagni", "should": true, "query": "should we add a caching layer now for future scale?"},
-  {"skill": "yagni", "should": true, "query": "add an abstraction class just in case we need more types later"},
-  {"skill": "yagni", "should": true, "query": "do we need this new dependency for the feature?"},
-  {"skill": "yagni", "should": true, "query": "this helper is used once, should I extract it anyway?"},
-  {"skill": "yagni", "should": false, "query": "write a function that adds two numbers"},
-  {"skill": "yagni", "should": false, "query": "fix the broken test"},
-  {"skill": "yagni", "should": false, "query": "what do we know about caching"},
-  {"skill": "yagni", "should": false, "query": "rename the variable to match the style guide"},
-
-  {"skill": "dev-wiki", "should": true, "query": "save this decision so the next session sees it"},
-  {"skill": "dev-wiki", "should": true, "query": "запомни что мы решили"},
-  {"skill": "dev-wiki", "should": true, "query": "record this bug before we forget how it was solved"},
-  {"skill": "dev-wiki", "should": true, "query": "what do we know about this topic"},
-  {"skill": "dev-wiki", "should": false, "query": "turn this procedure into a reusable skill"},
-  {"skill": "dev-wiki", "should": false, "query": "write a python script that checks the logs"},
-  {"skill": "dev-wiki", "should": false, "query": "fix this bug right now"},
-  {"skill": "dev-wiki", "should": false, "query": "what is the weather today"},
-
-  {"skill": "learn", "should": true, "query": "turn this session into a reusable skill"},
-  {"skill": "learn", "should": true, "query": "make a skill from this workflow"},
-  {"skill": "learn", "should": true, "query": "сделай скилл из этой процедуры"},
-  {"skill": "learn", "should": true, "query": "teach yourself this procedure so you never redo the research"},
-  {"skill": "learn", "should": false, "query": "save this decision into memory"},
-  {"skill": "learn", "should": false, "query": "запиши в память что мы выбрали"},
-  {"skill": "learn", "should": false, "query": "explain this procedure to me"},
-  {"skill": "learn", "should": false, "query": "what do we know about skill formats"},
-
-  {"skill": "fable-judge", "should": true, "query": "verify that the work is actually done"},
-  {"skill": "fable-judge", "should": true, "query": "проверь что сделано"},
-  {"skill": "fable-judge", "should": true, "query": "judge whether this agent really finished the task"},
-  {"skill": "fable-judge", "should": true, "query": "did the tests really pass or is the report fake?"},
-  {"skill": "fable-judge", "should": false, "query": "write a test for this function"},
-  {"skill": "fable-judge", "should": false, "query": "review the code style"},
-  {"skill": "fable-judge", "should": false, "query": "explain how to verify builds"},
-  {"skill": "fable-judge", "should": false, "query": "fix the flaky assertion"},
-
-  {"skill": "code-review-and-quality", "should": true, "query": "review this change before merge"},
-  {"skill": "code-review-and-quality", "should": true, "query": "check my code for problems"},
-  {"skill": "code-review-and-quality", "should": true, "query": "is this diff safe to merge?"},
-  {"skill": "code-review-and-quality", "should": true, "query": "look at the whole change for bugs and smells"},
-  {"skill": "code-review-and-quality", "should": false, "query": "fix the bug you found"},
-  {"skill": "code-review-and-quality", "should": false, "query": "write a new feature"},
-  {"skill": "code-review-and-quality", "should": false, "query": "verify the work is done"},
-  {"skill": "code-review-and-quality", "should": false, "query": "запомни этот вывод"},
-
-  {"skill": "windows-encoding-fixes", "should": true, "query": "UnicodeEncodeError при выводе кириллицы"},
-  {"skill": "windows-encoding-fixes", "should": true, "query": "cp1251 in the console output"},
-  {"skill": "windows-encoding-fixes", "should": true, "query": "my script crashes on Windows with an encoding error"},
-  {"skill": "windows-encoding-fixes", "should": true, "query": "CRLF line endings broke my md5 checks"},
-  {"skill": "windows-encoding-fixes", "should": false, "query": "write a python script that runs on Linux"},
-  {"skill": "windows-encoding-fixes", "should": false, "query": "how do I fix a permissions error on Windows"},
-  {"skill": "windows-encoding-fixes", "should": false, "query": "explain unicode normalization"},
-  {"skill": "windows-encoding-fixes", "should": false, "query": "sort these strings alphabetically"},
-
-  {"skill": "debugging-and-error-recovery", "should": true, "query": "it doesn't work"},
-  {"skill": "debugging-and-error-recovery", "should": true, "query": "still broken after the update"},
-  {"skill": "debugging-and-error-recovery", "should": true, "query": "the build fails, what do I do"},
-  {"skill": "debugging-and-error-recovery", "should": true, "query": "странная ошибка при старте приложения"},
-  {"skill": "debugging-and-error-recovery", "should": false, "query": "add error handling to this code"},
-  {"skill": "debugging-and-error-recovery", "should": false, "query": "explain how try/except works"},
-  {"skill": "debugging-and-error-recovery", "should": false, "query": "design the retry logic for the API"},
-  {"skill": "debugging-and-error-recovery", "should": false, "query": "catch all exceptions to be safe"},
-
-  {"skill": "money-path-safety", "should": true, "query": "add a promo code to the checkout"},
-  {"skill": "money-path-safety", "should": true, "query": "charge the user only after a successful job"},
-  {"skill": "money-path-safety", "should": true, "query": "refund logic for failed payments"},
-  {"skill": "money-path-safety", "should": true, "query": "deduct credits when the task starts successfully"},
-  {"skill": "money-path-safety", "should": false, "query": "format the price display nicely"},
-  {"skill": "money-path-safety", "should": false, "query": "add a shopping cart UI"},
-  {"skill": "money-path-safety", "should": false, "query": "rename the invoice template"},
-  {"skill": "money-path-safety", "should": false, "query": "write a query to list all users"},
-
-  {"skill": "security-and-hardening", "should": true, "query": "sanitize the user input in this form"},
-  {"skill": "security-and-hardening", "should": true, "query": "add auth to the API"},
-  {"skill": "security-and-hardening", "should": true, "query": "is this SQL query injectable?"},
-  {"skill": "security-and-hardening", "should": true, "query": "store the password securely"},
-  {"skill": "security-and-hardening", "should": false, "query": "speed up the login page render"},
-  {"skill": "security-and-hardening", "should": false, "query": "write a regex that extracts emails"},
-  {"skill": "security-and-hardening", "should": false, "query": "change the button color on the login form"},
-  {"skill": "security-and-hardening", "should": false, "query": "backup the database weekly"}
+ {
+  "skill": "superpowers",
+  "should": true,
+  "query": "add a feature that touches three files, make sure nothing breaks"
+ },
+ {
+  "skill": "superpowers",
+  "should": true,
+  "query": "refactor this module — I want tests around the behavior first"
+ },
+ {
+  "skill": "superpowers",
+  "should": true,
+  "query": "build a retry mechanism for failed uploads, prove it works"
+ },
+ {
+  "skill": "superpowers",
+  "should": true,
+  "query": "fix this bug and show me evidence it is really fixed"
+ },
+ {
+  "skill": "superpowers",
+  "should": false,
+  "query": "just change this one line, no ceremony"
+ },
+ {
+  "skill": "superpowers",
+  "should": false,
+  "query": "translate this doc to Russian"
+ },
+ {
+  "skill": "superpowers",
+  "should": false,
+  "query": "what do we know about retries"
+ },
+ {
+  "skill": "superpowers",
+  "should": false,
+  "query": "summarize this file for me"
+ },
+ {
+  "skill": "yagni",
+  "should": true,
+  "query": "should we add a caching layer now for future scale?"
+ },
+ {
+  "skill": "yagni",
+  "should": true,
+  "query": "add an abstraction class just in case we need more types later"
+ },
+ {
+  "skill": "yagni",
+  "should": true,
+  "query": "do we need this new dependency for the feature?"
+ },
+ {
+  "skill": "yagni",
+  "should": true,
+  "query": "this helper is used once, should I extract it anyway?"
+ },
+ {
+  "skill": "yagni",
+  "should": false,
+  "query": "write a function that adds two numbers"
+ },
+ {
+  "skill": "yagni",
+  "should": false,
+  "query": "fix the broken test"
+ },
+ {
+  "skill": "yagni",
+  "should": false,
+  "query": "what do we know about caching"
+ },
+ {
+  "skill": "yagni",
+  "should": false,
+  "query": "rename the variable to match the style guide"
+ },
+ {
+  "skill": "dev-wiki",
+  "should": true,
+  "query": "save this decision so the next session sees it"
+ },
+ {
+  "skill": "dev-wiki",
+  "should": true,
+  "query": "запомни что мы решили"
+ },
+ {
+  "skill": "dev-wiki",
+  "should": true,
+  "query": "record this bug before we forget how it was solved"
+ },
+ {
+  "skill": "dev-wiki",
+  "should": true,
+  "query": "what do we know about this topic"
+ },
+ {
+  "skill": "dev-wiki",
+  "should": false,
+  "query": "turn this procedure into a reusable skill"
+ },
+ {
+  "skill": "dev-wiki",
+  "should": false,
+  "query": "write a python script that checks the logs"
+ },
+ {
+  "skill": "dev-wiki",
+  "should": false,
+  "query": "fix this bug right now"
+ },
+ {
+  "skill": "dev-wiki",
+  "should": false,
+  "query": "what is the weather today"
+ },
+ {
+  "skill": "learn",
+  "should": true,
+  "query": "turn this session into a reusable skill"
+ },
+ {
+  "skill": "learn",
+  "should": true,
+  "query": "make a skill from this workflow"
+ },
+ {
+  "skill": "learn",
+  "should": true,
+  "query": "сделай скилл из этой процедуры"
+ },
+ {
+  "skill": "learn",
+  "should": true,
+  "query": "teach yourself this procedure so you never redo the research"
+ },
+ {
+  "skill": "learn",
+  "should": false,
+  "query": "save this decision into memory"
+ },
+ {
+  "skill": "learn",
+  "should": false,
+  "query": "запиши в память что мы выбрали"
+ },
+ {
+  "skill": "learn",
+  "should": false,
+  "query": "explain this procedure to me"
+ },
+ {
+  "skill": "learn",
+  "should": false,
+  "query": "what do we know about skill formats"
+ },
+ {
+  "skill": "fable-judge",
+  "should": true,
+  "query": "verify that the work is actually done"
+ },
+ {
+  "skill": "fable-judge",
+  "should": true,
+  "query": "проверь что сделано"
+ },
+ {
+  "skill": "fable-judge",
+  "should": true,
+  "query": "judge whether this agent really finished the task"
+ },
+ {
+  "skill": "fable-judge",
+  "should": true,
+  "query": "did the tests really pass or is the report fake?"
+ },
+ {
+  "skill": "fable-judge",
+  "should": false,
+  "query": "write a test for this function"
+ },
+ {
+  "skill": "fable-judge",
+  "should": false,
+  "query": "review the code style"
+ },
+ {
+  "skill": "fable-judge",
+  "should": false,
+  "query": "explain how to verify builds"
+ },
+ {
+  "skill": "fable-judge",
+  "should": false,
+  "query": "fix the flaky assertion"
+ },
+ {
+  "skill": "code-review-and-quality",
+  "should": true,
+  "query": "review this change before merge"
+ },
+ {
+  "skill": "code-review-and-quality",
+  "should": true,
+  "query": "check my code for problems"
+ },
+ {
+  "skill": "code-review-and-quality",
+  "should": true,
+  "query": "is this diff safe to merge?"
+ },
+ {
+  "skill": "code-review-and-quality",
+  "should": true,
+  "query": "look at the whole change for bugs and smells"
+ },
+ {
+  "skill": "code-review-and-quality",
+  "should": false,
+  "query": "fix the bug you found"
+ },
+ {
+  "skill": "code-review-and-quality",
+  "should": false,
+  "query": "write a new feature"
+ },
+ {
+  "skill": "code-review-and-quality",
+  "should": false,
+  "query": "verify the work is done"
+ },
+ {
+  "skill": "code-review-and-quality",
+  "should": false,
+  "query": "запомни этот вывод"
+ },
+ {
+  "skill": "windows-encoding-fixes",
+  "should": true,
+  "query": "UnicodeEncodeError при выводе кириллицы"
+ },
+ {
+  "skill": "windows-encoding-fixes",
+  "should": true,
+  "query": "cp1251 in the console output"
+ },
+ {
+  "skill": "windows-encoding-fixes",
+  "should": true,
+  "query": "my script crashes on Windows with an encoding error"
+ },
+ {
+  "skill": "windows-encoding-fixes",
+  "should": true,
+  "query": "CRLF line endings broke my md5 checks"
+ },
+ {
+  "skill": "windows-encoding-fixes",
+  "should": false,
+  "query": "write a python script that runs on Linux"
+ },
+ {
+  "skill": "windows-encoding-fixes",
+  "should": false,
+  "query": "how do I fix a permissions error on Windows"
+ },
+ {
+  "skill": "windows-encoding-fixes",
+  "should": false,
+  "query": "explain unicode normalization"
+ },
+ {
+  "skill": "windows-encoding-fixes",
+  "should": false,
+  "query": "sort these strings alphabetically"
+ },
+ {
+  "skill": "systematic-debugging",
+  "should": true,
+  "query": "странная ошибка при старте приложения"
+ },
+ {
+  "skill": "systematic-debugging",
+  "should": false,
+  "query": "add error handling to this code"
+ },
+ {
+  "skill": "systematic-debugging",
+  "should": false,
+  "query": "explain how try/except works"
+ },
+ {
+  "skill": "systematic-debugging",
+  "should": false,
+  "query": "design the retry logic for the API"
+ },
+ {
+  "skill": "systematic-debugging",
+  "should": false,
+  "query": "catch all exceptions to be safe"
+ },
+ {
+  "skill": "money-path-safety",
+  "should": true,
+  "query": "add a promo code to the checkout"
+ },
+ {
+  "skill": "money-path-safety",
+  "should": true,
+  "query": "charge the user only after a successful job"
+ },
+ {
+  "skill": "money-path-safety",
+  "should": true,
+  "query": "refund logic for failed payments"
+ },
+ {
+  "skill": "money-path-safety",
+  "should": true,
+  "query": "deduct credits when the task starts successfully"
+ },
+ {
+  "skill": "money-path-safety",
+  "should": false,
+  "query": "format the price display nicely"
+ },
+ {
+  "skill": "money-path-safety",
+  "should": false,
+  "query": "add a shopping cart UI"
+ },
+ {
+  "skill": "money-path-safety",
+  "should": false,
+  "query": "rename the invoice template"
+ },
+ {
+  "skill": "money-path-safety",
+  "should": false,
+  "query": "write a query to list all users"
+ },
+ {
+  "skill": "security-and-hardening",
+  "should": true,
+  "query": "sanitize the user input in this form"
+ },
+ {
+  "skill": "security-and-hardening",
+  "should": true,
+  "query": "add auth to the API"
+ },
+ {
+  "skill": "security-and-hardening",
+  "should": true,
+  "query": "is this SQL query injectable?"
+ },
+ {
+  "skill": "security-and-hardening",
+  "should": true,
+  "query": "store the password securely"
+ },
+ {
+  "skill": "security-and-hardening",
+  "should": false,
+  "query": "speed up the login page render"
+ },
+ {
+  "skill": "security-and-hardening",
+  "should": false,
+  "query": "write a regex that extracts emails"
+ },
+ {
+  "skill": "security-and-hardening",
+  "should": false,
+  "query": "change the button color on the login form"
+ },
+ {
+  "skill": "security-and-hardening",
+  "should": false,
+  "query": "backup the database weekly"
+ },
+ {
+  "skill": "systematic-debugging",
+  "should": true,
+  "query": "tests started failing after my refactor, help me debug"
+ },
+ {
+  "skill": "systematic-debugging",
+  "should": true,
+  "query": "the API returns 500 on requests that used to work"
+ },
+ {
+  "skill": "systematic-debugging",
+  "should": true,
+  "query": "why does this function return None instead of the value"
+ }
 ]

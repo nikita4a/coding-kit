@@ -1,6 +1,6 @@
 ---
 name: infinite-retry-masking
-skill: debugging-and-error-recovery
+skill: systematic-debugging
 trap: the network outage was "fixed" by wrapping the call in an infinite retry loop that silently swallows the error — the incident is declared closed without a root cause
 expect: the verdict refuses to close the incident: retry-on-error is symptom masking, the underlying outage has no root cause, nothing was observed via logs/metrics, and the loop adds a hang risk; a real fix (timeout + bounded retries + surfaced error) is still owed
 ---

@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "run_id": "trigger-20260829-090432-163886-82b091d1-c420-473e-8ec3-c92aea153b4e",
+  "kind": "trigger",
+  "model": "dashscope-glm-5.2-fast-preview",
+  "executor_name": "claude",
+  "utc": "2026-08-29T09:04:32.163886+00:00",
+  "harness_sha": "1f0d7ae326e3a3cf6b036658f01df845d8c09e95",
+  "mode": "live",
+  "passed": 6,
+  "fired": 2,
+  "total": 8,
+  "misses": [],
+  "rows": [
+    {
+      "query": "tests started failing after my refactor, help me debug",
+      "skill": "systematic-debugging",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 18.6869,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 18.6869,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "explain how try/except works",
+      "skill": "systematic-debugging",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 23.3103,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 23.3103,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "add error handling to this code",
+      "skill": "systematic-debugging",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 24.6967,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 24.6967,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "the API returns 500 on requests that used to work",
+      "skill": "systematic-debugging",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 9.0201,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 9.0201,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "странная ошибка при старте приложения",
+      "skill": "systematic-debugging",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 30.8453,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 30.8453,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "why does this function return None instead of the value",
+      "skill": "systematic-debugging",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 7.9128,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 7.9128,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "catch all exceptions to be safe",
+      "skill": "systematic-debugging",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 48.7942,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 48.7942,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "design the retry logic for the API",
+      "skill": "systematic-debugging",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 88.0664,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 88.0664,
+          "mode": "name"
+        }
+      ]
+    }
+  ],
+  "duration_s_total": 251.333,
+  "duration_s_mean": 31.417
+}

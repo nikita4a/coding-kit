@@ -50,6 +50,44 @@ from runner import resolve_cmd, run_prompt      # same executor contract
 from telemetry import load_reported_usage, summarize_durations
 from behavior_oracles import behavior_fired, has_oracle
 
+
+_SKILLS_DIR = Path(__file__).resolve().parents[1] / "skills"
+_FM_NAME_RE = re.compile(r"^name:\s*([A-Za-z0-9_-]+)\s*$", re.M)
+_FM_DESC_RE = re.compile(r"^description:\s*(.+)$", re.M)
+
+
+def listing_entries() -> list[dict]:
+    """One {name, description} row per skill, read live from skills/ frontmatter.
+
+    The measured listing is the experiment's treatment: a placeholder that
+    never gets replaced (live incident 2026-08-29) turns the run into a
+    measurement of the executor's ambient global skills instead.
+    """
+    entries: list[dict] = []
+    for d in sorted(_SKILLS_DIR.iterdir()) if _SKILLS_DIR.is_dir() else []:
+        if not d.is_dir():
+            continue
+        text = (d / "SKILL.md").read_text(encoding="utf-8", errors="replace")[:4000]
+        front = text.split("---", 2)
+        if len(front) < 3:
+            continue
+        m = _FM_NAME_RE.search(front[1])
+        if not m or m.group(1) != d.name:
+            continue
+        dm = _FM_DESC_RE.search(front[1])
+        entries.append({"name": d.name,
+                        "description": (dm.group(1).strip().strip("'\"")
+                                        if dm else "")})
+    return entries
+
+
+def _render_listing() -> str:
+    rows = listing_entries()
+    if not rows:
+        return "<skills listing>"
+    return "Skills:\n" + "\n".join(
+        f"- {r['name']}: {r['description']}" for r in rows)
+
 TRIGGER_RATE_MIN = 0.5
 FALSE_RATE_MAX = 0.3
 RUNS_DEFAULT = 3
@@ -131,7 +169,8 @@ PRELUDE = (
 
 
 def prompt_for(query: str) -> str:
-    return PRELUDE + "User request: " + query + "\n"
+    prelude = PRELUDE.replace("<skills listing>", _render_listing())
+    return prelude + "User request: " + query + "\n"
 
 
 def run_query_detailed(cmd: list[str], q: dict, runs: int,

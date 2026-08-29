@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Release contract regression test for coding-kit v3.4.4.
+"""Release contract regression test for coding-kit v3.4.5.
 
 Asserts the observable release invariants of v3.4.4, independent of any
 historical changelog wording that was accurate at the time:
@@ -35,8 +35,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-EXPECTED_VERSION = "3.4.4"
-EXPECTED_SKILL_COUNT = 43
+EXPECTED_VERSION = "3.4.5"
+EXPECTED_SKILL_COUNT = 42
 EXPECTED_SCENARIO_COUNT = 21
 EXPECTED_TRIGGER_QUERY_COUNT = 80
 EXPECTED_TASK_COUNT = 4
@@ -135,12 +135,12 @@ def _active_release_text() -> str:
 
 
 class VersionContractTest(unittest.TestCase):
-    def test_version_equals_3_4_3(self):
+    def test_version_equals_3_4_5(self):
         self.assertEqual(
             (ROOT / "VERSION").read_text(encoding="utf-8").strip(),
             EXPECTED_VERSION)
 
-    def test_profile_version_equals_3_4_3(self):
+    def test_profile_version_equals_3_4_5(self):
         m = _VERSION_RE.search((ROOT / "profile.yml").read_text(encoding="utf-8"))
         self.assertIsNotNone(m, "profile.yml must declare version")
         self.assertEqual(m.group(1), EXPECTED_VERSION)
@@ -157,7 +157,7 @@ class NoIdentityDeclarationTest(unittest.TestCase):
 
 
 class ManifestContractTest(unittest.TestCase):
-    def test_manifest_matches_on_disk_and_count_is_43(self):
+    def test_manifest_matches_on_disk_and_count_is_42(self):
         declared = _declared_skills()
         on_disk = _on_disk_skills()
         self.assertEqual(declared, on_disk,

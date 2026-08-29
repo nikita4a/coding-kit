@@ -20,6 +20,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "eval"))
 from trigger_eval import PRELUDE, prompt_for  # noqa: E402
 
+def _listing() -> list:
+    from trigger_eval import listing_entries
+    return listing_entries()
+
 
 class PreludeMandatoryChoiceTest(unittest.TestCase):
     def test_prelude_contains_mandatory_choice_instruction(self):
@@ -42,20 +46,31 @@ class PreludeFewShotTest(unittest.TestCase):
 
 
 class PreludeListingInterpolationTest(unittest.TestCase):
-    def test_prompt_for_interpolates_listing_and_query(self):
+    def test_prompt_for_interpolates_real_listing_and_query(self):
         prompt = prompt_for("add an unused abstraction")
-        # The prelude (with its instructions) comes first...
-        self.assertTrue(prompt.startswith(PRELUDE))
+        # The prelude instructions come first (the placeholder is the only
+        # part allowed to differ)...
+        self.assertTrue(
+            prompt.startswith(
+                PRELUDE.replace("<skills listing>", "").rstrip()[:120]))
         # ...the user request is appended after it...
         self.assertIn("User request: add an unused abstraction\n", prompt)
-        # ...and the listing placeholder is still filled in.
-        self.assertIn("<skills listing>", prompt)
+        # ...and the listing is REALLY filled in from skills/ frontmatter —
+        # not left as a literal placeholder (live incident 2026-08-29: the
+        # executor answered from its ambient global skills because the
+        # measured listing never entered the prompt).
+        self.assertNotIn("<skills listing>", prompt)
+        manifest = _listing()
+        self.assertTrue(
+            len(manifest) >= 10,
+            "assembled prompt must carry at least 10 skill entries")
+        for slug in ("yagni", "learn", "skill-authoring"):
+            self.assertIn(slug, prompt)
 
     def test_prompt_contains_both_few_shot_markers(self):
         prompt = prompt_for("fix the broken test")
         self.assertIn("SKILLS LOADED: sec-review", prompt)
         self.assertIn("SKILLS LOADED: none", prompt)
-
 
 class DetectionContractUnchangedTest(unittest.TestCase):
     """The prelude fix must not move the detection contract: the slug is

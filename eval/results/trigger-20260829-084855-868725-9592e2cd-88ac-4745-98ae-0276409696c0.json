@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "run_id": "trigger-20260829-084855-868725-9592e2cd-88ac-4745-98ae-0276409696c0",
+  "kind": "trigger",
+  "model": "dashscope-glm-5.2-fast-preview",
+  "executor_name": "claude",
+  "utc": "2026-08-29T08:48:55.868725+00:00",
+  "harness_sha": "1f0d7ae326e3a3cf6b036658f01df845d8c09e95",
+  "mode": "live",
+  "passed": 5,
+  "fired": 1,
+  "total": 8,
+  "misses": [
+    "debugging-and-error-recovery: trigger rate 0.25 < 0.5 (failed: ['why does this function return None instead of the value', 'tests started failing after my refactor, help me debug', 'the API returns 500 on requests that used to work'])"
+  ],
+  "rows": [
+    {
+      "query": "explain how try/except works",
+      "skill": "debugging-and-error-recovery",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 17.7103,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 17.7103,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "catch all exceptions to be safe",
+      "skill": "debugging-and-error-recovery",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 17.803,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 17.803,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "design the retry logic for the API",
+      "skill": "debugging-and-error-recovery",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 20.3977,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 20.3977,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "add error handling to this code",
+      "skill": "debugging-and-error-recovery",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 25.3529,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 25.3529,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "why does this function return None instead of the value",
+      "skill": "debugging-and-error-recovery",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 10.0294,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 10.0294,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "странная ошибка при старте приложения",
+      "skill": "debugging-and-error-recovery",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 35.2701,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 35.2701,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "tests started failing after my refactor, help me debug",
+      "skill": "debugging-and-error-recovery",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 57.4864,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 57.4864,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "the API returns 500 on requests that used to work",
+      "skill": "debugging-and-error-recovery",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 48.0792,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 48.0792,
+          "mode": "name"
+        }
+      ]
+    }
+  ],
+  "duration_s_total": 232.129,
+  "duration_s_mean": 29.016
+}

@@ -131,7 +131,7 @@ def judge_one(judge_cmd: list[str], expect: str, answer: str, timeout: int = 600
     return run_prompt(judge_cmd, prompt, timeout=timeout)
 
 
-_JUDGE_PASS_RE = re.compile(r"^PASS(?=$|[ \t:-])", re.IGNORECASE)
+_JUDGE_PASS_RE = re.compile(r"^PASS(?=$|[ \t:;,.\-])", re.IGNORECASE)
 
 
 def judge_passed(verdict_text: str) -> bool:

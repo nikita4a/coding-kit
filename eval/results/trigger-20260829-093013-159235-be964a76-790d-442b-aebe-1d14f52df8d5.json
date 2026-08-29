@@ -1,0 +1,1332 @@
+{
+  "schema_version": 1,
+  "run_id": "trigger-20260829-093013-159235-be964a76-790d-442b-aebe-1d14f52df8d5",
+  "kind": "trigger",
+  "model": "dashscope-glm-5.2-fast-preview",
+  "executor_name": "claude",
+  "utc": "2026-08-29T09:30:13.159235+00:00",
+  "harness_sha": "1f0d7ae326e3a3cf6b036658f01df845d8c09e95",
+  "mode": "live",
+  "passed": 65,
+  "fired": 31,
+  "total": 80,
+  "misses": [
+    "superpowers: trigger rate 0.25 < 0.5 (failed: ['refactor this module — I want tests around the behavior first', 'fix this bug and show me evidence it is really fixed', 'build a retry mechanism for failed uploads, prove it works'])"
+  ],
+  "rows": [
+    {
+      "query": "just change this one line, no ceremony",
+      "skill": "superpowers",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 17.1022,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 17.1022,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "add a feature that touches three files, make sure nothing breaks",
+      "skill": "superpowers",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 31.4676,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 31.4676,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "translate this doc to Russian",
+      "skill": "superpowers",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 33.0224,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 33.0224,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "summarize this file for me",
+      "skill": "superpowers",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 10.1395,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 10.1395,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "refactor this module — I want tests around the behavior first",
+      "skill": "superpowers",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 51.1552,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 51.1552,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "should we add a caching layer now for future scale?",
+      "skill": "yagni",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 21.8604,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 21.8604,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "what do we know about retries",
+      "skill": "superpowers",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 47.9883,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 47.9883,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "fix this bug and show me evidence it is really fixed",
+      "skill": "superpowers",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 67.691,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 67.691,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "add an abstraction class just in case we need more types later",
+      "skill": "yagni",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 28.3118,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 28.3118,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "this helper is used once, should I extract it anyway?",
+      "skill": "yagni",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 18.0325,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 18.0325,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "do we need this new dependency for the feature?",
+      "skill": "yagni",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 26.3877,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 26.3877,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "rename the variable to match the style guide",
+      "skill": "yagni",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 6.8349,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 6.8349,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "запомни что мы решили",
+      "skill": "dev-wiki",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 10.7828,
+      "mode": "oracle",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 10.7828,
+          "mode": "oracle"
+        }
+      ]
+    },
+    {
+      "query": "save this decision so the next session sees it",
+      "skill": "dev-wiki",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 15.4077,
+      "mode": "oracle",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 15.4077,
+          "mode": "oracle"
+        }
+      ]
+    },
+    {
+      "query": "what do we know about this topic",
+      "skill": "dev-wiki",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 17.8906,
+      "mode": "oracle",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 17.8906,
+          "mode": "oracle"
+        }
+      ]
+    },
+    {
+      "query": "write a function that adds two numbers",
+      "skill": "yagni",
+      "expected": false,
+      "fired": true,
+      "verdict": "FAIL",
+      "duration_s": 48.2876,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 48.2876,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "record this bug before we forget how it was solved",
+      "skill": "dev-wiki",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 24.3484,
+      "mode": "oracle",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 24.3484,
+          "mode": "oracle"
+        }
+      ]
+    },
+    {
+      "query": "turn this procedure into a reusable skill",
+      "skill": "dev-wiki",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 20.1826,
+      "mode": "oracle",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 20.1826,
+          "mode": "oracle"
+        }
+      ]
+    },
+    {
+      "query": "what do we know about caching",
+      "skill": "yagni",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 64.0003,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 64.0003,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "turn this session into a reusable skill",
+      "skill": "learn",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 27.7664,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 27.7664,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "fix this bug right now",
+      "skill": "dev-wiki",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 53.8209,
+      "mode": "oracle",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 53.8209,
+          "mode": "oracle"
+        }
+      ]
+    },
+    {
+      "query": "write a python script that checks the logs",
+      "skill": "dev-wiki",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 57.3412,
+      "mode": "oracle",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 57.3412,
+          "mode": "oracle"
+        }
+      ]
+    },
+    {
+      "query": "teach yourself this procedure so you never redo the research",
+      "skill": "learn",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 20.2389,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 20.2389,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "сделай скилл из этой процедуры",
+      "skill": "learn",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 23.1164,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 23.1164,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "make a skill from this workflow",
+      "skill": "learn",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 42.9157,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 42.9157,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "save this decision into memory",
+      "skill": "learn",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 18.0081,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 18.0081,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "запиши в память что мы выбрали",
+      "skill": "learn",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 17.698,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 17.698,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "explain this procedure to me",
+      "skill": "learn",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 11.0053,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 11.0053,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "what is the weather today",
+      "skill": "dev-wiki",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 125.0109,
+      "mode": "oracle",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 125.0109,
+          "mode": "oracle"
+        }
+      ]
+    },
+    {
+      "query": "what do we know about skill formats",
+      "skill": "learn",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 48.4907,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 48.4907,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "fix the broken test",
+      "skill": "yagni",
+      "expected": false,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 216.7104,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 216.7104,
+          "mode": "name",
+          "error": "PermissionError: [WinError 32] Процесс не может получить доступ к файлу, так как этот файл занят другим процессом: 'C:\\\\Users\\\\oleg2\\\\AppData\\\\Local\\\\Temp\\\\kit-eval-lj4urk04'"
+        }
+      ],
+      "error": "PermissionError: [WinError 32] Процесс не может получить доступ к файлу, так как этот файл занят другим процессом: 'C:\\\\Users\\\\oleg2\\\\AppData\\\\Local\\\\Temp\\\\kit-eval-lj4urk04'"
+    },
+    {
+      "query": "verify that the work is actually done",
+      "skill": "fable-judge",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 86.3118,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 86.3118,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "did the tests really pass or is the report fake?",
+      "skill": "fable-judge",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 104.156,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 104.156,
+          "mode": "name",
+          "error": "ExecutorError: subprocess exited with code 1",
+          "trace_tail": "The user is asking me to verify a claim that tests passed. This is exactly the fable-judge's job: a report is a set of claims, not evidence — I need to re-run the tests myself. But I don't yet see any report in this conversation. Let me find what's actually here to judge.\nAPI Error: Connection closed mid-response. The response above may be incomplete."
+        }
+      ],
+      "error": "ExecutorError: subprocess exited with code 1",
+      "trace_tail": "The user is asking me to verify a claim that tests passed. This is exactly the fable-judge's job: a report is a set of claims, not evidence — I need to re-run the tests myself. But I don't yet see any report in this conversation. Let me find what's actually here to judge.\nAPI Error: Connection closed mid-response. The response above may be incomplete."
+    },
+    {
+      "query": "judge whether this agent really finished the task",
+      "skill": "fable-judge",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 105.6008,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 105.6008,
+          "mode": "name",
+          "error": "ExecutorError: subprocess exited with code 1",
+          "trace_tail": "The find returned only `.` — the directory is genuinely empty. There is no work to judge. Let me confirm there's truly nothing here and check whether the conversation transcript itself is the \"work\" to judge (an agent's report might be embedded in this session).\nAPI Error: Connection closed mid-response. The response above may be incomplete."
+        }
+      ],
+      "error": "ExecutorError: subprocess exited with code 1",
+      "trace_tail": "The find returned only `.` — the directory is genuinely empty. There is no work to judge. Let me confirm there's truly nothing here and check whether the conversation transcript itself is the \"work\" to judge (an agent's report might be embedded in this session).\nAPI Error: Connection closed mid-response. The response above may be incomplete."
+    },
+    {
+      "query": "проверь что сделано",
+      "skill": "fable-judge",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 174.09,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 174.09,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "write a test for this function",
+      "skill": "fable-judge",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 114.826,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 114.826,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "explain how to verify builds",
+      "skill": "fable-judge",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 75.6059,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 75.6059,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "review this change before merge",
+      "skill": "code-review-and-quality",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 59.5075,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 59.5075,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "review the code style",
+      "skill": "fable-judge",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 160.7944,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 160.7944,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "check my code for problems",
+      "skill": "code-review-and-quality",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 75.2046,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 75.2046,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "is this diff safe to merge?",
+      "skill": "code-review-and-quality",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 55.4763,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 55.4763,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "fix the bug you found",
+      "skill": "code-review-and-quality",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 38.4644,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 38.4644,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "fix the flaky assertion",
+      "skill": "fable-judge",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 140.8854,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 140.8854,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "UnicodeEncodeError при выводе кириллицы",
+      "skill": "windows-encoding-fixes",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 39.6456,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 39.6456,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "build a retry mechanism for failed uploads, prove it works",
+      "skill": "superpowers",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 545.3888,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 545.3888,
+          "mode": "name",
+          "error": "TimeoutExpired: command timed out after 180s",
+          "trace_tail": "memory's design as my spec. Three RED-phase tests I wrote turned out to contradict the very formula I intended (they expected backoff to grow at zero jitter, but a jittered formula collapses to `base` at `rand=0`); the implementation was correct and those test specs were the error, so I corrected the tests to pin jitter to meaningful constants (`rand=1.0` for the growth/cap envelope, `rand=0.0` for the base-floor property) rather than weakening assertions.\n\nSKILLS LOADED: test-driven-development"
+        }
+      ],
+      "error": "TimeoutExpired: command timed out after 180s",
+      "trace_tail": "memory's design as my spec. Three RED-phase tests I wrote turned out to contradict the very formula I intended (they expected backoff to grow at zero jitter, but a jittered formula collapses to `base` at `rand=0`); the implementation was correct and those test specs were the error, so I corrected the tests to pin jitter to meaningful constants (`rand=1.0` for the growth/cap envelope, `rand=0.0` for the base-floor property) rather than weakening assertions.\n\nSKILLS LOADED: test-driven-development"
+    },
+    {
+      "query": "my script crashes on Windows with an encoding error",
+      "skill": "windows-encoding-fixes",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 16.6815,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 16.6815,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "cp1251 in the console output",
+      "skill": "windows-encoding-fixes",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 34.2817,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 34.2817,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "CRLF line endings broke my md5 checks",
+      "skill": "windows-encoding-fixes",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 15.541,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 15.541,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "запомни этот вывод",
+      "skill": "code-review-and-quality",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 83.9941,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 83.9941,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "write a python script that runs on Linux",
+      "skill": "windows-encoding-fixes",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 19.479,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 19.479,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "sort these strings alphabetically",
+      "skill": "windows-encoding-fixes",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 10.1838,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 10.1838,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "explain unicode normalization",
+      "skill": "windows-encoding-fixes",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 31.7032,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 31.7032,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "how do I fix a permissions error on Windows",
+      "skill": "windows-encoding-fixes",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 48.5621,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 48.5621,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "verify the work is done",
+      "skill": "code-review-and-quality",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 137.7536,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 137.7536,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "странная ошибка при старте приложения",
+      "skill": "systematic-debugging",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 28.0753,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 28.0753,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "explain how try/except works",
+      "skill": "systematic-debugging",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 16.1844,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 16.1844,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "add a promo code to the checkout",
+      "skill": "money-path-safety",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 12.5943,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 12.5943,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "look at the whole change for bugs and smells",
+      "skill": "code-review-and-quality",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 213.4263,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 213.4263,
+          "mode": "name",
+          "error": "TimeoutExpired: command timed out after 180s",
+          "trace_tail": "modified files' contents (before/after) directly into the chat.\n3. **If this was meant to be the `kit-eval-2bw2y027/upload_retry.py` change**, that directory was removed before I could read it; it needs to be restored or the files re-supplied.\n\nI'm ready to run the five-axis review (correctness → readability → architecture → security → performance) the moment the change is reachable. The skill is loaded; the blocker is purely that there's no code in scope.\n\nSKILLS LOADED: code-review-and-quality"
+        }
+      ],
+      "error": "TimeoutExpired: command timed out after 180s",
+      "trace_tail": "modified files' contents (before/after) directly into the chat.\n3. **If this was meant to be the `kit-eval-2bw2y027/upload_retry.py` change**, that directory was removed before I could read it; it needs to be restored or the files re-supplied.\n\nI'm ready to run the five-axis review (correctness → readability → architecture → security → performance) the moment the change is reachable. The skill is loaded; the blocker is purely that there's no code in scope.\n\nSKILLS LOADED: code-review-and-quality"
+    },
+    {
+      "query": "write a new feature",
+      "skill": "code-review-and-quality",
+      "expected": false,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 205.8131,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 205.8131,
+          "mode": "name",
+          "error": "TimeoutExpired: command timed out after 180s",
+          "trace_tail": "ntil I know the goal.\n\nLet me start with the one question that matters most:\n\n**What is the feature, and what should it do?** A sentence or two on the goal is enough — e.g. \"a CLI that converts X to Y\" or \"an endpoint that lets users export their data as CSV.\" If you have a target language/framework in mind, mention that too.\n\nOnce I know what we're building, I'll explore context (what exists, if anything) and walk through a design with you before touching any code.\n\nSKILLS LOADED: brainstorming"
+        }
+      ],
+      "error": "TimeoutExpired: command timed out after 180s",
+      "trace_tail": "ntil I know the goal.\n\nLet me start with the one question that matters most:\n\n**What is the feature, and what should it do?** A sentence or two on the goal is enough — e.g. \"a CLI that converts X to Y\" or \"an endpoint that lets users export their data as CSV.\" If you have a target language/framework in mind, mention that too.\n\nOnce I know what we're building, I'll explore context (what exists, if anything) and walk through a design with you before touching any code.\n\nSKILLS LOADED: brainstorming"
+    },
+    {
+      "query": "add error handling to this code",
+      "skill": "systematic-debugging",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 71.9541,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 71.9541,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "design the retry logic for the API",
+      "skill": "systematic-debugging",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 62.1726,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 62.1726,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "charge the user only after a successful job",
+      "skill": "money-path-safety",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 63.1046,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 63.1046,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "format the price display nicely",
+      "skill": "money-path-safety",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 60.4316,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 60.4316,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "add a shopping cart UI",
+      "skill": "money-path-safety",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 61.8006,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 61.8006,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "write a query to list all users",
+      "skill": "money-path-safety",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 12.3368,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 12.3368,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "deduct credits when the task starts successfully",
+      "skill": "money-path-safety",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 85.1709,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 85.1709,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "rename the invoice template",
+      "skill": "money-path-safety",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 57.0466,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 57.0466,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "sanitize the user input in this form",
+      "skill": "security-and-hardening",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 42.8196,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 42.8196,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "is this SQL query injectable?",
+      "skill": "security-and-hardening",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 37.6956,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 37.6956,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "add auth to the API",
+      "skill": "security-and-hardening",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 61.4221,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 61.4221,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "change the button color on the login form",
+      "skill": "security-and-hardening",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 8.7413,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 8.7413,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "refund logic for failed payments",
+      "skill": "money-path-safety",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 163.0553,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 163.0553,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "tests started failing after my refactor, help me debug",
+      "skill": "systematic-debugging",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 20.7049,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 20.7049,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "write a regex that extracts emails",
+      "skill": "security-and-hardening",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 60.4806,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 60.4806,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "speed up the login page render",
+      "skill": "security-and-hardening",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 66.4898,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 66.4898,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "catch all exceptions to be safe",
+      "skill": "systematic-debugging",
+      "expected": false,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 232.6418,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 232.6418,
+          "mode": "name",
+          "error": "PermissionError: [WinError 32] Процесс не может получить доступ к файлу, так как этот файл занят другим процессом: 'C:\\\\Users\\\\oleg2\\\\AppData\\\\Local\\\\Temp\\\\kit-eval-h4wix4em'"
+        }
+      ],
+      "error": "PermissionError: [WinError 32] Процесс не может получить доступ к файлу, так как этот файл занят другим процессом: 'C:\\\\Users\\\\oleg2\\\\AppData\\\\Local\\\\Temp\\\\kit-eval-h4wix4em'"
+    },
+    {
+      "query": "why does this function return None instead of the value",
+      "skill": "systematic-debugging",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 12.7443,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 12.7443,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "the API returns 500 on requests that used to work",
+      "skill": "systematic-debugging",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 58.4806,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 58.4806,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "backup the database weekly",
+      "skill": "security-and-hardening",
+      "expected": false,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 255.5365,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 255.5365,
+          "mode": "name",
+          "error": "TimeoutExpired: command timed out after 180s",
+          "trace_tail": "u meant **a database in this project** → this directory is empty; point me at the project/DB (path, engine) and I'll scope a backup for it.\n- If you want to **harden the existing one**: the one real caveat is `Logon Mode: Interactive only` — the 03:00 Sunday run succeeds only if you're logged in. If you want it to fire even when logged out (needs elevation) or to also push dumps off-machine (external drive / cloud), say the word and I'll plan that as a focused change.\n\nSKILLS LOADED: superpowers"
+        }
+      ],
+      "error": "TimeoutExpired: command timed out after 180s",
+      "trace_tail": "u meant **a database in this project** → this directory is empty; point me at the project/DB (path, engine) and I'll scope a backup for it.\n- If you want to **harden the existing one**: the one real caveat is `Logon Mode: Interactive only` — the 03:00 Sunday run succeeds only if you're logged in. If you want it to fire even when logged out (needs elevation) or to also push dumps off-machine (external drive / cloud), say the word and I'll plan that as a focused change.\n\nSKILLS LOADED: superpowers"
+    },
+    {
+      "query": "store the password securely",
+      "skill": "security-and-hardening",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 579.2178,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 579.2178,
+          "mode": "name",
+          "error": "TimeoutExpired: command timed out after 180s",
+          "trace_tail": "sponses or stack traces.\n- Rotate; scope to least privilege; audit access.\n\nThe single test: *if this string leaked right now, would an attacker authenticate as someone?* If yes → it's a secret (case 2) or the password-of-a-secret (case 1). Hash case 1, vault case 2.\n\n---\n\nWhich one is your case? If you tell me the language/framework and which kind of password, I'll write the actual storage + verification code against your real codebase instead of a sketch.\n\nSKILLS LOADED: security-and-hardening"
+        }
+      ],
+      "error": "TimeoutExpired: command timed out after 180s",
+      "trace_tail": "sponses or stack traces.\n- Rotate; scope to least privilege; audit access.\n\nThe single test: *if this string leaked right now, would an attacker authenticate as someone?* If yes → it's a secret (case 2) or the password-of-a-secret (case 1). Hash case 1, vault case 2.\n\n---\n\nWhich one is your case? If you tell me the language/framework and which kind of password, I'll write the actual storage + verification code against your real codebase instead of a sketch.\n\nSKILLS LOADED: security-and-hardening"
+    }
+  ],
+  "duration_s_total": 5947.295,
+  "duration_s_mean": 74.341
+}
