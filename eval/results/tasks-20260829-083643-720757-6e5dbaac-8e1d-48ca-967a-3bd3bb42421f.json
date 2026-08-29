@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "run_id": "tasks-20260829-083643-720757-6e5dbaac-8e1d-48ca-967a-3bd3bb42421f",
+  "kind": "tasks",
+  "model": "dashscope-glm-5.2-fast-preview",
+  "executor_name": "claude",
+  "utc": "2026-08-29T08:36:43.720757+00:00",
+  "harness_sha": "74de57a53fb2dde36035c330f2467dd964970a7a",
+  "mode": "live",
+  "rows": [
+    {
+      "name": "001-fix-div-zero",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 34.235
+        }
+      ]
+    },
+    {
+      "name": "002-add-validation",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 69.61
+        }
+      ]
+    },
+    {
+      "name": "003-regression-guard",
+      "verdict": "FAIL",
+      "attempts": [
+        {
+          "verdict": "FAIL",
+          "duration_s": 145.953,
+          "error_class": "other",
+          "trace_tail": "FAIL: no boundary assertion: missing clamp(v < lo) == lo\r\nFAIL: no boundary assertion: missing clamp(v > hi) == hi"
+        },
+        {
+          "verdict": "FAIL",
+          "duration_s": 109.407,
+          "error_class": "other",
+          "trace_tail": "FAIL: no boundary assertion: missing clamp(v < lo) == lo\r\nFAIL: no boundary assertion: missing clamp(v > hi) == hi"
+        }
+      ]
+    },
+    {
+      "name": "004-regression-test-first",
+      "verdict": "PASS",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "duration_s": 127.234
+        }
+      ]
+    }
+  ],
+  "passed": 3,
+  "total": 4,
+  "pass_rate": 0.75,
+  "pass@1": 0.75,
+  "pass@2": 0.75,
+  "duration_s_total": 486.439,
+  "duration_s_mean": 97.288
+}

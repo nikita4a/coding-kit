@@ -1,0 +1,1305 @@
+{
+  "schema_version": 1,
+  "run_id": "trigger-20260829-075636-077925-7c9b4c62-227b-404f-a44a-d3da721f5ab8",
+  "kind": "trigger",
+  "model": "dashscope-glm-5.2-fast-preview",
+  "executor_name": "claude",
+  "utc": "2026-08-29T07:56:36.077925+00:00",
+  "harness_sha": "74de57a53fb2dde36035c330f2467dd964970a7a",
+  "mode": "live",
+  "passed": 67,
+  "fired": 29,
+  "total": 80,
+  "misses": [
+    "learn: trigger rate 0.25 < 0.5 (failed: ['make a skill from this workflow', 'сделай скилл из этой процедуры', 'turn this session into a reusable skill'])",
+    "debugging-and-error-recovery: trigger rate 0.25 < 0.5 (failed: [\"it doesn't work\", 'still broken after the update', 'the build fails, what do I do'])"
+  ],
+  "rows": [
+    {
+      "query": "translate this doc to Russian",
+      "skill": "superpowers",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 10.8651,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 10.8651,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "add a feature that touches three files, make sure nothing breaks",
+      "skill": "superpowers",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 11.5226,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 11.5226,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "refactor this module — I want tests around the behavior first",
+      "skill": "superpowers",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 12.9621,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 12.9621,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "summarize this file for me",
+      "skill": "superpowers",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 10.658,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 10.658,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "just change this one line, no ceremony",
+      "skill": "superpowers",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 22.5109,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 22.5109,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "fix this bug and show me evidence it is really fixed",
+      "skill": "superpowers",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 24.4345,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 24.4345,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "should we add a caching layer now for future scale?",
+      "skill": "yagni",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 15.2191,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 15.2191,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "do we need this new dependency for the feature?",
+      "skill": "yagni",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 7.1623,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 7.1623,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "this helper is used once, should I extract it anyway?",
+      "skill": "yagni",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 10.1183,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 10.1183,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "add an abstraction class just in case we need more types later",
+      "skill": "yagni",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 13.3987,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 13.3987,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "write a function that adds two numbers",
+      "skill": "yagni",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 11.5309,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 11.5309,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "build a retry mechanism for failed uploads, prove it works",
+      "skill": "superpowers",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 41.9899,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 41.9899,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "rename the variable to match the style guide",
+      "skill": "yagni",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 7.6141,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 7.6141,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "what do we know about retries",
+      "skill": "superpowers",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 35.5789,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 35.5789,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "record this bug before we forget how it was solved",
+      "skill": "dev-wiki",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 27.2172,
+      "mode": "oracle",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 27.2172,
+          "mode": "oracle"
+        }
+      ]
+    },
+    {
+      "query": "fix the broken test",
+      "skill": "yagni",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 49.122,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 49.122,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "save this decision so the next session sees it",
+      "skill": "dev-wiki",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 39.5923,
+      "mode": "oracle",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 39.5923,
+          "mode": "oracle"
+        }
+      ]
+    },
+    {
+      "query": "turn this procedure into a reusable skill",
+      "skill": "dev-wiki",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 12.3811,
+      "mode": "oracle",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 12.3811,
+          "mode": "oracle"
+        }
+      ]
+    },
+    {
+      "query": "what do we know about this topic",
+      "skill": "dev-wiki",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 40.2234,
+      "mode": "oracle",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 40.2234,
+          "mode": "oracle"
+        }
+      ]
+    },
+    {
+      "query": "what is the weather today",
+      "skill": "dev-wiki",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 9.4605,
+      "mode": "oracle",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 9.4605,
+          "mode": "oracle"
+        }
+      ]
+    },
+    {
+      "query": "write a python script that checks the logs",
+      "skill": "dev-wiki",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 13.9179,
+      "mode": "oracle",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 13.9179,
+          "mode": "oracle"
+        }
+      ]
+    },
+    {
+      "query": "what do we know about caching",
+      "skill": "yagni",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 68.133,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 68.133,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "make a skill from this workflow",
+      "skill": "learn",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 13.4812,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 13.4812,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "запомни что мы решили",
+      "skill": "dev-wiki",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 63.9166,
+      "mode": "oracle",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 63.9166,
+          "mode": "oracle"
+        }
+      ]
+    },
+    {
+      "query": "сделай скилл из этой процедуры",
+      "skill": "learn",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 16.9315,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 16.9315,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "turn this session into a reusable skill",
+      "skill": "learn",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 28.1613,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 28.1613,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "explain this procedure to me",
+      "skill": "learn",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 8.253,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 8.253,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "fix this bug right now",
+      "skill": "dev-wiki",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 41.5121,
+      "mode": "oracle",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 41.5121,
+          "mode": "oracle"
+        }
+      ]
+    },
+    {
+      "query": "teach yourself this procedure so you never redo the research",
+      "skill": "learn",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 27.0399,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 27.0399,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "запиши в память что мы выбрали",
+      "skill": "learn",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 26.0302,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 26.0302,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "save this decision into memory",
+      "skill": "learn",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 36.2466,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 36.2466,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "write a test for this function",
+      "skill": "fable-judge",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 26.6373,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 26.6373,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "verify that the work is actually done",
+      "skill": "fable-judge",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 56.1718,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 56.1718,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "judge whether this agent really finished the task",
+      "skill": "fable-judge",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 49.0929,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 49.0929,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "проверь что сделано",
+      "skill": "fable-judge",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 67.918,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 67.918,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "review the code style",
+      "skill": "fable-judge",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 22.4505,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 22.4505,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "did the tests really pass or is the report fake?",
+      "skill": "fable-judge",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 64.731,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 64.731,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "explain how to verify builds",
+      "skill": "fable-judge",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 25.7336,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 25.7336,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "fix the flaky assertion",
+      "skill": "fable-judge",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 23.2034,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 23.2034,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "what do we know about skill formats",
+      "skill": "learn",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 87.4048,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 87.4048,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "write a new feature",
+      "skill": "code-review-and-quality",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 11.0332,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 11.0332,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "look at the whole change for bugs and smells",
+      "skill": "code-review-and-quality",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 13.5803,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 13.5803,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "is this diff safe to merge?",
+      "skill": "code-review-and-quality",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 23.5851,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 23.5851,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "check my code for problems",
+      "skill": "code-review-and-quality",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 42.718,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 42.718,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "UnicodeEncodeError при выводе кириллицы",
+      "skill": "windows-encoding-fixes",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 13.7598,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 13.7598,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "запомни этот вывод",
+      "skill": "code-review-and-quality",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 22.8098,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 22.8098,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "CRLF line endings broke my md5 checks",
+      "skill": "windows-encoding-fixes",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 5.5313,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 5.5313,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "cp1251 in the console output",
+      "skill": "windows-encoding-fixes",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 15.0473,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 15.0473,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "my script crashes on Windows with an encoding error",
+      "skill": "windows-encoding-fixes",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 14.853,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 14.853,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "fix the bug you found",
+      "skill": "code-review-and-quality",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 58.7328,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 58.7328,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "write a python script that runs on Linux",
+      "skill": "windows-encoding-fixes",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 22.9864,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 22.9864,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "how do I fix a permissions error on Windows",
+      "skill": "windows-encoding-fixes",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 18.8121,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 18.8121,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "sort these strings alphabetically",
+      "skill": "windows-encoding-fixes",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 7.4159,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 7.4159,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "verify the work is done",
+      "skill": "code-review-and-quality",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 59.407,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 59.407,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "explain unicode normalization",
+      "skill": "windows-encoding-fixes",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 27.9533,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 27.9533,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "it doesn't work",
+      "skill": "debugging-and-error-recovery",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 23.1897,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 23.1897,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "странная ошибка при старте приложения",
+      "skill": "debugging-and-error-recovery",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 18.214,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 18.214,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "add error handling to this code",
+      "skill": "debugging-and-error-recovery",
+      "expected": false,
+      "fired": true,
+      "verdict": "FAIL",
+      "duration_s": 17.7887,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 17.7887,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "still broken after the update",
+      "skill": "debugging-and-error-recovery",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 33.4687,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 33.4687,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "explain how try/except works",
+      "skill": "debugging-and-error-recovery",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 14.0992,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 14.0992,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "catch all exceptions to be safe",
+      "skill": "debugging-and-error-recovery",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 29.7678,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 29.7678,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "add a promo code to the checkout",
+      "skill": "money-path-safety",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 23.4153,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 23.4153,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "the build fails, what do I do",
+      "skill": "debugging-and-error-recovery",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 59.0391,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 59.0391,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "format the price display nicely",
+      "skill": "money-path-safety",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 10.0642,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 10.0642,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "charge the user only after a successful job",
+      "skill": "money-path-safety",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 40.0686,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 40.0686,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "add a shopping cart UI",
+      "skill": "money-path-safety",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 8.1153,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 8.1153,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "write a query to list all users",
+      "skill": "money-path-safety",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 9.7525,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 9.7525,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "rename the invoice template",
+      "skill": "money-path-safety",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 17.4909,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 17.4909,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "refund logic for failed payments",
+      "skill": "money-path-safety",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 36.9708,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 36.9708,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "sanitize the user input in this form",
+      "skill": "security-and-hardening",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 12.5116,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 12.5116,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "is this SQL query injectable?",
+      "skill": "security-and-hardening",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 24.8314,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 24.8314,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "store the password securely",
+      "skill": "security-and-hardening",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 18.9135,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 18.9135,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "write a regex that extracts emails",
+      "skill": "security-and-hardening",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 10.0427,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 10.0427,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "speed up the login page render",
+      "skill": "security-and-hardening",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 14.4635,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 14.4635,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "change the button color on the login form",
+      "skill": "security-and-hardening",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 7.372,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 7.372,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "add auth to the API",
+      "skill": "security-and-hardening",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 53.7486,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 53.7486,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "backup the database weekly",
+      "skill": "security-and-hardening",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 23.6211,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 23.6211,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "design the retry logic for the API",
+      "skill": "debugging-and-error-recovery",
+      "expected": false,
+      "fired": false,
+      "verdict": "PASS",
+      "duration_s": 163.5558,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 163.5558,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "deduct credits when the task starts successfully",
+      "skill": "money-path-safety",
+      "expected": true,
+      "fired": true,
+      "verdict": "PASS",
+      "duration_s": 141.9113,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": true,
+          "duration_s": 141.9113,
+          "mode": "name"
+        }
+      ]
+    },
+    {
+      "query": "review this change before merge",
+      "skill": "code-review-and-quality",
+      "expected": true,
+      "fired": false,
+      "verdict": "FAIL",
+      "duration_s": 961.1904,
+      "mode": "name",
+      "attempts": [
+        {
+          "fired": false,
+          "duration_s": 961.1904,
+          "mode": "name",
+          "error": "TimeoutExpired: command timed out after 180s",
+          "trace_tail": "The single candidate issue scored **0/100** — it's a pre-existing concern on a line the PR did not modify, and AGENTS.md's timeout rule actually *discourages* post-credential timeouts, so the no-timeout behavior is compliant, not a violation. Below the 80 threshold → filtered out (Step 6).\n\n**Final result (Step 8):** No issues survived. Re-confirmed eligibility, then posted a \"No issues found\" review comment via `gh`:\nhttps://github.com/router-for-me/CLIProxyAPI/pull/5332#issuecomment-5461170087"
+        }
+      ],
+      "error": "TimeoutExpired: command timed out after 180s",
+      "trace_tail": "The single candidate issue scored **0/100** — it's a pre-existing concern on a line the PR did not modify, and AGENTS.md's timeout rule actually *discourages* post-credential timeouts, so the no-timeout behavior is compliant, not a violation. Below the 80 threshold → filtered out (Step 6).\n\n**Final result (Step 8):** No issues survived. Re-confirmed eligibility, then posted a \"No issues found\" review comment via `gh`:\nhttps://github.com/router-for-me/CLIProxyAPI/pull/5332#issuecomment-5461170087"
+    }
+  ],
+  "duration_s_total": 3312.361,
+  "duration_s_mean": 41.405
+}
