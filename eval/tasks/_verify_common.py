@@ -251,6 +251,7 @@ def has_non_numeric_cover(tree: ast.Module) -> bool:
                     return True
     return False
 
+
 # --- Task 003: clamp boundary assertions ----------------------------------
 
 def _number(node: ast.AST) -> int | float | None:
@@ -296,6 +297,54 @@ def clamp_boundary_assertions(tree: ast.Module) -> tuple[bool, bool]:
     return boundary_lo, boundary_hi
 
 
+# --- Task 004: median even-count regression --------------------------------
+
+def _median_call(call: ast.Call) -> bool:
+    return _is_call_to(call, "median") and len(call.args) == 1
+
+
+def _median_even_list_arg(call: ast.Call) -> bool:
+    """``median([<literals>])`` with an even number of elements."""
+    if not _median_call(call):
+        return False
+    arg = call.args[0]
+    if not isinstance(arg, ast.List):
+        return False
+    return len(arg.elts) % 2 == 0
+
+
+def has_median_even_success(tree: ast.Module) -> bool:
+    """A top-level ``test_*`` with ``median([<even literal list>]) == <number>``."""
+    for fn in credited_test_functions(tree):
+        for node in ast.walk(fn):
+            if not isinstance(node, ast.Compare):
+                continue
+            if not any(isinstance(op, ast.Eq) for op in node.ops):
+                continue
+
+            def _even_call(nd: ast.AST) -> bool:
+                return isinstance(nd, ast.Call) and _median_even_list_arg(nd)
+
+            left_is_even = _even_call(node.left)
+            comparator_is_number = any(
+                isinstance(c, ast.Constant)
+                and isinstance(c.value, (int, float))
+                and not isinstance(c.value, bool)
+                for c in node.comparators
+            )
+            if left_is_even and comparator_is_number:
+                return True
+            if any(
+                isinstance(node.left, ast.Constant)
+                and isinstance(node.left.value, (int, float))
+                and not isinstance(node.left.value, bool)
+                and _even_call(c)
+                for c in node.comparators
+            ):
+                return True
+    return False
+
+
 # --- Public entry point ----------------------------------------------------
 
 def audit_test_calc(tree: ast.Module, task: str) -> list[str]:
@@ -322,6 +371,12 @@ def audit_test_calc(tree: ast.Module, task: str) -> list[str]:
             failures.append("no boundary assertion: missing clamp(v < lo) == lo")
         if not boundary_hi:
             failures.append("no boundary assertion: missing clamp(v > hi) == hi")
+    elif task == "004-regression-test-first":
+        if not has_median_even_success(tree):
+            failures.append(
+                "no behavioral coverage: missing median([<even literal "
+                "list>]) == <number> assertion"
+            )
     return failures
 
 

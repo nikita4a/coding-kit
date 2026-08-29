@@ -1,5 +1,5 @@
 # Coding Agent OS — Operating Contract
-> **v3.4.3** | db-tools (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 18, task-smoke 3 (oracle verify), trigger-eval 80 (+ behavior oracles for always-on skills), schema-v1 results store, evidence trend, eval telemetry (duration + reported usage), inlined-prompt ablation, ponytail skill, doctor 9 checks, 38 skills.
+> **v3.4.4** | db-tools (findings, repomap, call-graph, ftsquery), fable-judge, FILE-SIZE gate, trap-suite 21, task-smoke 4 (oracle verify), usage-audit (real-session telemetry), trigger-eval 80 (+ behavior oracles for always-on skills), schema-v1 results store, evidence trend, eval telemetry (duration + reported usage), inlined-prompt ablation, ponytail skill, doctor 9 checks, 43 skills.
 
 > **Product:** Coding Agent OS v2 | **CORE v2**
 > Profile root: this directory.
@@ -102,80 +102,24 @@ Memory = database (~/.memory), not conversation. Before "what do we know about X
 python ~/.memory/db-tools/search_all.py "X"
 ```
 
-**Save reflex:** after every finished task / made decision / closed bug — would a future session need this? Yes → findings.py add (conclusion) or Wiki post. No → skip (noise-free is deliberate).
+**Save reflex:** after a finished task / decision / closed bug — worth remembering? → `findings.py add "topic" --text "conclusion" --source path`. No → skip (noise-free is deliberate).
 
-**Boundary rule:** portable knowledge (patterns, lessons, decisions) → `~/.memory/Wiki/<type>/<slug>.md` → `python ~/.memory/db-tools/build.py`. Project status/specifics → file in the project → `python ~/.memory/db-tools/build.py -r <project root> -o ~/.memory/db/<name>.db`. Findings: `python ~/.memory/db-tools/findings.py add "topic" --text "conclusion" --source path`.
+**Boundary rule:** portable → `~/.memory/Wiki/<type>/<slug>.md` → `build.py`; project → `WORK/<project>/docs/` → `build.py -r <root> -o ~/.memory/db/<name>.db`.
 
-**Path convention:** `~/.memory` everywhere; env `MEMORY_ROOT` overrides (shell expands `~`; on Windows use Git Bash / PowerShell `$env:MEMORY_ROOT`).
+**Tools:** `findings.py add|search` (research.db), `search_all.py` (all bases), `repomap.py project|file` (maps), `search.py --calls|--imports` (graphs). `MEMORY_ROOT` overrides `~/.memory`.
 
-**Engine v2.7:**
-- `python ~/.memory/db-tools/findings.py add "topic" --text "conclusion" --source path` — findings in research.db (knowledge is lost otherwise)
-- `python ~/.memory/db-tools/findings.py search "topic"` — search findings
-- `python ~/.memory/db-tools/repomap.py project --tokens 1500` — project map (PageRank over import graph)
-- `python ~/.memory/db-tools/repomap.py file <path>` — file map: symbols + callers + callees
-- `python ~/.memory/db-tools/search.py --calls <fn>` / `--imports` / `--inherits` — dependency graphs
-- `python ~/.memory/db-tools/search_all.py "topic"` — search all databases at once
-
-**Upgrading the kit (data survival).** Irreplaceable: `Wiki/` (markdown, in the memory repo's git) and `db/research.db` (findings+links — **gitignored, back it up yourself**). Everything else in `db/` is a rebuildable index.
-```bash
-cp ~/.memory/db/research.db ~/research.db.bak   # the only manual backup
-git pull && python scripts/install.py           # new engine, indexes rebuilt
-python scripts/doctor.py                        # verify
-# search broken after an engine schema change? Rebuild indexes from source:
-find ~/.memory/db -name '*.db*' ! -name 'research.db*' -delete
-python scripts/install.py   # NEVER delete research.db
-```
+**Data survival on upgrade:** back up `~/.memory/db/research.db` (gitignored, everything else in `db/` is rebuildable via `scripts/install.py`), then `python scripts/doctor.py` to verify.
 
 ## 6. 📚 SKILLS
 
-### Always-on
-| Skill | Purpose |
-|-------|---------|
-| `superpowers` | Plan → TDD → Implement → Verify → Report |
-| `yagni` | Minimalism, delete dead code, stdlib-first |
-| `engineering-persona` | Direct engineering tone, no fluff |
-| `fable-method` | Complex multi-step tasks |
-| `dev-wiki` | Cross-chat memory |
+Always-on: `superpowers` (the method), `yagni` (minimalism), `engineering-persona` (tone), `fable-method` (complex tasks), `dev-wiki` (memory).
 
-### Domain
-| Skill | Trigger |
-|-------|---------|
-| `fable-judge` | Verify "done": re-run claimed checks, verdict VERIFIED/REFUTED |
-| `windows-encoding-fixes` | Windows: cp1251, CRLF, venv paths |
-| `code-review-and-quality` | Review, "check the code", "what will break" |
-| `test-driven-development` | "Write a test", "cover", TDD |
-| `incremental-implementation` | Multi-file changes |
-| `debugging-and-error-recovery` | "Doesn't work", "broke", bug |
-| `systematic-debugging` | Root cause: reproduce → localize → fix → guard |
-| `architecture-simplicity` | Design, refactoring |
-| `production-first-decisions` | Tool/library choice |
-| `security-and-hardening` | OWASP, input validation, auth |
-| `observability-and-instrumentation` | Logs, metrics, tracing |
-| `shipping-and-launch` | Deploy, feature flags, rollback |
-| `spec-driven-development` | Spec-first |
-| `git-workflow-and-versioning` | Commits, branches, PRs |
-| `code-graph-review` | Blast radius, impact analysis |
-| `money-path-safety` | Money, payments, balance |
-| `learn` | "Learn this", "/learn", "make a skill" — agent writes a SKILL.md |
-| `web-research` | Web search, fact-checking |
-| `skill-authoring` | Creating skills |
-| `reasoning-engine` | Multi-step thinking before non-trivial actions |
-| `debug-incident-protocol` | "Doesn't work", "broke", incident analysis |
-| `testing-discipline` | What to test, coverage, "is it done" |
-| `brainstorming` | Design tasks: questions before code, spec |
-| `writing-plans` | Execution plan from spec |
-| `executing-plans` | Plan execution with checkpoints |
-| `subagent-driven-development` | Implementation via subagents |
-| `dispatching-parallel-agents` | Parallel independent tasks |
-| `verification-before-completion` | "Done" only with fresh check output |
-| `requesting-code-review` | Request a review |
-| `receiving-code-review` | Handle review feedback |
-| `using-git-worktrees` | Isolated worktrees per branch |
-| `finishing-a-development-branch` | Branch integration into main |
+38 domain skills live in `skills/` with trigger descriptions in each SKILL.md; the authoritative manifest is `profile.yml`.
 
 **Skill diagnostics:**
-- `python scripts/tools/skills_search.py "<symptom words>"` — find the fitting skill without a model (token ranking over descriptions)
-- `python eval/trigger_eval.py --queries eval/trigger_queries.json [--executor "<cli>"]` — measure description trigger rate (should-trigger queries must fire, near-misses must not; thresholds 0.5 / 0.3)
+- `python scripts/tools/skills_search.py "<symptom words>"` — find the fitting skill without a model
+- `python eval/trigger_eval.py --queries eval/trigger_queries.json [--executor "<cli>"]` — measure trigger rate (thresholds 0.5 / 0.3)
+- `python scripts/tools/usage_audit.py [--since YYYY-MM-DD]` — real-usage audit: which skills/memory/OPS markers actually fire in session transcripts
 
 ---
 
@@ -196,233 +140,4 @@ python scripts/tools/check_file_sizes.py --ci       # gate (exit 1 on hard)
 
 ## 9. CHANGELOG
 
-> **Claim discipline (v2.7.4):** every "fixed"/"verified" claim below must cite the regression test (tests/test_*.py) or doctor check that re-verifies it. A claim without a check is not a claim — the v2.6 "githist 40-hex boundary" entry had neither code nor test (audit 2026-08-22). Sub-agent/cross-model verdicts are testimony: re-run fresh before reporting.
-
-- **v3.4.3 (installer resilience, eval hardening & contract alignment)**:
-  installer (`scripts/install.py`) hardened with strict absolute-path validation
-  for `MEMORY_ROOT` (S-L1, `tests/test_install.py:InstallMemoryRootValidationTest`),
-  PowerShell preflight check and automated rollback on junction/symlink creation
-  failure (S-M1, `tests/test_install.py:LinkEngineHardeningTest`), early detection
-  and rejection of unsupported isolated/embedded Python environments (S-M2,
-  `tests/test_install.py:PythonEnvironmentCheckTest`), and engine schema version
-  aligned to 2.9 (S-L4, `scripts/doctor.py:check_engine_sync`, `tests/test_doctor.py`).
-  Eval harness hardened with bounded prefix and untrusted candidate delimiters in
-  trap-suite judge prompts (E-2, `eval/runner.py:judge_one`, `tests/test_json_output.py`),
-  explicit top-level `mode` discriminator (`"dry-run"` vs `"live"`) in task runner
-  and safe legacy zero-result filtering in trend reporting (E-3, `eval/task_runner.py`,
-  `eval/trend.py`, `tests/test_task_runner.py`, `tests/test_trend.py`). Asset counts
-  explicitly asserted by release contract: 38 skills, 18 trap scenarios, 80 trigger queries,
-  3 task smokes, 9 doctor checks (E-1, `tests/test_release_contract.py:AssetCountsContractTest`).
-  Stale instruction paths (`scripts/task-brief`, `eval/workflow.js`, `skills/fable-method/eval/`)
-  cleared from `fable-judge` and SDD skills (A-R1/A-R2, `tests/test_release_contract.py:StaleDocReferencesTest`).
-  Ponytail skill MIT license added (`skills/ponytail/LICENSE`), supported versions table
-  in `SECURITY.md` updated with `3.4.x`, and OPS.md §6 table formatting repaired.
-  Deferred per review scope: H-F1 deletion, ME-1 migration, ME-4 peripheral tests,
-  D-R5/D-R6, S-L2/S-L3, I6, and threat-model redesign. Version 3.4.3 across VERSION,
-  profile.yml, OPS.md, SKILL_RUNTIME.md, and test_release_contract.py. Verified: full
-  pytest suite, doctor, and file-size gate green.
-
-- **v3.4.2 (persona → behavioral rules + context-monitor removal)**:
-  identity/persona declarations replaced with behavioral rules per 2026
-  persona-prompting research (expert personas add no accuracy for code tasks
-  and hurt clarity). OPS §1 and AGENTS §1 drop the persona role
-  declarations, keep the Three pillars, language rule, and stop-word, and
-  open with the one-line method: plan → TDD → implement → verify → report;
-  evidence over claims. The AGENTS self-check and the OPS drift-killer
-  self-check now ask "do I follow the method / check memory / back every
-  claim with fresh evidence?" instead of a persona identity check.
-  engineering-persona SKILL.md description clarified as response-format
-  rules (not a persona). Adapter Verify sections (UNIVERSAL, gemini,
-  antigravity, zcode) and the eval/trigger_eval.py prelude converted from
-  "who are you" identity checks to behavioral checks (show the method, search
-  memory through db-tools).
-  `scripts/context-monitor.py` and `tests/test_context_monitor.py` are
-  removed (YAGNI — no consumer; the context-reflex was unclaimed dead
-  weight, and keeping an unused script is exactly the accidental scope the
-  release removes). doctor drops the reflex-command check it guarded and is
-  now 9 checks; the OPS CONTEXT MONITOR section and the AGENTS reflex block
-  are stripped, README/SKILL_RUNTIME/adapters no longer command it. Version 3.4.2
-  across VERSION and profile.yml; OPS.md and SKILL_RUNTIME.md headers
-  v3.4.2; skill count stays 38. Release-contract test
-  `tests/test_release_contract.py` extended to assert no identity-declaration
-  phrase in the public release text, the 3.4.2 version, and the
-  context-monitor script/test absent plus no ACTIVE doc reference. Sources:
-  Wharton GAIL "Playing Pretend: Expert Personas Don't Improve Factual
-  Accuracy" (2025-12-07, Basil et al., SSRN 5879722,
-  gail.wharton.upenn.edu/research-and-insights/playing-pretend-expert-
-  personas/); PRISM arXiv 2603.18507 (2026-03, expert personas improve
-  alignment/safety but damage knowledge retrieval); arXiv 2605.29420
-  (2026-05, roles raise expertise depth, reduce clarity; baseline wins in
-  tech/science/finance/legal); arXiv 2311.10054 (EMNLP 2024 Findings,
-  personas in system prompts do not improve factual performance). Verified:
-  full pytest suite, doctor, and the file-size gate green.
-
-- **v3.4.1 (ponytail skill)**: `skills/ponytail/SKILL.md` — lazy senior-dev
-  mode adapted from DietrichGebert/ponytail (MIT, credits note preserved) into
-  coding-kit Hermes conventions; registered in the profile.yml domain list.
-  Public skill counts 37 -> 38 across README/OPS/UNIVERSAL. Version 3.4.1
-  across VERSION and profile.yml; OPS.md and SKILL_RUNTIME.md headers v3.4.1.
-  Release-contract test `tests/test_release_contract.py` extended to assert
-  ponytail presence and a 38-skill manifest in sync. Verified: full pytest
-  suite, doctor, and the file-size gate green.
-
-- **v3.4.0 (focused release — behavior oracle & accidental-scope removal)**:
-  only the valid behavior-oracle feature from the reverted mixed commit
-  e7449f6 is kept: `eval/behavior_oracles.py` plus `signal_fired()` /
-  `has_oracle` and per-row/per-attempt `mode=oracle|name` in
-  `eval/trigger_eval.py` (`tests/test_trigger_eval.py`, BehaviorOracleTest).
-  The accidental screenpipe scope (`skills/screenpipe-api`,
-  `skills/screenpipe-cli`, profile.yml declarations — never had consumers)
-  and the four stale pre-oracle live result JSONs from e7449f6 (one leaked
-  the personal path) are excluded from this release. Version 3.4.0 across
-  VERSION and profile.yml; OPS.md and SKILL_RUNTIME.md headers v3.4.
-  Release-contract regression test `tests/test_release_contract.py` asserts
-  the release invariants (version, skill manifest 37 in sync, screenpipe
-  absent, no personal path in the public release text, stale results absent).
-  Verified: full pytest suite, doctor, and the file-size gate green.
-- **v3.3.1 (pre-publication hardening)**: `scripts/kitctl.py` removed — the
-  thin lifecycle dispatcher had zero runtime consumers: agent skills,
-  harness triggers, and CI call the underlying scripts directly
-  (`python scripts/doctor.py`, `python -m pytest tests`,
-  `python scripts/tools/check_file_sizes.py --ci`). The
-  install.py CLI-guard tests moved to `tests/test_install.py`
-  (`InstallCliGuardTest`), the trend ascii-stdout unicode regression
-  test to `tests/test_trend.py`; `tests/test_kitctl.py` deleted with
-  the dispatcher. README daily loop and CONTRIBUTING gates now name
-  the scripts directly. Verified: full pytest suite, doctor, and the
-  file-size gate green after the cut.
-  Git history sanitized pre-publication: personal machine paths and
-  internal docs purged from every revision (both pickaxe forms return
-  zero commits; originals kept in a local pre-sanitize bundle).
-
-
-- **v3.3.0 (eval telemetry & experimental inlined-prompt ablation)**:
-  `eval/telemetry.py` — `summarize_durations` folds finite, non-negative
-  per-attempt `duration_s` into `duration_s_total`/`duration_s_mean`
-  (skipping negatives, NaN/Inf, and booleans), and `load_reported_usage`
-  ingests a user-supplied `--usage-json` `{tokens_total, cost_usd}` object
-  only when strictly numeric and finite — measured wall-clock only, never
-  fabricated tokens/cost (`tests/test_telemetry.py`). All three runners
-  persist the duration aggregates, and attach `reported_usage` on live runs
-  only — dry-run never ingests it
-  (`tests/test_json_output.py`, `tests/test_task_runner.py`,
-  `tests/test_trigger_eval.py`). `eval/prompt_assembly.py` — controlled
-  inlined-prompt assembly (`skill_manifest`, `assemble_prompt`) plus
-  `runner.py --inline-skills/--disable-skill` wiring; the executor runs from
-  a neutral per-call temp `cwd` while `executor_env()` retains HOME/auth and
-  drops secrets (`tests/test_prompt_assembly.py`,
-  `tests/test_prompt_inline.py`, `tests/test_json_output.py`,
-  `tests/test_task_runner.py`). `eval/ablate.py` — experimental per-skill
-  inlined-prompt contribution (pass-rate with/without the inlined body),
-  persisted as `kind="ablate"` and dispatched via `kitctl ablate`
-  (`tests/test_ablate.py`, `tests/test_results_io.py`,
-  `tests/test_kitctl.py`); rendered raw by `trend.py` under an explicit
-  experimental caveat (`tests/test_trend.py`). Ablation is descriptive, not
-  causal: ambient global skills are NOT controlled, small samples may be
-  non-conclusive, and a treatment removes a skill from that experiment's
-  inlined prompt only — it never deletes the skill or claims deletion evidence.
-
-- **v3.2.0 (evidence-first evals & reliable trend loop)**: `eval/results_io.py` —
-  schema_version 1 append-only store with atomic `os.link` temp-writes, unique UTC
-  microsecond+uuid4 `run_id`, separate `model` and sanitized `executor_spec`, kind
-  validation (`trap`, `tasks`, `trigger`), concurrent write safety, and resilient loading
-  (`tests/test_results_io.py`). `eval/task_runner.py` — task smoke canary on 3 real
-  coding tasks using binary `verify.py` oracles (no LLM judge), pristine fixture sandbox
-  isolation per attempt, default `--tries 2`, shared 6-class failure taxonomy, and trace
-  tail capture (`tests/test_task_runner.py`). `eval/runner.py` & `eval/trigger_eval.py` —
-  truthful per-attempt duration, error, and verdict recording, decoupled `--model` metadata,
-  and cleanup regression tests (`tests/test_json_output.py`). `eval/trend.py` — reliable
-  history reporting grouped by `(kind, model)`, pass-rate calculation, warn-only baseline
-  deltas (exit 0), and structured Failure Evidence Packets without unsupervised source
-  edits (`tests/test_trend.py`). `scripts/kitctl.py` — `tasks` (dry-run default), `trend`,
-  and pytest-based `tests` dispatch (`tests/test_kitctl.py`). CI & gates: `.github/workflows/evals.yml`
-  dry-only validation on Ubuntu and Windows matrix (`permissions: contents: read`),
-  no live push races; eliminated plan baseline grandfather loophole in `scripts/file_size_baseline.json`;
-  memory extraction equivalence tests for `file_scanner.py`, `findings_db.py`, `findings_links.py`.
-- **v3.0.0 (publication-ready)**: `scripts/kitctl.py` — one command for
-  the lifecycle (install/doctor/gate/eval/triggers/tests/warmup/
-  checkpoint/context; thin dispatcher, tests/test_kitctl.py).
-  install.py CLI guard: '--help' prints usage instead of running the
-  installer, unknown argv refused (tests/test_kitctl.py; the audit's
-  '--help ran the install' hazard). README: kitctl daily loop,
-  trigger-eval row. Version 3.0.0 across VERSION/profile/OPS.
-- **v2.9.0 (memory quality)**: single FTS sanitizer — db-tools/
-  ftsquery.py; the three drifting copies (search.py / findings.py /
-  memory-warmup.py) import it now (tests/test_v29.py; quoted
-  phrase-prefix semantics live-verified). Findings gain verify-commands:
-  `add --verify-cmd` + `findings.py verify <id>` re-runs it (VERIFIED +
-  verified_at / FAILED exit 1) — memory that proves itself fresh.
-  build.py: full rebuild is atomic (temp db + rename — a crash mid-build
-  leaves the previous index intact), refuses a project named 'research'
-  defaulting into the findings store, wiki-branch root compare is
-  case-insensitive. memory-warmup honors MEMORY_ROOT (OPS §5 contract).
-- **v2.8.0 (self-verifying kit)**: doctor learns the two classes the
-  2026-08-22 audit sailed past — `check_reflex_commands` (a documented
-  reflex command must print status and exit non-zero on trouble; catches
-  the v2.7.3 silent no-op context-monitor) and `check_encoding_discipline`
-  (no bare text=True in engine/scripts/eval — the cp1251 mojibake class;
-  the one live instance, context-monitor dump_checkpoint, fixed)
-  (tests/test_doctor.py; doctor is now 10 checks). Trap-suite 15 -> 18:
-  dead-flag, contract-drift, silent-cross-write — the three degradation
-  classes the audit itself demonstrated (eval/scenarios/, dry-run
-  validated). CI: trigger-queries validation step in the gates workflow.
-- **v2.7.4 (contract-truth release — closes all 4 MAJOR of audit 2026-08-22)**:
-  `search.py --refresh` refuses a (-r, -b) pair that does not match
-  build.py's own mapping; `--force-refresh` overrides
-  (tests/test_search_refresh.py — wiki.db and project indexes can no
-  longer silently cross-destroy; the v2.6 bug class, reopened by the
-  audit as reachable via --refresh). `context-monitor.py --check` always
-  prints a status line; exit codes 0/1/2 = ok/warn/critical
-  (tests/test_context_monitor.py — the OPS §7 reflex used to be a silent
-  no-op). githist.py: git output decoded via _compat.run (no permanent
-  cp1251 mojibake in research.db on Windows), real 40-hex commit
-  boundary, empty commits kept (tests/test_githist.py — the misdocumented
-  v2.6 claim is now true). `trigger_eval --timeout` reaches the executor
-  (tests/test_trigger_eval.py). sanitize_query comment now matches
-  behavior (quoted phrase-prefix verified live). ZCode adapter
-  (adapters/zcode.md, profile.yml, README, UNIVERSAL).
-
-- **v2.7.3 (trap-suite live matrix)**: first full live run of all 15
-  scenarios via `claude --model dashscope-glm-5.2-fast-preview -p`
-  (default resale provider was 502ing). 13/15 first try; breaking-migration =
-  fast-model elision (stable 2/2 on retry); grounded-decision `expect`
-  over-specified "web search" and is now the skill's real contract
-  (primary sources + honest tool-gap disclosure). Result: 15/15 PASS,
-  matrix in eval/results-2026-08-21-trap15-glm52.md.
-- **v2.7.2 (trap-suite 2.0, part 1)**: 5 new scenarios (silent-test-skip,
-  type-erasure, infinite-retry-masking, breaking-migration, mock-pollution)
-  — real agent-degradation classes from review round 2. Content calibrated
-  against a live model: 5/5 PASS with session-model sanity run; live
-  claude -p suite blocked by external provider 502 (not the kit).
-- **v2.7.1 (review round)**: doctor.py YAML-validates skill frontmatter
-  (regex fallback without pyyaml); debug-incident-protocol frontmatter
-  quoted (PyYAML/Hermes crash); docs 36->37 skills, headers v2.6/v2.5->v2.7.
-- **v2.7.0 (skill autopilot)**: trigger-eval (description trigger-rate
-  measurement, 80 baseline queries) + skills_search (no-model catalog);
-  ROUTING rule zero uses skills_search.
-- **v2.6 (review round 2)**: 12 engine defects closed with live
-  repros — `build.py -r X` without `-o` no longer destroys wiki.db;
-  text->binary flip drops the stale FTS row; BOM-tolerant skip.local;
-  skip.local never indexed; warmup `created` column + sanitized MATCH;
-  `search.py -p` slash-normalized; githist 40-hex commit boundary;
-  extract_findings bootstraps schema + word-boundary markers; engine
-  regression tests (tests/test_build.py).
-- **v2.5 (review-driven hardening)**: all v2.4-review findings closed —
-  Camoufox dead-refs cut (R1), install link follows the last installer (R2),
-  unit tests for install/root resolver (R3), CI windows+ubuntu matrix (R4),
-  neutral skip defaults + per-machine `skip.local` (R5), smoke by exit-code
-  (N1), `.override.md`/`skip.local` gitignored (N2), 8-16K runtime mode (N3),
-  engine fully English (N5). Engine: binaries never indexed (ext list + NUL
-  sniff — a 50MB .exe bloated agent.db to 372MB and froze search), FTS
-  optimize after deletions.
-- **v2.4 (hardening)**: destructive-command guardrail (OPS §2.9), override modes
-  (`.override.md`: EXPLORATORY_PROTOTYPE / STRICT_AUDIT), findings `--file/--symbol`
-  linkage surfaced in `repomap.py file`, `scripts/doctor.py` self-diagnostic,
-  trap-suite +2 (hallucinated-import, premature-abstraction) — 10 scenarios.
-- **v2.3 (shareable kit)**: memory engine vendored into the kit (`memory/db-tools`,
-  one physical copy via junction), `scripts/install.py` one-command bootstrap,
-  README + MIT LICENSE + .gitattributes, user-path remnants purged —
-  one clone gives a friend a fully working kit.
-- **v2.2**: portable memory paths (`~/.memory` + `MEMORY_ROOT`), context-monitor `--dump-checkpoint`, trap-suite +3 scenarios (silent-failure, money-safety, shell-injection) — 8/8 PASS.
-- **v2.1**: English core (AGENTS/OPS/BOOT/SKILL_RUNTIME/profile, all skills).
-- **v2.0**: obra/superpowers phase skills imported (MIT), AGENTS.md soul, trap-suite evals.
+Full history: `docs/CHANGELOG.md`. Claim discipline lives there: every "fixed"/"verified" claim must cite a regression test or doctor check; a claim without a check is not a claim.

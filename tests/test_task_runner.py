@@ -24,12 +24,13 @@ def test_task_runner_discovers_tasks():
         encoding="utf-8",
     )
     assert r.returncode == 0, r.stderr
-    assert "3 tasks discovered" in r.stdout or "3 tasks" in r.stdout
+    assert "4 tasks discovered" in r.stdout or "4 tasks" in r.stdout
 
 
 def test_verify_rejects_pristine_fixture(tmp_path):
-    # pristine fixture fails for all 3 tasks
-    for task in ("001-fix-div-zero", "002-add-validation", "003-regression-guard"):
+    # pristine fixture fails for all 4 tasks
+    for task in ("001-fix-div-zero", "002-add-validation", "003-regression-guard",
+                 "004-regression-test-first"):
         sandbox = tmp_path / task
         shutil.copytree(ROOT / "eval" / "tasks" / "repo-fixture", sandbox)
         v = ROOT / "eval" / "tasks" / task / "verify.py"

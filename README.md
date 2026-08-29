@@ -1,6 +1,6 @@
 # coding-kit — Coding Agent OS
 
-A portable agent-brain kit: methodology (superpowers), minimalism (YAGNI), cross-chat memory (SQLite FTS5), adversarial evals (trap-suite). 38 Hermes-compatible skills, English instructions, one command install.
+A portable agent-brain kit: methodology (superpowers), minimalism (YAGNI), cross-chat memory (SQLite FTS5), adversarial evals (trap-suite). 43 Hermes-compatible skills, English instructions, one command install.
 
 Works in any environment that reads an agent rules file and SKILL.md skills: Claude Code, OMP, Gemini CLI, Antigravity, Hermes.
 
@@ -12,9 +12,9 @@ Works in any environment that reads an agent rules file and SKILL.md skills: Cla
 | Contract | `OPS.md` | phases, memory hierarchy, gates, changelog |
 | Runtime | `SKILL_RUNTIME.md` | context-size modes |
 | Manifest | `profile.yml` | single source of truth: paths, skills |
-| Skills | `skills/` | 38: always-on core + obra phase skills + domain |
+| Skills | `skills/` | 43: always-on core + obra phase skills + domain + dashboard/UX |
 | Memory engine | `memory/db-tools/` | build, search_all, findings, repomap (FTS5) |
-| Evals | `eval/` | trap-suite (18 scenarios), task smoke (3 oracle-verified tasks), trigger-eval (80 queries), ablation, schema-v1 store + trend + telemetry |
+| Evals | `eval/` | trap-suite (21 scenarios), task smoke (4 oracle-verified tasks), trigger-eval (80 queries), ablation, schema-v1 store + trend + telemetry |
 | Adapters | `adapters/` | per-environment setup guides |
 
 ## Install (one command)
@@ -53,8 +53,8 @@ Gates and checks (the kit's own lifecycle, run directly):
 ## Evals & Trend Loop
 
 The kit includes an evidence-first evaluation harness:
-- **Trap-suite (`eval/runner.py`)**: 18 adversarial scenarios testing adherence to superpowers, YAGNI, and security invariants. Candidate answers are bounded and delimited as untrusted evidence. Omitted `--judge` defaults to the executor (self-judging carries inherent bias; recommend configuring a distinct `--judge` for gating).
-- **Task Smoke (`eval/task_runner.py`)**: 3 real coding tasks verified by deterministic `verify.py` test oracles (no LLM judge). Each attempt runs in an isolated sandbox cloned fresh from `eval/tasks/repo-fixture` (default `--tries 2`). This serves as a smoke canary, not a statistical benchmark.
+- **Trap-suite (`eval/runner.py`)**: 21 adversarial scenarios testing adherence to superpowers, YAGNI, and security invariants. Candidate answers are bounded and delimited as untrusted evidence. Omitted `--judge` defaults to the executor (self-judging carries inherent bias; recommend configuring a distinct `--judge` for gating).
+- **Task Smoke (`eval/task_runner.py`)**: 4 real coding tasks verified by deterministic `verify.py` test oracles (no LLM judge). Each attempt runs in an isolated sandbox cloned fresh from `eval/tasks/repo-fixture` (default `--tries 2`). This serves as a smoke canary, not a statistical benchmark.
 - **Trigger Evals (`eval/trigger_eval.py`)**: 80 queries testing skill activation routing.
 - **Schema-v1 Results Store (`eval/results_io.py`)**: atomic append-only JSON storage under `eval/results/` with microsecond UTC timestamps, UUID `run_id`, separate `model` metadata, explicit `mode` (`"dry-run"` vs `"live"`), and standardized failure taxonomies.
 - **Trend Reporting (`eval/trend.py`)**: summarizes newest runs by `(kind, model)`, filters dry-runs and zero-result artifacts via explicit mode discriminators, reports baseline deltas, and produces structured Failure Evidence Packets with bounded trace tails for debugging.

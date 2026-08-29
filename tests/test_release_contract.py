@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Release contract regression test for coding-kit v3.4.3.
+"""Release contract regression test for coding-kit v3.4.4.
 
-Asserts the observable release invariants of v3.4.3, independent of any
+Asserts the observable release invariants of v3.4.4, independent of any
 historical changelog wording that was accurate at the time:
 
 - VERSION and profile.yml version are both 3.4.3 (doctor check_versions).
@@ -35,11 +35,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-EXPECTED_VERSION = "3.4.3"
-EXPECTED_SKILL_COUNT = 38
-EXPECTED_SCENARIO_COUNT = 18
+EXPECTED_VERSION = "3.4.4"
+EXPECTED_SKILL_COUNT = 43
+EXPECTED_SCENARIO_COUNT = 21
 EXPECTED_TRIGGER_QUERY_COUNT = 80
-EXPECTED_TASK_COUNT = 3
+EXPECTED_TASK_COUNT = 4
 
 # Identity-declaration phrases the v3.4.2 release removed from the public
 # release text. Built from parts so this meta-test's own source never
@@ -157,12 +157,29 @@ class NoIdentityDeclarationTest(unittest.TestCase):
 
 
 class ManifestContractTest(unittest.TestCase):
-    def test_manifest_matches_on_disk_and_count_is_38(self):
+    def test_manifest_matches_on_disk_and_count_is_43(self):
         declared = _declared_skills()
         on_disk = _on_disk_skills()
         self.assertEqual(declared, on_disk,
                          "profile.yml skill manifest must equal skills/ dirs")
         self.assertEqual(len(on_disk), EXPECTED_SKILL_COUNT)
+
+
+class NewDashboardSkillsPresentTest(unittest.TestCase):
+    NEW_SKILLS = (
+        "agent-ux",
+        "dashboard-design",
+        "dashboard-ui-review",
+        "data-visualization",
+        "design-system",
+    )
+
+    def test_new_dashboard_skills_in_manifest_and_on_disk(self):
+        declared = _declared_skills()
+        on_disk = _on_disk_skills()
+        for sk in self.NEW_SKILLS:
+            self.assertIn(sk, declared, f"{sk} must be declared in profile.yml manifest")
+            self.assertIn(sk, on_disk, f"{sk} skill dir must exist on disk")
 
 
 class PonytailPresentTest(unittest.TestCase):
@@ -228,7 +245,7 @@ class ContextMonitorAbsentTest(unittest.TestCase):
 
 
 class AssetCountsContractTest(unittest.TestCase):
-    def test_scenario_count_is_18(self):
+    def test_scenario_count_is_21(self):
         scenarios = list((ROOT / "eval" / "scenarios").glob("*.md"))
         self.assertEqual(len(scenarios), EXPECTED_SCENARIO_COUNT,
                          f"eval/scenarios/*.md count must be {EXPECTED_SCENARIO_COUNT}, found {len(scenarios)}")
@@ -241,7 +258,7 @@ class AssetCountsContractTest(unittest.TestCase):
         self.assertEqual(len(data), EXPECTED_TRIGGER_QUERY_COUNT,
                          f"eval/trigger_queries.json entry count must be {EXPECTED_TRIGGER_QUERY_COUNT}, found {len(data)}")
 
-    def test_task_count_is_3(self):
+    def test_task_count_is_4(self):
         import sys
         if str(ROOT / "eval") not in sys.path:
             sys.path.insert(0, str(ROOT / "eval"))

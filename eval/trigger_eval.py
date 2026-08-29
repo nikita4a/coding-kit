@@ -115,9 +115,18 @@ def validate(queries: list[dict]) -> list[str]:
 
 PRELUDE = (
     "You are an agent. You have a skills directory available "
-    "(Hermes-format SKILL.md skills). Load any skill that fits the user "
-    "request. End your answer with a line: SKILLS LOADED: <comma-separated "
-    "skill names you actually loaded, or 'none'>.\n\n"
+    "(Hermes-format SKILL.md skills), listed below.\n"
+    "You MUST choose from this list: for every request, decide which "
+    "single skill fits it best and load it; answer 'none' only when no "
+    "skill in the list fits. Do not invent skills that are not listed.\n\n"
+    "Examples of the required answer format:\n"
+    "User request: review this security patch for a hardcoded-token leak\n"
+    "SKILLS LOADED: sec-review\n"
+    "User request: rename the variable to match the style guide\n"
+    "SKILLS LOADED: none\n\n"
+    "<skills listing>\n\n"
+    "End your answer with a line: SKILLS LOADED: <comma-separated skill "
+    "names you actually loaded, or 'none'>.\n\n"
 )
 
 
