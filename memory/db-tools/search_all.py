@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 from _compat import chulan_root, fix_encoding  # noqa: E402
-from search import sanitize_query  # noqa: E402
+from ftsquery import sanitize_query  # noqa: E402
 
 fix_encoding()
 
