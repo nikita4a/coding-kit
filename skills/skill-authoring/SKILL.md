@@ -1,6 +1,6 @@
 ---
 name: skill-authoring
-description: 'Use when creating/editing any skill: frontmatter rules (name/description), folder structure, script bundling, quality checklist. Per the Agent Skills specification (Hermes-compatible).'
+description: 'Use when creating or editing any skill: frontmatter rules (name/description), folder structure, script bundling, quality checklist — including converting the current session/procedure/URL into a new reusable skill ("learn", "/learn", "turn this session into a skill", "make a skill from this workflow", "сделай скилл из этой процедуры", "навык из"). Per the Agent Skills specification (Hermes-compatible).'
 compatibility: applies to skills/ in this set, ~/.hermes/skills, .claude/skills
 ---
 
@@ -82,3 +82,15 @@ compatibility: Requires X  # optional
 ## Available scripts (relative paths from the skill root)
 ## References (pointers «read when X»)
 ```
+
+## 6. Turning a session into a skill (the former /learn flow)
+
+The raw material is what happened in this chat (or a named directory/procedure/URL) — not a skill-format question, and not a conclusion to remember (that is dev-wiki/findings).
+
+1. **Isolate the repeatable procedure.** What did you actually do that a fresh session would have to rediscover? Steps in order, with the "why" behind non-obvious decisions. One-off facts are NOT skills → memory instead; general knowledge the agent already has is NOT a skill (YAGNI).
+2. **Trigger test before writing.** In a fresh session, would the description fire for the natural phrase a user would say? No plausible trigger → stop, don't write it. The description is the only thing a future session sees.
+3. **Draft SKILL.md** by the rules above: numbered imperative procedure, defaults (not menus), gotchas — the most valuable section.
+4. **Choose the location.** Portable (any machine/project) → kit `skills/<slug>/`, commit — subject to the kit gates (English, file-size, review), propagates to every harness automatically. Machine/user-specific → the harness's user skills dir (e.g. `~/.claude/skills/`); does NOT propagate.
+5. **Verify before claiming done.** Frontmatter delimiters, `name` == folder, description within limits; trigger test against the most natural phrase; replay one real past case through the new skill — same outcome, ideally fewer wasted moves.
+
+Gotchas: don't over-generalize — encode the procedure that exists, not the class of procedures; Russian belongs only in trigger words; scripts stay in `scripts/`, never inline; a skill that was wrong once is fixed like code — edit + verify against the same case.

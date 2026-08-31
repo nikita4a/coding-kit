@@ -82,10 +82,10 @@ is a junction on Windows, a symlink elsewhere — `install.py` picks automatical
 
 ## Credits
 
-Phase-workflow skills (`brainstorming`, `writing-plans`, `executing-plans`,
-`subagent-driven-development`, `using-git-worktrees`, `requesting-code-review`,
-`receiving-code-review`, `verification-before-completion`, `systematic-debugging`,
-`dispatching-parallel-agents`, `finishing-a-development-branch`) are derived from
+Phase-workflow skills (`brainstorming`, `writing-plans`, `using-git-worktrees`,
+`requesting-code-review`, `receiving-code-review`, `verification-before-completion`,
+`systematic-debugging`, `dispatching-parallel-agents`, `finishing-a-development-branch`)
+are derived from
 [obra/superpowers](https://github.com/obra/superpowers) (MIT) © Jesse Vincent,
 reworked and extended for coding-kit. See `skills/superpowers/LICENSE`.
 

@@ -4,6 +4,28 @@
 > re-read by the model every session; OPS keeps only the living contract).
 
 > **Claim discipline (v2.7.4):** every "fixed"/"verified" claim below must cite the regression test (tests/test_*.py) or doctor check that re-verifies it. A claim without a check is not a claim — the v2.6 "githist 40-hex boundary" entry had neither code nor test (audit 2026-08-22). Sub-agent/cross-model verdicts are testimony: re-run fresh before reporting.
+- **v3.4.6 (zero-use skill re-audit)**: the 2-3-week re-review of the 9
+  zero-read skills flagged by the 2026-08-29 audit (findings #113/#114),
+  executed 2026-08-31 against real-session telemetry since v3.4.5
+  (usage_audit + a skill://-read scan of both transcript stores; audit's own
+  subagent transcripts excluded). Evidence-based kills/merges, 42 -> 36
+  skills: `agent-ux` (0 uses ever), `executing-plans` +
+  `subagent-driven-development` (0 real uses; 12 apparent hits were the
+  audit's own C1/C2 subagents; dispatching-parallel-agents covers the
+  parallel path), `learn` (0 real invocations — every "/learn" hit was
+  substring noise from `skills/learn` paths; flow folded into skill-authoring
+  §6 "Turning a session into a skill", RU triggers preserved),
+  `dashboard-ui-review` + `data-visualization` (0 uses; both merged into
+  `dashboard-design`, which kept its single real use — the Otklik realty
+  dashboard session 2026-08-29). `design-system` kept (1 real use, same
+  session). screenpipe-api was already gone (v3.4.3). Manifest/OPS/credits/
+  cross-references updated; trigger_queries.json learn -> skill-authoring (8
+  queries). Regression tests: `DashboardSkillsPresentTest` +
+  `LearnFoldedIntoSkillAuthoringTest` (killed slugs absent, merged flow +
+  RU trigger present), `ManifestContractTest` count 36,
+  `tests/test_trigger_eval_prelude.py` slug swap learn -> ponytail.
+  Verified: `python -m pytest tests/ -q` = 309 passed, 1 skipped, 34
+  subtests; `python scripts/doctor.py` = All systems GREEN (9 checks).
 - **v3.4.5 (eval truth-fixes)**: three root causes found by the first live
   v3.4.4 matrix run, closed with regression tests. (1) `eval/trigger_eval.py`
   `<skills listing>` placeholder was NEVER replaced — the measured listing

@@ -64,7 +64,7 @@ class PreludeListingInterpolationTest(unittest.TestCase):
         self.assertTrue(
             len(manifest) >= 10,
             "assembled prompt must carry at least 10 skill entries")
-        for slug in ("yagni", "learn", "skill-authoring"):
+        for slug in ("yagni", "ponytail", "skill-authoring"):
             self.assertIn(slug, prompt)
 
     def test_prompt_contains_both_few_shot_markers(self):

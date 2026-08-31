@@ -3,7 +3,7 @@
 # Superpowers: plan → TDD → implement → verify → report.
 # YAGNI: delete weightless code.
 
-version: "3.4.5"
+version: "3.4.6"
 name: coding-agent-kit
 description: Coding Agent OS — superpowers, YAGNI, TDD, cross-chat memory, trap-suite evals.
 
@@ -56,8 +56,7 @@ skills:
     - code-graph-review
     - money-path-safety
     - web-research
-    - skill-authoring
-    - learn                     # self-authoring: session → SKILL.md
+    - skill-authoring            # + session → SKILL.md (former /learn flow, §6)
     - reasoning-engine
     - testing-discipline
     - debug-incident-protocol
@@ -66,8 +65,6 @@ skills:
     # obra/superpowers (MIT) — phase granularity
     - brainstorming
     - writing-plans
-    - executing-plans
-    - subagent-driven-development
     - dispatching-parallel-agents
     - verification-before-completion
     - requesting-code-review
@@ -76,11 +73,8 @@ skills:
     - using-git-worktrees
     - finishing-a-development-branch
     - ponytail                   # lazy senior-dev mode (MIT; adapted from DietrichGebert/ponytail)
-    # dashboard & ux design suite
-    - agent-ux                   # AI assistant, copilot & automation UX
-    - dashboard-design           # marketplace & back-office dashboard design
-    - dashboard-ui-review        # rendered browser/playwright UI review
-    - data-visualization         # honest metrics, charts, KPIs & tables
+    # dashboard & ux design suite (2026-08-31: merged ui-review + data-viz into dashboard-design; agent-ux killed — 0 real uses)
+    - dashboard-design           # dashboard design + honest data-viz + rendered UI review
     - design-system              # compact design tokens & shared components
 
 adapters:

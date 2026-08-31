@@ -16,7 +16,7 @@ Method (ported as ideas from the agentskills.io methodology):
 - per-skill summary: trigger rate (should-queries passed) and false rate
   (should-not queries passed). Thresholds: trigger >= 0.5 and false <= 0.3.
 - anti-overfitting: do NOT paste words from failed queries into the
-  description; find the real trigger gap and reword (see skills/learn).
+  description; find the real trigger gap and reword (see skills/skill-authoring).
 - always-on skills (ambient, never "loaded" on request) are measured by a
   behavior oracle instead of the slug-name signal — the answer must invoke
   the skill's mandated reflex commands/paths (see behavior_oracles.py), not

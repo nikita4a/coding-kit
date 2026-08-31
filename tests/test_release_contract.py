@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Release contract regression test for coding-kit v3.4.5.
+"""Release contract regression test for coding-kit v3.4.6.
 
-Asserts the observable release invariants of v3.4.4, independent of any
+Asserts the observable release invariants, independent of any
 historical changelog wording that was accurate at the time:
 
 - VERSION and profile.yml version are both 3.4.3 (doctor check_versions).
@@ -35,8 +35,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-EXPECTED_VERSION = "3.4.5"
-EXPECTED_SKILL_COUNT = 42
+EXPECTED_VERSION = "3.4.6"
+EXPECTED_SKILL_COUNT = 36
 EXPECTED_SCENARIO_COUNT = 21
 EXPECTED_TRIGGER_QUERY_COUNT = 80
 EXPECTED_TASK_COUNT = 4
@@ -135,12 +135,12 @@ def _active_release_text() -> str:
 
 
 class VersionContractTest(unittest.TestCase):
-    def test_version_equals_3_4_5(self):
+    def test_version_equals_3_4_6(self):
         self.assertEqual(
             (ROOT / "VERSION").read_text(encoding="utf-8").strip(),
             EXPECTED_VERSION)
 
-    def test_profile_version_equals_3_4_5(self):
+    def test_profile_version_equals_3_4_6(self):
         m = _VERSION_RE.search((ROOT / "profile.yml").read_text(encoding="utf-8"))
         self.assertIsNotNone(m, "profile.yml must declare version")
         self.assertEqual(m.group(1), EXPECTED_VERSION)
@@ -157,7 +157,7 @@ class NoIdentityDeclarationTest(unittest.TestCase):
 
 
 class ManifestContractTest(unittest.TestCase):
-    def test_manifest_matches_on_disk_and_count_is_42(self):
+    def test_manifest_matches_on_disk_and_count_is_36(self):
         declared = _declared_skills()
         on_disk = _on_disk_skills()
         self.assertEqual(declared, on_disk,
@@ -165,21 +165,51 @@ class ManifestContractTest(unittest.TestCase):
         self.assertEqual(len(on_disk), EXPECTED_SKILL_COUNT)
 
 
-class NewDashboardSkillsPresentTest(unittest.TestCase):
+class DashboardSkillsPresentTest(unittest.TestCase):
+    """v3.4.6: ui-review + data-viz merged into dashboard-design; agent-ux
+    killed (0 real uses since 2026-08-15). Only the merged skill + design-system
+    remain."""
+
     NEW_SKILLS = (
-        "agent-ux",
         "dashboard-design",
-        "dashboard-ui-review",
-        "data-visualization",
         "design-system",
     )
 
-    def test_new_dashboard_skills_in_manifest_and_on_disk(self):
+    KILLED_SKILLS = (
+        "agent-ux",
+        "dashboard-ui-review",
+        "data-visualization",
+    )
+
+    def test_dashboard_skills_in_manifest_and_on_disk(self):
         declared = _declared_skills()
         on_disk = _on_disk_skills()
         for sk in self.NEW_SKILLS:
             self.assertIn(sk, declared, f"{sk} must be declared in profile.yml manifest")
             self.assertIn(sk, on_disk, f"{sk} skill dir must exist on disk")
+        for sk in self.KILLED_SKILLS:
+            self.assertNotIn(sk, declared, f"{sk} must be gone from the manifest")
+            self.assertNotIn(sk, on_disk, f"{sk} skill dir must be gone")
+
+
+class LearnFoldedIntoSkillAuthoringTest(unittest.TestCase):
+    """v3.4.6: the former learn skill (session → SKILL.md flow) folded into
+    skill-authoring §6; learn/executing-plans/subagent-driven-development
+    killed (0 real uses)."""
+
+    def test_learn_absent_skill_authoring_present_with_flow(self):
+        declared = _declared_skills()
+        on_disk = _on_disk_skills()
+        self.assertNotIn("learn", declared)
+        self.assertNotIn("learn", on_disk)
+        self.assertNotIn("executing-plans", declared)
+        self.assertNotIn("subagent-driven-development", declared)
+        self.assertIn("skill-authoring", declared)
+        body = (ROOT / "skills" / "skill-authoring" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("Turning a session into a skill", body,
+                      "skill-authoring must carry the former /learn flow")
+        self.assertIn("сделай скилл из этой процедуры", body,
+                      "RU trigger phrases from learn must survive in skill-authoring")
 
 
 class PonytailPresentTest(unittest.TestCase):

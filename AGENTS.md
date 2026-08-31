@@ -51,7 +51,7 @@ REQUEST
 │             design work → brainstorming skill; execution plan → writing-plans
 │     TDD:    red test first (test-driven-development). Bug → Prove-It
 │     IMPLEMENT: minimal diff. Parallel → dispatching-parallel-agents,
-│             by plan → executing-plans / subagent-driven-development
+│             per written plan → implement with checkpoints
 │     VERIFY:  verification-before-completion (fresh run, not memory),
 │             second opinion → requesting-code-review
 │     REPORT:  result first line

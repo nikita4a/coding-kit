@@ -22,9 +22,9 @@ first   first     minimal      observed    first
 Kit v2: each phase has a granular skill helper. A phase is not replaced, but deepened:
 
 - PLAN → `brainstorming` (design questions, spec), `writing-plans` (execution plan)
-- IMPLEMENT → `executing-plans` (per the plan with checkpoints), `subagent-driven-development`, `dispatching-parallel-agents`
+- IMPLEMENT → `dispatching-parallel-agents` (parallel slices), per-plan implementation with checkpoints
 - VERIFY → `verification-before-completion` (fresh output), `requesting-code-review`, `fable-judge` (adversarial)
-- Debug → `systematic-debugging`, `debugging-and-error-recovery`
+- Debug → `systematic-debugging`
 - Git → `using-git-worktrees`, `finishing-a-development-branch`
 
 ## Phase 1: PLAN
