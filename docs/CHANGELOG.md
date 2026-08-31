@@ -4,6 +4,23 @@
 > re-read by the model every session; OPS keeps only the living contract).
 
 > **Claim discipline (v2.7.4):** every "fixed"/"verified" claim below must cite the regression test (tests/test_*.py) or doctor check that re-verifies it. A claim without a check is not a claim — the v2.6 "githist 40-hex boundary" entry had neither code nor test (audit 2026-08-22). Sub-agent/cross-model verdicts are testimony: re-run fresh before reporting.
+- **v3.4.7 (CLI machine mode)**: closes the CLI-vs-MCP decision
+  (findings #166) — the two measured pain points (shell quoting on
+  `add --text`, prose output agents parse by eye) fixed inside the CLI,
+  no second runtime. `findings.py add --stdin` reads the conclusion from
+  stdin: zero shell quoting, CRLF normalized to LF, mutual exclusion with
+  `--text` (exit 2), empty input rejected (exit 2). `findings.py search
+  --json` and `search_all.py --json` emit a JSON list (id/created/topic/
+  tags/source/snippet and db/path/snippet respectively); empty result is
+  `[]` with exit 0; human output unchanged. Regression tests:
+  `tests/test_findings_cli_machine.py` (4 tests, red-first: quoting-
+  survival text with mixed quotes/backticks/$VAR verified verbatim in the
+  DB, JSON contract fields, empty-result `[]`, CRLF normalization via
+  byte-mode pipes; harness passes stdin as bytes — text=True doubles
+  CRLF on Windows). skills_search already had --json (v3.4.4). Verified:
+  `python -m pytest tests/ -q` = 313 passed, 1 skipped, 34 subtests;
+  ruff on touched files = baseline 8 (0 new). Release contract: version
+  3.4.7, 36 skills.
 - **v3.4.6 (zero-use skill re-audit)**: the 2-3-week re-review of the 9
   zero-read skills flagged by the 2026-08-29 audit (findings #113/#114),
   executed 2026-08-31 against real-session telemetry since v3.4.5

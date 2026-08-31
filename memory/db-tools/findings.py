@@ -16,6 +16,7 @@ Examples:
 """
 import argparse
 import datetime
+import json
 import os
 import sqlite3
 import sys
@@ -46,11 +47,27 @@ from findings_links import (
     cmd_link_rm,
     cmd_related,
 )
+
 OPS = {"AND", "OR", "NOT", "NEAR"}  # noqa: F401 — re-exported for old imports
 
 def cmd_add(args):
     con = connect()
     cur = con.cursor()
+    if args.stdin_mode and args.text:
+        print("[!] --stdin and --text are mutually exclusive", file=sys.stderr)
+        sys.exit(2)
+    if not args.stdin_mode and not args.text:
+        print("[!] either --text or --stdin is required", file=sys.stderr)
+        sys.exit(2)
+    if args.stdin_mode:
+        text = sys.stdin.read()
+        # Windows pipes/here-strings send CRLF; store LF like every other entry
+        text = text.replace("\r\n", "\n")
+        if not text.strip():
+            print("[!] --stdin: empty input, nothing to add", file=sys.stderr)
+            sys.exit(2)
+    else:
+        text = args.text
     if not args.source:
         print("[~] hint: --source not set; for web facts give a "
               "URL/path (verification, research.db id=367)", file=sys.stderr)
@@ -64,7 +81,7 @@ def cmd_add(args):
         "INSERT INTO findings (created, topic, text, tags, source, file, "
         "symbol, verify_cmd) VALUES (?,?,?,?,?,?,?,?)",
         (datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M"),
-         args.topic, args.text, args.tags, args.source or "",
+         args.topic, text, args.tags, args.source or "",
          args.file or "", args.symbol or "", getattr(args, "verify_cmd", "") or ""))
     new_id = cur.lastrowid
     for rel in _parse_ids(args.related):
@@ -180,7 +197,7 @@ def cmd_verify(args):
 def cmd_search(args):
     con = connect()
     cur = con.cursor()
-    sql = ("SELECT f.id, f.created, f.topic, f.tags, "
+    sql = ("SELECT f.id, f.created, f.topic, f.tags, f.source, "
            "snippet(findings_fts, 1, '[', ']', '…', 12) AS snip "
            "FROM findings_fts JOIN findings f ON f.id = findings_fts.rowid "
            "WHERE findings_fts MATCH ?")
@@ -200,10 +217,18 @@ def cmd_search(args):
     except sqlite3.OperationalError as e:
         print(f"invalid query: {e}", file=sys.stderr)
         sys.exit(1)
+    if getattr(args, "json_mode", False):
+        print(json.dumps([
+            {"id": r["id"], "created": r["created"], "topic": r["topic"],
+             "tags": r["tags"], "source": r["source"], "snippet": r["snip"]}
+            for r in rows], ensure_ascii=False))
+        con.close()
+        return
     if not rows:
         print(f"not found for \"{args.query}\""
               + (f" (source ~ \"{source}\")" if source else "")
               + (f" (tag \"{tag}\")" if tag else ""))
+        con.close()
         return
     print(f"found: {len(rows)}\n")
     for r in rows:
@@ -289,7 +314,9 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     p_add = sub.add_parser("add", help="add a finding")
     p_add.add_argument("topic", help="topic in one line")
-    p_add.add_argument("--text", required=True, help="conclusion/fact")
+    p_add.add_argument("--text", help="conclusion/fact (or use --stdin)")
+    p_add.add_argument("--stdin", dest="stdin_mode", action="store_true",
+                       help="read conclusion text from stdin (no shell quoting)")
     p_add.add_argument("--tags", default="", help="space-separated tags")
     p_add.add_argument("--source", default="", help="where it came from (path/URL)")
     p_add.add_argument("--file", default="",
@@ -316,6 +343,8 @@ def main():
                           help="filter: source (path/URL) contains substring")
     p_search.add_argument("--tag", default="",
                           help="filter: exact finding tag")
+    p_search.add_argument("--json", dest="json_mode", action="store_true",
+                          help="machine output: JSON list")
     p_search.set_defaults(fn=cmd_search)
 
     p_list = sub.add_parser("list", help="list findings")

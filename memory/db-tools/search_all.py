@@ -11,6 +11,7 @@ Usage:
     python3 db-tools/search_all.py "legacy" --substring
 """
 import argparse
+import json
 import sqlite3
 import sys
 from pathlib import Path
@@ -70,6 +71,8 @@ def main() -> int:
                     help="results per database")
     ap.add_argument("--substring", action="store_true",
                     help="trigram substring instead of words (declensions)")
+    ap.add_argument("--json", dest="json_mode", action="store_true",
+                    help="machine output: JSON list")
     args = ap.parse_args()
     if args.substring and len(args.query) < 3:
         print("--substring requires a query of at least 3 characters",
@@ -77,6 +80,11 @@ def main() -> int:
         return 1
     results = search_all(args.query, limit=args.limit,
                          substring=args.substring)
+    if getattr(args, "json_mode", False):
+        print(json.dumps(
+            [{"db": n, "path": rp, "snippet": snip} for n, rp, snip in results],
+            ensure_ascii=False))
+        return 0
     if not results:
         print("not found in any database")
         return 1
