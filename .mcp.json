@@ -3,6 +3,14 @@
     "cua-driver": {
       "command": "cua-driver",
       "args": ["mcp"]
+    },
+    "browsermcp": {
+      "command": "uv",
+      "args": ["run", "--project", "/home/nikita/mcps/BrowserMCP", "browsermcp", "mcp"]
+    },
+    "searchmcp": {
+      "command": "uv",
+      "args": ["run", "--project", "/home/nikita/mcps/SearchMCP", "searchmcp", "mcp"]
     }
   }
 }
