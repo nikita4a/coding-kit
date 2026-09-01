@@ -67,6 +67,28 @@ REQUEST
 ├─ "learn this / /learn X / make a skill" ──→ learn: distill the
 │     repeatable procedure into a new SKILL.md (format: skill-authoring)
 │
+├─ "spec mode / write a spec / spec this out" ──→ SPEC-MODE:
+│     structured spec-driven development (spec-mode skill)
+│     SPECIFY → CLARIFY → PLAN → TASKS → IMPLEMENT, each gated
+│
+├─ "grill me / ask me questions / stress-test this" ──→ GRILL-ME:
+│     adversarial requirements interrogation (grill-me skill)
+│     ask 15-50 questions before writing code
+│
+├─ "MCP not connecting / tools unavailable / MCP broken" ──→ MCP-REPAIR:
+│     5-step diagnostic ladder (mcp-repair skill)
+│     status → logs → CLI reproduction → stdio probe → fix
+│
+├─ "drive desktop / control apps / take screenshot" ──→ CUA-DRIVER:
+│     computer-use agent driver (cua-driver skill)
+│     list_apps, click, type_text, get_window_state, screenshot
+│
+├─ "define requirements / what are the edge cases" ──→ REQUIREMENTS-ENGINEERING:
+│     EARS format requirements (requirements-engineering skill)
+│
+├─ "spec doesn't match / requirements drifted" ──→ TROUBLESHOOTING:
+│     spec-reality divergence diagnostics (troubleshooting skill)
+│
 └─ SMALL THING (<10 lines, no code logic) ──→ do it now, verify after
 ```
 

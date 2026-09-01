@@ -5,7 +5,7 @@ Asserts the observable release invariants, independent of any
 historical changelog wording that was accurate at the time:
 
 - VERSION and profile.yml version are both 3.4.3 (doctor check_versions).
-- profile.yml's skill manifest equals the on-disk skills/ dirs; total is 38.
+- profile.yml's skill manifest equals the on-disk skills/ dirs; total is 47.
 - the ponytail skill is present in both the manifest and the skill dirs.
 - the current public release text no longer contains any identity-declaration
   phrase ("Engineer agent", "Not a chatbot", "Not a theorist", "Not a PM",
@@ -36,9 +36,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 EXPECTED_VERSION = "3.4.7"
-EXPECTED_SKILL_COUNT = 36
+EXPECTED_SKILL_COUNT = 47
 EXPECTED_SCENARIO_COUNT = 21
-EXPECTED_TRIGGER_QUERY_COUNT = 80
+EXPECTED_TRIGGER_QUERY_COUNT = 102
 EXPECTED_TASK_COUNT = 4
 
 # Identity-declaration phrases the v3.4.2 release removed from the public
@@ -157,7 +157,7 @@ class NoIdentityDeclarationTest(unittest.TestCase):
 
 
 class ManifestContractTest(unittest.TestCase):
-    def test_manifest_matches_on_disk_and_count_is_36(self):
+    def test_manifest_matches_on_disk_and_count_is_47(self):
         declared = _declared_skills()
         on_disk = _on_disk_skills()
         self.assertEqual(declared, on_disk,

@@ -398,5 +398,115 @@
     "skill": "systematic-debugging",
     "should": true,
     "query": "why does this function return None instead of the value"
+  },
+  {
+    "skill": "spec-mode",
+    "should": true,
+    "query": "write a spec for this feature before coding"
+  },
+  {
+    "skill": "spec-mode",
+    "should": false,
+    "query": "just fix this typo in the README"
+  },
+  {
+    "skill": "requirements-engineering",
+    "should": true,
+    "query": "help me define clear requirements for this system"
+  },
+  {
+    "skill": "requirements-engineering",
+    "should": false,
+    "query": "rename this variable to snake_case"
+  },
+  {
+    "skill": "design-documentation",
+    "should": true,
+    "query": "design the architecture for this new service"
+  },
+  {
+    "skill": "design-documentation",
+    "should": false,
+    "query": "add a print statement for debugging"
+  },
+  {
+    "skill": "task-breakdown",
+    "should": true,
+    "query": "break this project into sequenced implementation tasks"
+  },
+  {
+    "skill": "task-breakdown",
+    "should": false,
+    "query": "fix the CSS spacing on this button"
+  },
+  {
+    "skill": "create-steering-documents",
+    "should": true,
+    "query": "set up project standards and coding conventions"
+  },
+  {
+    "skill": "create-steering-documents",
+    "should": false,
+    "query": "change the color scheme to dark mode"
+  },
+  {
+    "skill": "quality-assurance",
+    "should": true,
+    "query": "what quality gates should we enforce per phase"
+  },
+  {
+    "skill": "quality-assurance",
+    "should": false,
+    "query": "add a comment to this function"
+  },
+  {
+    "skill": "troubleshooting",
+    "should": true,
+    "query": "the spec doesn't match what we actually built"
+  },
+  {
+    "skill": "troubleshooting",
+    "should": false,
+    "query": "update the changelog with today's date"
+  },
+  {
+    "skill": "ai-prompting",
+    "should": true,
+    "query": "how should I structure my prompt for this complex task"
+  },
+  {
+    "skill": "ai-prompting",
+    "should": false,
+    "query": "delete this unused import"
+  },
+  {
+    "skill": "mcp-repair",
+    "should": true,
+    "query": "MCP server is not connecting, tools are unavailable"
+  },
+  {
+    "skill": "mcp-repair",
+    "should": false,
+    "query": "add a new dependency to package.json"
+  },
+  {
+    "skill": "grill-me",
+    "should": true,
+    "query": "grill me with hard questions before we start coding"
+  },
+  {
+    "skill": "grill-me",
+    "should": false,
+    "query": "just run the existing test suite"
+  },
+  {
+    "skill": "cua-driver",
+    "should": true,
+    "query": "drive my desktop and take a screenshot of the app"
+  },
+  {
+    "skill": "cua-driver",
+    "should": false,
+    "query": "write a unit test for the parser"
   }
 ]

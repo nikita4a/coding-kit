@@ -1,6 +1,6 @@
 # coding-kit — Coding Agent OS
 
-A portable agent-brain kit: methodology (superpowers), minimalism (YAGNI), cross-chat memory (SQLite FTS5), adversarial evals (trap-suite). 43 Hermes-compatible skills, English instructions, one command install.
+A portable agent-brain kit: methodology (superpowers), minimalism (YAGNI), cross-chat memory (SQLite FTS5), adversarial evals (trap-suite). 47 Hermes-compatible skills, English instructions, one command install.
 
 Works in any environment that reads an agent rules file and SKILL.md skills: Claude Code, OMP, Gemini CLI, Antigravity, Hermes.
 
@@ -12,10 +12,11 @@ Works in any environment that reads an agent rules file and SKILL.md skills: Cla
 | Contract | `OPS.md` | phases, memory hierarchy, gates, changelog |
 | Runtime | `SKILL_RUNTIME.md` | context-size modes |
 | Manifest | `profile.yml` | single source of truth: paths, skills |
-| Skills | `skills/` | 43: always-on core + obra phase skills + domain + dashboard/UX |
+| Skills | `skills/` | 47: always-on core + obra phase skills + domain + spec methodology + mcp-repair + grill-me + cua-driver |
 | Memory engine | `memory/db-tools/` | build, search_all, findings, repomap (FTS5) |
 | Evals | `eval/` | trap-suite (21 scenarios), task smoke (4 oracle-verified tasks), trigger-eval (80 queries), ablation, schema-v1 store + trend + telemetry |
 | Adapters | `adapters/` | per-environment setup guides |
+| MCP configs | `.mcp.json`, `opencode.json` | MCP server registration (Cua Driver) |
 
 ## Install (one command)
 
@@ -48,7 +49,18 @@ Gates and checks (the kit's own lifecycle, run directly):
 - `python -m pytest tests -q` — unit test suite.
 - `python scripts/tools/check_file_sizes.py --ci` — file-size gate (hard limits).
 - `python memory/scripts/memory-warmup.py` — cross-chat memory warmup.
+- `python scripts/validate_skills.py` — validate all SKILL.md frontmatter and format.
+- `python scripts/scan_secrets.py` — scan repo for hardcoded secrets.
 
+## MCP integration
+
+The kit includes MCP server registration for Cua Driver — a computer-use agent driver for the host desktop: installed apps, signed-in browser sessions, screenshots, clicks, typing, and window state.
+
+Configs are in `.mcp.json` (Claude Code) and `opencode.json` (OpenCode). If the server is not installed, the config is inert — no errors, no connections.
+
+Companion skills: `mcp-repair` (5-step diagnostic ladder for any MCP server), `cua-driver` (permission modes, installation, antipatterns).
+
+See `docs/mcp-setup.md` for full installation guide.
 
 ## Evals & Trend Loop
 
@@ -90,6 +102,5 @@ are derived from
 reworked and extended for coding-kit. See `skills/superpowers/LICENSE`.
 
 ## License
-
 
 MIT — see LICENSE.

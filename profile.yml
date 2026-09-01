@@ -76,6 +76,17 @@ skills:
     # dashboard & ux design suite (2026-08-31: merged ui-review + data-viz into dashboard-design; agent-ux killed — 0 real uses)
     - dashboard-design           # dashboard design + honest data-viz + rendered UI review
     - design-system              # compact design tokens & shared components
+    - spec-mode
+    - requirements-engineering
+    - design-documentation
+    - task-breakdown
+    - create-steering-documents
+    - quality-assurance
+    - troubleshooting
+    - ai-prompting
+    - mcp-repair
+    - grill-me
+    - cua-driver
 
 adapters:
   - platform: gemini

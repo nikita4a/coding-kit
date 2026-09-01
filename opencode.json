@@ -1,0 +1,13 @@
+{
+  "skills": {
+    "directories": ["skills"],
+    "autoLoad": ["superpowers", "yagni", "engineering-persona", "fable-method", "dev-wiki"]
+  },
+  "memory": {
+    "root": "~/.memory",
+    "wiki": "~/.memory/Wiki"
+  },
+  "mcp": {
+    "configFile": ".mcp.json"
+  }
+}

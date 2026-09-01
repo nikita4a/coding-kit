@@ -182,6 +182,8 @@ def regen_routers():
 
 def bump_claude_md():
     n = len(master_skill_names())
+    if not CLAUDE_MD.exists():
+        return "skipped (no CLAUDE.md)"
     t = CLAUDE_MD.read_text(encoding="utf-8")
     t2 = re.sub(
         r"coding-kit v\d+\.\d+\.\d+ \(repo master; machine CLAUDE\.md"

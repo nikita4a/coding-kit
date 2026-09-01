@@ -4,6 +4,31 @@
 > re-read by the model every session; OPS keeps only the living contract).
 
 > **Claim discipline (v2.7.4):** every "fixed"/"verified" claim below must cite the regression test (tests/test_*.py) or doctor check that re-verifies it. A claim without a check is not a claim — the v2.6 "githist 40-hex boundary" entry had neither code nor test (audit 2026-08-22). Sub-agent/cross-model verdicts are testimony: re-run fresh before reporting.
+
+## v3.5.0 (unreleased) — Spec methodology + mcp-repair + grill-me + Cua Driver
+
+### Added (11 skills)
+- Spec methodology suite (8): spec-mode, requirements-engineering, design-documentation, task-breakdown, create-steering-documents, quality-assurance, troubleshooting, ai-prompting — ported from AGGG4ks-dist
+- mcp-repair — 5-step MCP server diagnostic ladder
+- grill-me — adversarial requirements interrogation (inspired by mattpocock/skills, 101k stars)
+- cua-driver — computer-use agent driver for host desktop (MCP integration)
+
+### Added (configs)
+- .mcp.json — MCP server registration (Cua Driver)
+- opencode.json — OpenCode config with skills/memory/mcp
+
+### Added (scripts)
+- scripts/validate_skills.py — SKILL.md validator
+- scripts/scan_secrets.py — repo-wide secret scanner
+
+### Added (docs)
+- docs/mcp-setup.md — Cua Driver installation guide
+
+### Updated
+- profile.yml — 11 new skill entries under domain:
+- README.md — skill count 36→47, MCP integration section, new scripts
+- OPS.md — version summary updated
+
 - **v3.4.7 (CLI machine mode)**: closes the CLI-vs-MCP decision
   (findings #166) — the two measured pain points (shell quoting on
   `add --text`, prose output agents parse by eye) fixed inside the CLI,
