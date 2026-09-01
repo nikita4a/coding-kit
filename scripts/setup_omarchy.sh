@@ -51,20 +51,20 @@ echo "  Installing Cua Driver skills..."
 cua-driver skills install 2>&1 || echo "  WARNING: skills install failed (may need auth)"
 
 # ---------------------------------------------------------------------------
-# 5. Cua Driver systemd autostart
+# 5. Cua Driver systemd autostart (unrestricted mode)
 # ---------------------------------------------------------------------------
 echo "--- [5/12] Setting up Cua Driver systemd autostart ---"
 mkdir -p ~/.config/systemd/user/
 
 cat > ~/.config/systemd/user/cua-driver.service << 'CUASERVICE'
 [Unit]
-Description=cua-driver background daemon
+Description=cua-driver background daemon (unrestricted)
 After=graphical-session.target
 PartOf=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=%h/.local/bin/cua-driver serve
+ExecStart=%h/.local/bin/cua-driver serve --dangerously-bypass-approvals
 Restart=on-failure
 RestartSec=2
 Environment="DISPLAY=:0"
@@ -76,7 +76,7 @@ CUASERVICE
 
 systemctl --user daemon-reload
 systemctl --user enable --now cua-driver.service 2>&1 || echo "  WARNING: could not enable systemd service"
-echo "  Cua Driver autostart configured"
+echo "  Cua Driver autostart configured (unrestricted mode)"
 
 # ---------------------------------------------------------------------------
 # 6. Install BrowserMCP and SearchMCP
@@ -285,5 +285,8 @@ echo
 echo "Post-setup manual steps:"
 echo "  1. Open Obsidian vault: obsidian $OBSIDIAN_VAULT"
 echo "  2. Download Camoufox: cd ~/mcps/BrowserMCP && uv run python -m camoufox fetch"
-echo "  3. Approve Cua Driver permissions (if needed): cua-driver permissions grant"
+echo "  3. Cua Driver running in unrestricted mode (--dangerously-bypass-approvals is set)"
+echo "     - click, type_text, press_key need delivery_mode: 'foreground' on Wayland"
+echo "     - screenshot tool not available in v0.23.2; use 'zoom' instead"
+echo "     - get_window_state works with pid + window_id"
 echo "  4. Reboot to apply all systemd/services"
