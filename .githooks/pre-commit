@@ -1,0 +1,26 @@
+#!/bin/bash
+# Pre-commit hook: scan staged files for hardcoded secrets
+
+echo "=== Secret Scanner ==="
+
+# Get staged files that are text
+STAGED=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null)
+
+if [ -z "$STAGED" ]; then
+  echo "  No staged files to scan."
+  exit 0
+fi
+
+# Run the full scanner on the repo root (scans only text files, excludes .git/node_modules)
+# Future: optimize to check only staged files by passing --root with a temp dir
+python3 scripts/scan_secrets.py 2>&1
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+  echo ""
+  echo "❌ SECRETS FOUND — commit blocked"
+  echo "  Fix the secrets above or use --no-verify to bypass"
+  exit 1
+fi
+
+echo "✅ No secrets found"
